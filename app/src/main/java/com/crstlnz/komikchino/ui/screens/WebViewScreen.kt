@@ -62,7 +62,8 @@ fun WebViewScreen(url: String, title: String = "Comments", onBackPressed: () -> 
                         webView = wV
                     },
                     onRequestOpenBrowser = { url ->
-                        uriHandler.openUri(url)
+//                        uriHandler.openUri(url)
+                        uriHandler.openUri("https://void-scans.com/")
                     }
                 )
             }

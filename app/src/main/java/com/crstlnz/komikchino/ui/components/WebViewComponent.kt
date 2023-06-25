@@ -37,7 +37,6 @@ fun WebViewComponent(
                 request: WebResourceRequest?
             ): Boolean {
                 val u = request?.url.toString()
-                Log.d("URL", u)
                 val regex = Regex(".*:\\/\\/\\/.*")
                 if (regex.matches(u)) {
                     onRequestOpenBrowser(u)

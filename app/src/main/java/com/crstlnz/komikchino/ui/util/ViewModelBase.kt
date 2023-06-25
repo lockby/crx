@@ -24,7 +24,6 @@ open class ViewModelBase<T>(
     protected val _state = MutableStateFlow<DataState<T>>(DataState.Idle)
     protected open var cacheKey: String = "";
 
-    //    var onError: ((message: String, dataState: DataState<T>) -> Unit)? = null
     private val _onError = MutableSharedFlow<String>()
     val onError = _onError.asSharedFlow()
 

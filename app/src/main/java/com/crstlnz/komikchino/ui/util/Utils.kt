@@ -1,7 +1,6 @@
 package com.crstlnz.komikchino.ui.util
 
 import android.content.Context
-import android.os.Build
 import android.text.Html
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -26,7 +25,6 @@ import com.fasterxml.jackson.databind.JavaType
 import kotlinx.coroutines.delay
 import java.util.Locale
 import kotlin.system.measureTimeMillis
-
 suspend fun <T> delayBlock(time: Long = 300L, block: suspend () -> T): T {
     val usedTime = measureTimeMillis {
         block()
@@ -37,7 +35,6 @@ suspend fun <T> delayBlock(time: Long = 300L, block: suspend () -> T): T {
     }
     return block()
 }
-
 @Composable
 fun LazyListState.OnBottomReached(
     itemOffset: Int = 1,
@@ -58,36 +55,26 @@ fun LazyListState.OnBottomReached(
             }
     }
 }
-
 fun convertHTML(str: String): String {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        Html.fromHtml(str, Html.FROM_HTML_MODE_LEGACY).toString()
-    } else {
-        Html.fromHtml(str).toString()
-    }
+    return Html.fromHtml(str, Html.FROM_HTML_MODE_LEGACY).toString()
 }
-
 fun getComicTypeColor(type: String): Color {
     if(AppSettings.komikServer == KomikServer.MANGAKATANA) return Blue
     return when (type.lowercase(Locale.ROOT).trim()) {
         "manhwa" -> {
             Green
         }
-
         "manga" -> {
             Blue
         }
-
         "manhua" -> {
             Red
         }
-
         else -> {
             Purple
         }
     }
 }
-
 suspend fun <T> loadWithCacheMain(
     key: String,
     fetch: suspend () -> T,
@@ -103,7 +90,6 @@ suspend fun <T> loadWithCacheMain(
         data
     }
 }
-
 suspend fun <T> loadWithCache(
     context: Context,
     key: String,
@@ -114,7 +100,6 @@ suspend fun <T> loadWithCache(
     val storage = StorageHelper<T>(context, "CACHE", type)
     return loadWithCacheMain(key, fetch, storage, force)
 }
-
 suspend fun <T> loadWithCache(
     key: String,
     fetch: suspend () -> T,
@@ -123,8 +108,6 @@ suspend fun <T> loadWithCache(
 ): T? {
     return loadWithCacheMain(key, fetch, storage, force)
 }
-
-
 @Composable
 fun ComposableLifecycle(
     lifeCycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
@@ -140,4 +123,3 @@ fun ComposableLifecycle(
         }
     }
 }
-
