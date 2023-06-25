@@ -34,11 +34,12 @@
 -keep class androidx.annotation.** { *; }
 -keep class javax.inject.** { *; }
 -keep class com.crstlnz.komikchino.data.model.** { *; }
+-keep class com.crstlnz.komikchino.data.database.** { *; }
 # End Retrofit2 with Jackson
 
 #by android studio
--dontwarn javax.servlet.ServletContainerInitializer
--dontwarn org.apache.bsf.BSFManager
+#-dontwarn javax.servlet.ServletContainerInitializer
+#-dontwarn org.apache.bsf.BSFManager
 #####################
 
 

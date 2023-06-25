@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.placeholder
@@ -20,11 +21,15 @@ fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = composed {
     }
 }
 
-fun Modifier.defaultPlaceholder(color: Color? = null, highlightColor : Color? = null): Modifier = composed {
+fun Modifier.defaultPlaceholder(
+    color: Color? = null,
+    highlightColor: Color? = null,
+    shape: Shape = RoundedCornerShape(8.dp)
+): Modifier = composed {
     placeholder(
         visible = true,
         color = color ?: MaterialTheme.colors.surface,
-        shape = RoundedCornerShape(8.dp),
+        shape = shape,
         highlight = PlaceholderHighlight.shimmer(
             highlightColor = highlightColor ?: lightenColor(
                 MaterialTheme.colors.surface, 20

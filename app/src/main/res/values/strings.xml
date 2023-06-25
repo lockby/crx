@@ -35,4 +35,7 @@
     <string name="komiknotfound">Komik not found!</string>
     <string name="synopsis">Synopsis</string>
     <string name="detail">Detail</string>
+    <string name="home_bookmark">Rak</string>
+    <string name="home_genre">Genre</string>
+    <string name="home_adadeh">List</string>
 </resources>

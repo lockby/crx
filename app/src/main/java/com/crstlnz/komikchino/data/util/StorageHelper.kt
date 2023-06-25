@@ -2,18 +2,19 @@ package com.crstlnz.komikchino.data.util
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import com.crstlnz.komikchino.data.model.StorageItem
 import com.crstlnz.komikchino.data.model.StorageItemValue
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.type.TypeFactory
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import java.io.IOException
 
 class StorageHelper<T>(
     private val context: Context,
     private val sharedPreferencesName: String,
-    private val objectType: JavaType,
+    private val objectType: JavaType = TypeFactory.defaultInstance()
+        .constructType(String::class.java),
     private val expireTimeInMillis: Long = 3600000L
 ) {
     private val sharedPreferences: SharedPreferences by lazy {

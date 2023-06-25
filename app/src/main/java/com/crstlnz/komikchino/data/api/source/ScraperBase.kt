@@ -10,7 +10,7 @@ interface ScraperBase {
     suspend fun getHome(): HomeData
     suspend fun search(query: String, page: Int = 1): SearchQuery
     suspend fun getDetailKomik(slug: String): KomikDetail
-    suspend fun getDetailKomik(id: Int): KomikDetail
-    suspend fun getChapterList(id: Int): List<Chapter>
-    suspend fun getChapter(id: Int): ChapterModel
+//    suspend fun getDetailKomik(id: Int): KomikDetail
+    suspend fun getChapterList(id: String): List<Chapter>
+    suspend fun getChapter(id: String): ChapterModel
 }

@@ -1,6 +1,5 @@
 package com.crstlnz.komikchino.ui.screens.home.fragments.home
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,20 +19,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.SnackbarHostState
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,30 +37,28 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.R
+import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.FeaturedComic
-import com.crstlnz.komikchino.data.model.PopularComic
+import com.crstlnz.komikchino.data.model.Section
 import com.crstlnz.komikchino.data.model.State
-import com.crstlnz.komikchino.data.util.homeStorageHelper
-import com.crstlnz.komikchino.ui.components.ErrorView
 import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.navigations.MainNavigation
-import com.crstlnz.komikchino.ui.screens.home.HomeViewModel
-import com.crstlnz.komikchino.ui.screens.home.HomeViewModelFactory
+import com.crstlnz.komikchino.ui.theme.Black1
 import com.crstlnz.komikchino.ui.theme.Black3
+import com.crstlnz.komikchino.ui.theme.Blue
 import com.crstlnz.komikchino.ui.theme.Red
 import com.crstlnz.komikchino.ui.theme.Yellow
 import com.crstlnz.komikchino.ui.util.defaultPlaceholder
@@ -74,107 +68,139 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.delay
 
-@SuppressLint("CoroutineCreationDuringComposition")
 @Composable
 fun HomeFragment(navController: NavController) {
-    val v = viewModel<HomeViewModel>(
-        factory = HomeViewModelFactory(
-            homeStorageHelper(
-                LocalContext.current
-            )
-        )
-    )
+    val v: HomeFragmenViewModel = hiltViewModel()
     val dataState by v.state.collectAsState()
-    val data = dataState.data
+
     LazyColumn(Modifier.fillMaxSize()) {
         when (dataState.state) {
             State.DATA -> {
-                if (data == null) {
-                    item {
-                        ErrorView(resId = R.drawable.empty_box,
-                            message = stringResource(R.string.empty),
-                            onClick = {
-                                v.load()
-                            })
-                    }
-                } else {
-                    featuredView(
-                        data.featured, onKomikClick = { title, slug ->
-                            navController.navigate("${MainNavigation.KOMIKDETAIL}/${title}/${slug}")
-                        },
-                        4
-                    )
-
-                    popularView(data.popular) { title, slug ->
-                        navController.navigate("${MainNavigation.KOMIKDETAIL}/${title}/${slug}")
-                    }
+                val data = (dataState as DataState.Success).data
+                featuredView(
+                    data.featured, onKomikClick = { title, slug ->
+                        MainNavigation.toKomik(navController, title, slug)
+                    }, 4
+                )
+                sectionView(data.sections) { title, slug ->
+                    MainNavigation.toKomik(navController,title,slug)
                 }
             }
 
             else -> {
-                item {
-                    Text("wew")
-                }
+                komikLoading()
             }
         }
     }
 }
 
+@Preview
+@Composable
+fun LoadingPreview() {
+    LazyColumn() {
+        komikLoading()
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
 fun LazyListScope.komikLoading() {
-    items(count = 5, key = {
-        it
-    }) {
-        Card(
-            modifier = Modifier
-                .padding(horizontal = 15.dp, vertical = 7.5.dp)
+    item {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 10f)
                 .defaultPlaceholder(
-                    color = lightenColor(MaterialTheme.colors.surface, 20),
-                    highlightColor = lightenColor(MaterialTheme.colors.surface, 60)
+                    color = lightenColor(Black1, 25),
+                    highlightColor = lightenColor(Black1, 60),
+                    shape = RectangleShape
                 )
+        )
+    }
+
+    item {
+        Row(
+            Modifier.padding(start = 15.dp, end = 15.dp, top = 20.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            val height = 90.dp
-            Row(
-                modifier = Modifier.padding(15.dp)
-            ) {
+            Box(modifier = Modifier.background(color = Red, shape = CircleShape)) {
+                Icon(
+                    tint = Color.White,
+                    painter = painterResource(id = R.drawable.fire),
+                    contentDescription = "Popular Icon",
+                    modifier = Modifier
+                        .padding(
+                            start = 3.5.dp, end = 2.5.dp, top = 3.dp, bottom = 3.dp
+                        )
+                        .width(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                "Popular Today",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+        }
+    }
+
+    items(count = 10, key = { it }) {
+        Row(Modifier.padding(15.dp)) {
+            Box(
+                modifier = Modifier
+                    .width(120.dp)
+                    .aspectRatio(11f / 16f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .defaultPlaceholder(
+                        color = lightenColor(Black1, 25), highlightColor = lightenColor(Black1, 60)
+                    )
+            )
+            Spacer(Modifier.width(10.dp))
+            Column() {
                 Box(
                     modifier = Modifier
-                        .height(height)
-                        .aspectRatio(8F / 10F),
+                        .height(16.dp)
+                        .fillMaxWidth(0.8f)
+                        .defaultPlaceholder(
+                            color = lightenColor(Black1, 25),
+                            highlightColor = lightenColor(Black1, 60)
+                        )
                 )
-                Spacer(modifier = Modifier.width(15.dp))
-                Column(
-                    modifier = Modifier
-                        .weight(1F)
-                        .height(height)
-                ) {
+                Spacer(modifier = Modifier.height(4.dp))
+                FlowRow(verticalArrangement = Arrangement.Center) {
                     Box(
                         modifier = Modifier
-                            .weight(1F)
-                            .fillMaxWidth()
-                    ) {
-                        Text(
-                            "Member Name",
-                            modifier = Modifier.defaultPlaceholder(),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.SemiBold)
-                        )
-                    }
+                            .height(12.dp)
+                            .fillMaxWidth(0.18f)
+                            .defaultPlaceholder(
+                                color = lightenColor(Black1, 25),
+                                highlightColor = lightenColor(Black1, 60)
+                            )
+                    )
+                    Spacer(Modifier.width(6.dp))
                     Box(
-                        modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd
-                    ) {
-                        Text(
-                            "Graduate",
-                            modifier = Modifier.defaultPlaceholder(),
-                            style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.SemiBold),
-                            textAlign = TextAlign.Right,
-                            color = MaterialTheme.colors.primary
-                        )
-                    }
+                        modifier = Modifier
+                            .height(12.dp)
+                            .fillMaxWidth(0.1f)
+                            .defaultPlaceholder(
+                                color = lightenColor(Black1, 25),
+                                highlightColor = lightenColor(Black1, 60)
+                            )
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .height(12.dp)
+                            .fillMaxWidth(0.28f)
+                            .defaultPlaceholder(
+                                color = lightenColor(Black1, 25),
+                                highlightColor = lightenColor(Black1, 60)
+                            )
+                    )
                 }
+
             }
         }
     }
+
 }
 
 
@@ -199,13 +225,10 @@ fun LazyListScope.featuredView(
             }
         }
         HorizontalPager(
-            count = Int.MAX_VALUE, state = pagerState,
-            modifier = Modifier.nestedScroll(remember {
+            count = Int.MAX_VALUE, state = pagerState, modifier = Modifier.nestedScroll(remember {
                 object : NestedScrollConnection {
                     override fun onPostScroll(
-                        consumed: Offset,
-                        available: Offset,
-                        source: NestedScrollSource
+                        consumed: Offset, available: Offset, source: NestedScrollSource
                     ): Offset {
                         elapsedTime = 0
                         return Offset.Zero
@@ -221,12 +244,15 @@ fun LazyListScope.featuredView(
                     .background(color = Black3)
                     .clickable {
                         onKomikClick(featureds[it].title, featureds[it].slug)
-                    }
-            ) {
-                ImageView(url = featureds[it].img)
+                    }) {
+                ImageView(
+                    url = featureds[it].img,
+                    modifier = Modifier.fillMaxSize(),
+                    contentDescription = "Thumbnail"
+                )
                 Box(
                     Modifier
-                        .background(color = Color.Black.copy(alpha = 0.3f))
+                        .background(color = Color.Black.copy(alpha = 0.15f))
                         .fillMaxSize()
                 )
                 Box(
@@ -234,7 +260,7 @@ fun LazyListScope.featuredView(
                         .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
-                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)),
+                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
                                 100F,
                                 600F
                             )
@@ -243,63 +269,79 @@ fun LazyListScope.featuredView(
                 Column(
                     Modifier
                         .padding(15.dp)
-                        .fillMaxSize(),
-                    verticalArrangement = Arrangement.Bottom
+                        .fillMaxSize(), verticalArrangement = Arrangement.Bottom
                 ) {
                     Text(
-                        featureds[it].title, style = MaterialTheme.typography.h6.copy(
+                        featureds[it].title,
+                        style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.SemiBold, shadow = Shadow(
                                 Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
                             )
                         ),
+                        color = Color.White,
                         modifier = Modifier.fillMaxWidth(0.7f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        featureds[it].description, style = MaterialTheme.typography.body2.copy(
-                            fontWeight = FontWeight.SemiBold, shadow = Shadow(
+                        featureds[it].description, style = MaterialTheme.typography.bodyMedium.copy(
+                            color = Color.White, fontWeight = FontWeight.SemiBold, shadow = Shadow(
                                 Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
                             )
-                        ),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        ), maxLines = 2, overflow = TextOverflow.Ellipsis
                     )
                     Spacer(Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            featureds[it].type,
-                            style = MaterialTheme.typography.body2.copy(
-                                color = getComicTypeColor(featureds[it].type),
-                                fontWeight = FontWeight.SemiBold,
-                                shadow = Shadow(
-                                    Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
+                        if (featureds[it].type.isNotEmpty()) {
+                            Text(
+                                featureds[it].type,
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    color = getComicTypeColor(featureds[it].type),
+                                    fontWeight = FontWeight.SemiBold,
+                                    shadow = Shadow(
+                                        Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
+                                    )
                                 )
                             )
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Icon(
-                            Icons.Filled.Star,
-                            contentDescription = "Star",
-                            modifier = Modifier.height(16.dp),
-                            tint = Yellow
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            featureds[it].score.toString(),
-                            style = MaterialTheme.typography.body2.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                shadow = Shadow(
-                                    Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
+                            Spacer(Modifier.width(6.dp))
+                        }
+
+                        if (featureds[it].score != null) {
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = "Star",
+                                modifier = Modifier.height(16.dp),
+                                tint = Yellow
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                featureds[it].score.toString(),
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    shadow = Shadow(
+                                        Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
+                                    )
                                 )
                             )
-                        )
-                        Spacer(Modifier.width(10.dp))
+                            Spacer(Modifier.width(10.dp))
+                        }
+
+                        if (featureds[it].type.isEmpty() && featureds[it].score == null) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.web),
+                                contentDescription = "Genre",
+                                modifier = Modifier.height(16.dp),
+                                tint = Yellow
+                            )
+                            Spacer(Modifier.width(6.dp))
+                        }
                         Text(
                             featureds[it].genre.joinToString(", ") { it.title },
                             modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.body2.copy(
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = if (featureds[it].type.isEmpty() || featureds[it].score == null) Blue else Color.White,
                                 fontWeight = FontWeight.SemiBold,
                                 shadow = Shadow(
                                     Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
@@ -316,99 +358,108 @@ fun LazyListScope.featuredView(
 }
 
 @OptIn(ExperimentalLayoutApi::class)
-fun LazyListScope.popularView(
-    popular: List<PopularComic> = listOf(),
+fun LazyListScope.sectionView(
+    sections: List<Section> = listOf(),
     onKomikClick: (title: String, slug: String) -> Unit = { _, _ -> }
 ) {
-    item {
-        Row(
-            Modifier.padding(start = 15.dp, end = 15.dp, top = 20.dp, bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Card(backgroundColor = Red, shape = CircleShape) {
-                androidx.compose.material.Icon(
-                    painter = painterResource(id = R.drawable.fire),
-                    contentDescription = "Popular Icon",
-                    modifier = Modifier
-                        .padding(
-                            start = 3.5.dp,
-                            end = 2.5.dp,
-                            top = 3.dp,
-                            bottom = 3.dp
-                        )
-                        .width(18.dp)
+    val section = sections.getOrNull(0)
+    if (section == null) {
+        item { }
+    } else {
+        val komikList = section.list
+        item {
+            Row(
+                Modifier.padding(start = 15.dp, end = 15.dp, top = 20.dp, bottom = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.background(color = Red, shape = CircleShape)) {
+                    Icon(
+                        tint = Color.White,
+                        painter = painterResource(id = R.drawable.fire),
+                        contentDescription = "Popular Icon",
+                        modifier = Modifier
+                            .padding(
+                                start = 3.5.dp, end = 2.5.dp, top = 3.dp, bottom = 3.dp
+                            )
+                            .width(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    "Popular Today",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
             }
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                "Popular Today",
-                style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.SemiBold)
-            )
         }
-    }
-    items(count = popular.size, key = {
-        popular[it].slug.ifEmpty {
-            it
-        }
-    }) {
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                onKomikClick(
-                    popular[it].title,
-                    popular[it].slug
-                )
-            }) {
-            Row(Modifier.padding(15.dp)) {
-                ImageView(
-                    url = popular[it].img,
-                    modifier = Modifier
-                        .width(120.dp)
-                        .aspectRatio(11f / 16f)
-                        .clip(RoundedCornerShape(8.dp))
-                )
-                Spacer(Modifier.width(10.dp))
-                Column() {
-                    Text(
-                        popular[it].title, style = MaterialTheme.typography.body1.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+        items(count = komikList.size, key = {
+            komikList[it].slug.ifEmpty {
+                it
+            }
+        }) {
+            Box(modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    onKomikClick(
+                        komikList[it].title, komikList[it].slug
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    FlowRow(verticalArrangement = Arrangement.Center) {
+                }) {
+                Row(Modifier.padding(15.dp)) {
+                    ImageView(
+                        url = komikList[it].img,
+                        modifier = Modifier
+                            .width(120.dp)
+                            .aspectRatio(11f / 16f)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentDescription = "Thumbnail"
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Column() {
                         Text(
-                            popular[it].type,
-                            style = MaterialTheme.typography.caption.copy(
-                                color = getComicTypeColor(popular[it].type),
+                            komikList[it].title, style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.SemiBold
-                            )
+                            ), maxLines = 2, overflow = TextOverflow.Ellipsis
                         )
-                        Spacer(Modifier.width(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Filled.Star,
-                                contentDescription = "Star",
-                                modifier = Modifier.height(14.dp),
-                                tint = Yellow
-                            )
-                            Spacer(Modifier.width(2.dp))
-                            Text(
-                                popular[it].score.toString(),
-                                style = MaterialTheme.typography.caption.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    shadow = Shadow(
-                                        Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
+                        Spacer(modifier = Modifier.height(2.dp))
+                        FlowRow(verticalArrangement = Arrangement.Center) {
+                            if (komikList[it].type.isNotEmpty()) {
+                                Text(
+                                    komikList[it].type,
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        color = getComicTypeColor(komikList[it].type),
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                 )
+                                Spacer(Modifier.width(6.dp))
+                            }
+
+                            if (komikList[it].score != null) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        Icons.Filled.Star,
+                                        contentDescription = "Star",
+                                        modifier = Modifier.height(14.dp),
+                                        tint = Yellow
+                                    )
+                                    Spacer(Modifier.width(2.dp))
+                                    Text(
+                                        komikList[it].score.toString(),
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    )
+                                }
+                                Spacer(Modifier.width(6.dp))
+                            }
+
+                            Text(
+                                komikList[it].chapterString,
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
-                        Spacer(Modifier.width(6.dp))
-                        Text(popular[it].chapterString, style = MaterialTheme.typography.caption)
                     }
                 }
             }
         }
     }
+
 }

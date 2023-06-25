@@ -1,22 +1,20 @@
 package com.crstlnz.komikchino.data.model
 
-import android.graphics.Bitmap
-import android.media.Image
 import androidx.compose.ui.graphics.ImageBitmap
-import com.crstlnz.komikchino.data.database.readhistory.model.ReadHistoryItem
+import com.crstlnz.komikchino.data.database.chapterhistory.ChapterHistoryItem
 import com.fasterxml.jackson.annotation.JsonProperty
-import kotlinx.coroutines.flow.MutableStateFlow
 
 data class ChapterModel(
-    val id: Int = 0,
-    val komikId: Int = 0,
-    val title: String = "",
+    val id: String,
+    val mangaId: String,
+    val slug: String,
+    val title: String,
     @JsonProperty("name") val imgs: List<String> = listOf()
 )
 
 data class ChapterHistoryData(
-    val id: Int = 0,
-    val readHistory: ReadHistoryItem? = null
+    val id: String = "id",
+    val readHistory: ChapterHistoryItem? = null
 )
 
 data class PreloadedImages(

@@ -1,24 +1,29 @@
 package com.crstlnz.komikchino.ui.util
 
+import android.content.Context
 import android.os.Build
 import android.text.Html
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.toLowerCase
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
+import com.crstlnz.komikchino.config.AppSettings
+import com.crstlnz.komikchino.data.datastore.KomikServer
+import com.crstlnz.komikchino.data.util.StorageHelper
 import com.crstlnz.komikchino.ui.theme.Blue
 import com.crstlnz.komikchino.ui.theme.Green
 import com.crstlnz.komikchino.ui.theme.Purple
 import com.crstlnz.komikchino.ui.theme.Red
+import com.fasterxml.jackson.databind.JavaType
 import kotlinx.coroutines.delay
-import java.time.LocalDate
-import java.time.Period
-import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 import kotlin.system.measureTimeMillis
 
@@ -63,6 +68,7 @@ fun convertHTML(str: String): String {
 }
 
 fun getComicTypeColor(type: String): Color {
+    if(AppSettings.komikServer == KomikServer.MANGAKATANA) return Blue
     return when (type.lowercase(Locale.ROOT).trim()) {
         "manhwa" -> {
             Green
@@ -78,6 +84,59 @@ fun getComicTypeColor(type: String): Color {
 
         else -> {
             Purple
+        }
+    }
+}
+
+suspend fun <T> loadWithCacheMain(
+    key: String,
+    fetch: suspend () -> T,
+    storage: StorageHelper<T>,
+    force: Boolean
+): T? {
+    val cache = storage.getRaw<T>(key)
+    return if (cache?.isValid == true && !force) {
+        cache.data
+    } else {
+        val data = fetch()
+        storage.set<T>(key, data)
+        data
+    }
+}
+
+suspend fun <T> loadWithCache(
+    context: Context,
+    key: String,
+    fetch: suspend () -> T,
+    type: JavaType,
+    force: Boolean = true,
+): T? {
+    val storage = StorageHelper<T>(context, "CACHE", type)
+    return loadWithCacheMain(key, fetch, storage, force)
+}
+
+suspend fun <T> loadWithCache(
+    key: String,
+    fetch: suspend () -> T,
+    storage: StorageHelper<T>,
+    force: Boolean = true,
+): T? {
+    return loadWithCacheMain(key, fetch, storage, force)
+}
+
+
+@Composable
+fun ComposableLifecycle(
+    lifeCycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
+    onEvent: (LifecycleOwner, Lifecycle.Event) -> Unit
+) {
+    DisposableEffect(lifeCycleOwner) {
+        val observer = LifecycleEventObserver { source, event ->
+            onEvent(source, event)
+        }
+        lifeCycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifeCycleOwner.lifecycle.removeObserver(observer)
         }
     }
 }

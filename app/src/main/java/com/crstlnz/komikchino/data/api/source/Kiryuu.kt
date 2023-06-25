@@ -7,16 +7,20 @@ import com.crstlnz.komikchino.data.model.FeaturedComic
 import com.crstlnz.komikchino.data.model.Genre
 import com.crstlnz.komikchino.data.model.HomeData
 import com.crstlnz.komikchino.data.model.KomikDetail
-import com.crstlnz.komikchino.data.model.PopularComic
 import com.crstlnz.komikchino.data.model.SearchItem
 import com.crstlnz.komikchino.data.model.SearchQuery
+import com.crstlnz.komikchino.data.model.Section
+import com.crstlnz.komikchino.data.model.SectionComic
 import com.crstlnz.komikchino.data.model.SimilarTitle
 import com.crstlnz.komikchino.data.util.getBackgroundImage
 import com.crstlnz.komikchino.data.util.getLastPathSegment
 import com.crstlnz.komikchino.data.util.getQuery
 import com.crstlnz.komikchino.data.util.parseDateString
+import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import java.util.Locale
+import java.util.regex.Pattern
 
 class Kiryuu : ScraperBase {
     private val api = KomikClient.getKiryuuClient()
@@ -56,28 +60,32 @@ class Kiryuu : ScraperBase {
             )
         }
 
-        val popularList = arrayListOf<PopularComic>()
-        val populars = document.select(".popularslider .bs")
+        val sectionList = arrayListOf<SectionComic>()
+        val comics = document.select(".popularslider .bs")
 
-        for (popular in populars) {
-            val url = popular.selectFirst(".bsx a")?.attr("href") ?: ""
-            popularList.add(
-                PopularComic(
-                    title = popular.selectFirst(".bigor .tt")?.text()?.trim() ?: "",
+        for (comic in comics) {
+            val url = comic.selectFirst(".bsx a")?.attr("href") ?: ""
+            sectionList.add(
+                SectionComic(
+                    title = comic.selectFirst(".bigor .tt")?.text()?.trim() ?: "",
                     url = url,
-                    type = popular.selectFirst(".limit .type")?.classNames()?.toList()?.getOrNull(1)
+                    type = comic.selectFirst(".limit .type")?.classNames()?.toList()?.getOrNull(1)
                         ?.toString()
-                        ?: if (popular.selectFirst(".novelabel") != null) "Novel" else "",
-                    img = popular.selectFirst("img")?.attr("src") ?: "",
+                        ?: if (comic.selectFirst(".novelabel") != null) "Novel" else "",
+                    img = comic.selectFirst("img")?.attr("src") ?: "",
                     slug = getLastPathSegment(url) ?: "",
-                    score = popular.selectFirst(".rating .numscore")?.text()?.trim()
+                    score = comic.selectFirst(".rating .numscore")?.text()?.trim()
                         ?.toFloatOrNull() ?: 0f,
-                    chapterString = popular.selectFirst(".bigor .epxs")?.text()?.trim() ?: ""
+                    chapterString = comic.selectFirst(".bigor .epxs")?.text()?.trim() ?: ""
                 )
             )
         }
         return HomeData(
-            featured = featuredList, popular = popularList
+            featured = featuredList, sections = listOf(Section(
+                title = document.selectFirst("#content .hotslid .releases")?.text()?.trim()
+                    ?.split(" ")?.joinToString(" ") { it.capitalize(Locale.ROOT) } ?: "",
+                list = sectionList
+            ))
         )
     }
 
@@ -115,7 +123,7 @@ class Kiryuu : ScraperBase {
     private fun parseKomik(document: Document): KomikDetail {
         val table = document.select(".infotable tbody tr")
         val id = document.selectFirst(".bookmark")?.attr("data-id")?.toIntOrNull() ?: 0
-
+        val title = document.selectFirst(".seriestuheader .entry-title")?.text()
         val genreList = arrayListOf<Genre>()
         val genres = document.select(".seriestugenre a")
 
@@ -157,13 +165,15 @@ class Kiryuu : ScraperBase {
             val dlUrl = chapter.selectFirst(".dt a")?.attr("href") ?: ""
             chapterList.add(
                 Chapter(
-                    title = chapter.selectFirst(".chbox .chapternum")?.text() ?: "",
+                    title = chapter.selectFirst(".chbox .chapternum")?.text()
+                        ?.replace(title ?: "", "")?.trim()
+                        ?: "",
                     date = parseDateString(
                         chapter.selectFirst(".eph-num .chapterdate")?.text()?.trim() ?: ""
                     ),
                     slug = getLastPathSegment(url) ?: "",
-                    id = getQuery(dlUrl, "id")?.toIntOrNull(),
-                    mangaId = id,
+                    id = getQuery(dlUrl, "id")?.toString(),
+                    mangaId = id.toString(),
                     url = url,
                 )
             )
@@ -171,8 +181,11 @@ class Kiryuu : ScraperBase {
 
 
         return KomikDetail(
-            id = id,
-            title = document.selectFirst(".seriestuheader .entry-title")?.text()
+            id = id.toString(),
+            slug = getLastPathSegment(
+                document.selectFirst("link[rel='canonical']")?.attr("href") ?: ""
+            ) ?: "",
+            title = title
                 ?.replace("Bahasa Indonesia", "")?.trim() ?: "",
             img = document.selectFirst(".seriestucontent .thumb img")?.attr("src") ?: "",
             banner = getBackgroundImage(
@@ -187,19 +200,24 @@ class Kiryuu : ScraperBase {
         )
     }
 
-    override suspend fun getDetailKomik(slug: String): KomikDetail {
-        val body = api.getKomikPage(slug)
+//    override suspend fun getDetailKomik(slug: String): KomikDetail {
+//        val body = api.getKomikPage(slug)
+//        val document = Jsoup.parse(body.string())
+//        return parseKomik(document)
+//    }
+
+    override suspend fun getDetailKomik(id: String): KomikDetail {
+        val intId = id.toIntOrNull()
+        val body: ResponseBody = if (intId != null) {
+            api.getKomikById(id)
+        } else {
+            api.getKomikPage(id)
+        }
         val document = Jsoup.parse(body.string())
         return parseKomik(document)
     }
 
-    override suspend fun getDetailKomik(id: Int): KomikDetail {
-        val body = api.getKomikById(id)
-        val document = Jsoup.parse(body.string())
-        return parseKomik(document)
-    }
-
-    override suspend fun getChapterList(id: Int): List<Chapter> {
+    override suspend fun getChapterList(id: String): List<Chapter> {
         val body = api.getKomikById(id)
         val document = Jsoup.parse(body.string())
 
@@ -216,9 +234,8 @@ class Kiryuu : ScraperBase {
                         chapter.selectFirst(".eph-num .chapterdate")?.text()?.trim() ?: ""
                     ),
                     slug = getLastPathSegment(url) ?: "",
-                    id = getQuery(dlUrl, "id")?.toIntOrNull(),
-                    mangaId = document.selectFirst(".bookmark")?.attr("data-id")?.toIntOrNull()
-                        ?: 0,
+                    id = getQuery(dlUrl, "id"),
+                    mangaId = document.selectFirst(".bookmark")?.attr("data-id")?.toString(),
                     url = url,
                 )
             )
@@ -227,7 +244,7 @@ class Kiryuu : ScraperBase {
         return chapterList
     }
 
-    override suspend fun getChapter(id: Int): ChapterModel {
+    override suspend fun getChapter(id: String): ChapterModel {
         val body = api.getChapter(id)
         val document = Jsoup.parse(body.string())
         val imgs = document.select("#readerarea img")
@@ -236,9 +253,29 @@ class Kiryuu : ScraperBase {
             imgList.add(img.attr("src") ?: "")
         }
 
+        val breadCrumbs = document.select(".ts-breadcrumb li")
+        val mangaTitle = breadCrumbs.getOrNull(1)?.selectFirst("span")?.text()?.trim()
+        val chapterTitle =
+            breadCrumbs.getOrNull(2)?.selectFirst("span")?.text()?.replace(mangaTitle ?: "", "")
+                ?.trim() ?: ""
+
+        val slug =
+            getLastPathSegment(breadCrumbs.getOrNull(2)?.selectFirst("a")?.attr("href") ?: "") ?: ""
+
+        val regex = "var post_id = (\\d+);"
+        val pattern = Pattern.compile(regex)
+        val matcher = pattern.matcher(document.select("script").html())
+
+        var mangaId: String = ""
+        if (matcher.find()) {
+            mangaId = matcher.group(1)?.toString() ?: ""
+        }
         return ChapterModel(
             id = id,
             imgs = imgList,
+            title = chapterTitle,
+            slug = slug,
+            mangaId = mangaId,
         )
     }
 

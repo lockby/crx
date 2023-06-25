@@ -2,7 +2,12 @@ package com.crstlnz.komikchino.data.model
 
 data class HomeData(
     var featured: List<FeaturedComic> = listOf(),
-    var popular: List<PopularComic> = listOf()
+    var sections: List<Section> = listOf()
+)
+
+data class Section(
+    val title: String,
+    val list: List<SectionComic> = listOf()
 )
 
 data class FeaturedComic(
@@ -13,15 +18,15 @@ data class FeaturedComic(
     val type: String = "",
     val img: String = "",
     val slug: String = "",
-    val score: Float = 0f,
+    val score: Float? = null,
 )
 
-data class PopularComic(
+data class SectionComic(
     var title: String = "",
     var url: String = "",
     val type: String = "",
     val img: String = "",
     val slug: String = "",
-    val score: Float = 0f,
+    val score: Float? = null,
     val chapterString: String = ""
 )

@@ -1,47 +1,54 @@
 package com.crstlnz.komikchino.ui.screens.search
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.crstlnz.komikchino.data.api.KomikClient
-import com.crstlnz.komikchino.data.api.source.Kiryuu
+import com.crstlnz.komikchino.config.AppSettings
+import com.crstlnz.komikchino.data.api.source.ScraperBase
+import com.crstlnz.komikchino.data.datastore.KomikServer
+import com.crstlnz.komikchino.data.model.DataState
+import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
 import com.crstlnz.komikchino.data.model.SearchItem
 import com.crstlnz.komikchino.data.util.StorageHelper
 import com.crstlnz.komikchino.ui.util.ViewModelBase
-import com.crstlnz.komikchino.ui.util.delayBlock
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Named
 
 enum class InfiniteState {
     IDLE, LOADING, FINISH
 }
 
-class SearchViewModelFactory(
-    private val storage: StorageHelper<List<SearchItem>>,
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return SearchViewModel(storage) as T
-    }
-}
-
-class SearchViewModel(private val storage: StorageHelper<List<SearchItem>>) :
+@HiltViewModel
+class SearchViewModel @Inject constructor(
+    @Named("searchCache") private val storage: StorageHelper<List<SearchItem>>,
+    private val api: ScraperBase
+) :
     ViewModelBase<List<SearchItem>>(
         storage,
         true
     ) {
-    private val api: Kiryuu = Kiryuu()
     override var cacheKey = "search"
     private var query = ""
     private var page = 1
+
+    fun getCurrentQuery(): String {
+        return query
+    }
 
     fun search(query: String, page: Int = 1) {
         this.query = query
         this.page = page
         load()
     }
+
+    private var lastFetch = 0L
+    private val mustDelay = 2800L
 
     private val _infiniteState = MutableStateFlow(InfiniteState.IDLE)
     val infiniteState: StateFlow<InfiniteState> = _infiniteState.asStateFlow()
@@ -50,15 +57,20 @@ class SearchViewModel(private val storage: StorageHelper<List<SearchItem>>) :
         page++
         viewModelScope.launch {
             _infiniteState.update { InfiniteState.LOADING }
-            val data = delayBlock(350L) {
-                fetchSearch(query, page)
+            if (AppSettings.komikServer == KomikServer.MANGAKATANA) {
+                val timeElapsed = System.currentTimeMillis() - lastFetch
+                if (timeElapsed < mustDelay) {
+                    withContext(Dispatchers.IO) {
+                        Thread.sleep(mustDelay - timeElapsed)
+                    }
+                }
             }
+            val data = fetchSearch(query, page)
             if (data.isNotEmpty()) {
                 _state.update {
-                    val oldData = it.data ?: listOf()
-                    it.copy(
-                        data = listOf(*oldData.toTypedArray(), *data.toTypedArray())
-                    )
+                    val oldData = it.getDataOrNull() ?: arrayListOf()
+                    DataState.Success(oldData.plus(data))
+//                    DataState.Success(listOf(*oldData.toTypedArray(), *data.toTypedArray()))
                 }
                 _infiniteState.update { InfiniteState.IDLE }
             } else {
@@ -72,7 +84,7 @@ class SearchViewModel(private val storage: StorageHelper<List<SearchItem>>) :
         if (!result.hasNext) {
             _infiniteState.update { InfiniteState.FINISH }
         }
-
+        lastFetch = System.currentTimeMillis()
         return result.result
 //        val body = api.search(page, query)
 //        val document: Document = Jsoup.parse(body.string())

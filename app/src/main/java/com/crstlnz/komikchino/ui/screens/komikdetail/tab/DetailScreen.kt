@@ -3,7 +3,6 @@ package com.crstlnz.komikchino.ui.screens.komikdetail.tab
 import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -28,17 +28,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.Icon
-import androidx.compose.material.ListItem
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,7 +45,6 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -62,16 +56,12 @@ import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.theme.Black1
 import com.crstlnz.komikchino.ui.theme.Blue
 import com.crstlnz.komikchino.ui.theme.LightYellow
-import com.crstlnz.komikchino.ui.theme.Red
 import com.crstlnz.komikchino.ui.theme.WhiteGray
 import com.crstlnz.komikchino.ui.theme.Yellow
 import com.crstlnz.komikchino.ui.util.convertHTML
 import com.crstlnz.komikchino.ui.util.getComicTypeColor
-import com.google.accompanist.pager.HorizontalPager
 
-@OptIn(
-    ExperimentalMaterialApi::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class
-)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun DetailScreen(
     komikDetail: KomikDetail,
@@ -79,12 +69,16 @@ fun DetailScreen(
     state: LazyListState = rememberLazyListState(),
     onKomikClick: (title: String, slug: String) -> Unit = { _, _ -> }
 ) {
-    LazyColumn(modifier.padding(15.dp), state = state, verticalArrangement = Arrangement.Bottom) {
+    LazyColumn(
+        contentPadding = PaddingValues(15.dp),
+        state = state,
+        verticalArrangement = Arrangement.Bottom
+    ) {
         item {
             Column() {
                 Row(verticalAlignment = Alignment.Top) {
                     ImageView(
-                        url = komikDetail.img,
+                        url = komikDetail.img, contentDescription = "Thumbnail",
                         modifier = Modifier
                             .width(100.dp)
                             .aspectRatio(12f / 16f)
@@ -94,28 +88,31 @@ fun DetailScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
                             komikDetail.title,
-                            style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.SemiBold)
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 komikDetail.type,
-                                style = MaterialTheme.typography.caption.copy(
+                                style = MaterialTheme.typography.labelMedium.copy(
                                     color = getComicTypeColor(komikDetail.type),
                                     fontWeight = FontWeight.SemiBold
                                 )
                             )
-                            Spacer(Modifier.width(6.dp))
-                            Icon(
-                                Icons.Filled.Star,
-                                contentDescription = "Star",
-                                modifier = Modifier.height(16.dp),
-                                tint = Yellow
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                komikDetail.score.toString(),
-                                style = MaterialTheme.typography.caption
-                            )
+                            if (komikDetail.score != null) {
+                                Spacer(Modifier.width(6.dp))
+                                Icon(
+                                    Icons.Filled.Star,
+                                    contentDescription = "Star",
+                                    modifier = Modifier.height(16.dp),
+                                    tint = Yellow
+                                )
+
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    komikDetail.score.toString(),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
                         }
                     }
                 }
@@ -127,12 +124,15 @@ fun DetailScreen(
                         contentDescription = "Synopsis Icon"
                     )
                     Spacer(Modifier.width(5.dp))
-                    Text(stringResource(R.string.synopsis), style = MaterialTheme.typography.h6)
+                    Text(
+                        stringResource(R.string.synopsis),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 }
                 Spacer(modifier = Modifier.height(7.dp))
                 Text(
                     convertHTML(komikDetail.description).trim(),
-                    style = MaterialTheme.typography.body1
+                    style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(20.dp))
                 FlowRow(
@@ -144,14 +144,14 @@ fun DetailScreen(
                         Box(
                             Modifier.border(
                                 width = 1.dp,
-                                color = WhiteGray.copy(alpha = 0.6f),
+                                color = MaterialTheme.colorScheme.outline,
                                 shape = RoundedCornerShape(15.dp)
                             )
                         ) {
                             Text(
                                 it.title,
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                                style = MaterialTheme.typography.caption.copy(color = Blue)
+                                style = MaterialTheme.typography.labelMedium.copy(color = Blue)
                             )
                         }
                     }
@@ -169,7 +169,7 @@ fun DetailScreen(
                             contentDescription = "Komik Icon"
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text("Similar Title", style = MaterialTheme.typography.h6)
+                        Text("Similar Title", style = MaterialTheme.typography.titleMedium)
                     }
                     Spacer(modifier = Modifier.height(15.dp))
                     androidx.compose.foundation.pager.HorizontalPager(
@@ -189,19 +189,21 @@ fun DetailScreen(
                         })
                     ) {
                         val similar = komikDetail.similar[it]
-                        Card(shape = RoundedCornerShape(10.dp),
+                        Box(
                             modifier = modifier
                                 .fillMaxWidth()
                                 .aspectRatio(12f / 16f)
+                                .clip(RoundedCornerShape(10.dp))
                                 .clickable() {
                                     Log.d("SLUG", similar.slug)
                                     onKomikClick(
-                                        similar.title,
-                                        similar.slug
+                                        similar.title, similar.slug
                                     )
                                 }) {
                             ImageView(
-                                url = similar.img, modifier.fillMaxSize()
+                                url = similar.img,
+                                modifier.fillMaxSize(),
+                                contentDescription = "Thumbnail"
                             )
                             Box(
                                 Modifier
@@ -218,9 +220,10 @@ fun DetailScreen(
                                     .padding(12.dp),
                                 verticalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Card(
-                                    backgroundColor = if (similar.isColored) LightYellow else Color.Transparent,
-                                    shape = RoundedCornerShape(15.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .background(color = if (similar.isColored) LightYellow else Color.Transparent)
+                                        .clip(RoundedCornerShape(15.dp))
                                 ) {
                                     if (similar.isColored) {
                                         Row(
@@ -239,7 +242,7 @@ fun DetailScreen(
                                             Spacer(Modifier.width(3.dp))
                                             Text(
                                                 "WARNA",
-                                                style = MaterialTheme.typography.overline.copy(
+                                                style = MaterialTheme.typography.labelSmall.copy(
                                                     color = Black1,
                                                     fontWeight = FontWeight.SemiBold
                                                 )
@@ -252,7 +255,7 @@ fun DetailScreen(
                                     Row() {
                                         Text(
                                             similar.type,
-                                            style = MaterialTheme.typography.caption.copy(
+                                            style = MaterialTheme.typography.labelMedium.copy(
                                                 color = getComicTypeColor(similar.type),
                                                 fontWeight = FontWeight.SemiBold,
                                                 shadow = Shadow(
@@ -264,7 +267,7 @@ fun DetailScreen(
                                         similar.genre?.let { it1 ->
                                             Text(
                                                 it1,
-                                                style = MaterialTheme.typography.caption.copy(
+                                                style = MaterialTheme.typography.labelMedium.copy(
                                                     color = WhiteGray, shadow = Shadow(
                                                         color = Color.Black, blurRadius = 10f
                                                     )
@@ -274,7 +277,7 @@ fun DetailScreen(
                                     }
                                     Text(
                                         similar.title,
-                                        style = MaterialTheme.typography.body1.copy(
+                                        style = MaterialTheme.typography.bodyMedium.copy(
                                             color = WhiteGray,
                                             fontWeight = FontWeight.SemiBold,
                                             shadow = Shadow(

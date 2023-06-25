@@ -1,7 +1,5 @@
 package com.crstlnz.komikchino.ui.screens.komikdetail.tab
 
-import android.util.Log
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -14,33 +12,31 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.Divider
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.ListItem
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.data.model.Chapter
+import com.crstlnz.komikchino.data.model.DataState.Loading.getDataOrNull
 import com.crstlnz.komikchino.data.util.formatRelativeDate
+import com.crstlnz.komikchino.data.util.isToday
 import com.crstlnz.komikchino.ui.components.ErrorView
 import com.crstlnz.komikchino.ui.screens.komikdetail.KomikViewModel
-import com.crstlnz.komikchino.ui.theme.Black2
 import com.crstlnz.komikchino.ui.theme.WhiteGray
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ChapterList(
     modifier: Modifier = Modifier,
@@ -48,15 +44,17 @@ fun ChapterList(
     state: LazyListState = rememberLazyListState(),
     chapterList: List<Chapter> = listOf(),
     onReload: () -> Unit = {},
-    onChapterClick: (title: String, id: Int) -> Unit = { _, _ -> },
+    onChapterClick: (title: String, id: String) -> Unit = { _, _ -> },
 ) {
-    val isReversed by viewModel.isReversed.collectAsState()
-    val chapters = if (isReversed) chapterList.reversed() else chapterList
+    val scope = rememberCoroutineScope()
     val interactionSource = remember { MutableInteractionSource() }
-    val chapterHistory = viewModel.chapterReadHistory.observeAsState(listOf())
-    viewModel.chapterReadHistory.observeForever {
-        Log.d("INIDIA", it.toString())
-    }
+    val dataState by viewModel.state.collectAsState()
+    val chapterHistory by viewModel.readChapterHistory(dataState.getDataOrNull()?.id ?: "")
+        .observeAsState()
+    val chapterMap = chapterHistory?.associateBy { it.id } ?: mapOf()
+    val isAscending by viewModel.settings.isChapterSortAscending.collectAsState(initial = false)
+    val chapters = if (isAscending) chapterList.reversed() else chapterList
+
     LazyColumn(modifier, state = state) {
         if (chapters.isEmpty()) {
             item {
@@ -83,20 +81,18 @@ fun ChapterList(
                     ) {
                         Text(
                             "${chapters.size} ${if (chapters.size > 1) "chapters" else "chapter"}",
-                            style = MaterialTheme.typography.caption
+                            style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            if (!isReversed) "Terbaru" else "Terlama",
+                            if (!isAscending) "Terbaru" else "Terlama",
                             modifier = Modifier.clickable(
                                 interactionSource = interactionSource, indication = null
                             ) {
-                                viewModel.toggleReversed()
+                                scope.launch {
+                                    viewModel.settings.setChapterSort(!isAscending)
+                                }
                             },
-                            style = MaterialTheme.typography.caption.copy(
-                                color = WhiteGray.copy(
-                                    alpha = 0.7f
-                                )
-                            )
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
@@ -104,22 +100,27 @@ fun ChapterList(
 
             items(chapters.size, key = { chapters[it].id ?: chapters[it].slug }) { index ->
                 ListItem(modifier = Modifier
-                    .background(color = if (chapterHistory.value.any { c ->
-                            chapters[index].id == c.chapterId
-                        }) WhiteGray.copy(alpha = 0.1f) else Color.Transparent)
                     .clickable {
-                        onChapterClick(chapters[index].title, chapters[index].id ?: 0)
-                    }, text = {
-                    Column(Modifier.padding(vertical = 10.dp)) {
+                        onChapterClick(chapters[index].title, chapters[index].id ?: "")
+                    },
+                    colors = ListItemDefaults.colors(
+                        containerColor = if (chapterMap.containsKey(chapters[index].id)) WhiteGray.copy(
+                            alpha = 0.1f
+                        ) else Color.Transparent
+                    ),
+                    headlineContent = {
                         Text(
                             chapters[index].title,
-                            style = TextStyle(fontWeight = FontWeight.SemiBold)
                         )
-                        Text(chapters[index].date?.let { formatRelativeDate(it) } ?: "",
-                            style = MaterialTheme.typography.caption)
+                    },
+                    supportingContent = {
+                        val date = chapters[index].date
+                        if (date != null) {
+                            Text(if (!isToday(date)) formatRelativeDate(date) else "Hari ini")
+                        }
                     }
-                })
-                Divider(color = Black2.copy(alpha = 0.7f))
+                )
+                Divider()
             }
         }
     }

@@ -9,7 +9,7 @@ data class SearchQuery(
 data class SearchItem(
     var title: String = "",
     var img: String = "",
-    var score: Float = 0f,
+    var score: Float? = 0f,
     var type: String = "",
     var isColored: Boolean = false,
     var isComplete: Boolean = false,

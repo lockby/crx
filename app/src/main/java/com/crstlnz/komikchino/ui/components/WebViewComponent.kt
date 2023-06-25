@@ -1,15 +1,13 @@
 package com.crstlnz.komikchino.ui.components
 
 import android.annotation.SuppressLint
-import android.content.Intent
+import android.graphics.Color
 import android.util.Log
 import android.webkit.*
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.google.accompanist.web.*
-import java.util.regex.Matcher
-import java.util.regex.Pattern
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -29,6 +27,8 @@ fun WebViewComponent(
             it.settings.builtInZoomControls = true
             it.settings.displayZoomControls = false
             it.settings.domStorageEnabled = true
+            it.setBackgroundColor(Color.parseColor("#1E2124"))
+            it.settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
             onCreated(it)
         },
         client = object : AccompanistWebViewClient() {

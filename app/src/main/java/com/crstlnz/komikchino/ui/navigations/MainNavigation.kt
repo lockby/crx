@@ -1,21 +1,33 @@
 package com.crstlnz.komikchino.ui.navigations
 
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.crstlnz.komikchino.config.AppSettings
+import com.crstlnz.komikchino.data.database.komik.KomikHistoryItem
+import com.crstlnz.komikchino.data.datastore.KomikServer
+import com.crstlnz.komikchino.data.util.convertToStringURL
+import com.crstlnz.komikchino.ui.screens.WebViewScreen
 import com.crstlnz.komikchino.ui.screens.chapter.ChapterScreen
 import com.crstlnz.komikchino.ui.screens.home.HomeScreen
-import com.crstlnz.komikchino.ui.screens.home.WebViewScreen
+import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.ServerSelectScreen
 import com.crstlnz.komikchino.ui.screens.komikdetail.KomikScreen
 import com.crstlnz.komikchino.ui.screens.search.SearchScreen
 import com.google.accompanist.navigation.animation.composable
 import java.net.URLDecoder
+import java.net.URLEncoder
 
+enum class ContentType(private val value: String) {
+    CHAPTER("chapter"), MANGA("manga");
+
+    override fun toString(): String {
+        return value
+    }
+}
 
 object MainNavigation {
     const val HOME = "home"
@@ -23,6 +35,62 @@ object MainNavigation {
     const val SEARCH = "search"
     const val CHAPTER = "chapter"
     const val WEBVIEW = "webview"
+    const val SERVER_SELECTION = "server_select"
+
+    fun toChapter(
+        navController: NavController,
+        chapterId: String,
+        chapterTitle: String,
+        komikData: KomikHistoryItem
+    ) {
+        navController.navigate(
+            "${CHAPTER}/${convertToStringURL(chapterId)}/${chapterTitle}/${
+                convertToStringURL(
+                    komikData
+                )
+            }",
+        )
+    }
+
+    fun toWebView(navController: NavController, url: String) {
+        navController.navigate(
+            "${WEBVIEW}/${
+                URLEncoder.encode(
+                    url, "utf-8"
+                )
+            }"
+        )
+    }
+
+    fun toCommentView(
+        navController: NavController, slug: String, title: String, type: ContentType
+    ) {
+        if (AppSettings.komikServer == KomikServer.KIRYUU) {
+            toWebView(
+                navController,
+                "file:///android_asset/disqus.html?id=${slug}&title=${title}&type=${type}"
+            )
+        } else {
+            val split = slug.split("/")
+            val mangaSlug = split.getOrNull(0)?.split(".")?.getOrNull(0) ?: ""
+            val chapterId = split.getOrNull(1)
+            val id = if (chapterId != null) "$mangaSlug/$chapterId" else mangaSlug
+            toWebView(
+                navController,
+                "file:///android_asset/mangakatanadisqus.html?url=https://mangakatana.com/manga/${slug}&id=${id}"
+            )
+        }
+    }
+
+    fun toKomik(
+        navController: NavController,
+        title: String,
+        slug: String,
+    ) {
+        navController.navigate(
+            "${KOMIKDETAIL}/${title}/${slug}",
+        )
+    }
 }
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -43,41 +111,24 @@ fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
         "${MainNavigation.KOMIKDETAIL}/{title}/{slug}",
     ) {
         val title = it.arguments?.getString("title")
-        val slug = it.arguments?.getString("slug")
-        KomikScreen(navController, title ?: "", slug ?: "")
+        KomikScreen(navController, title ?: "")
     }
 
     composable(
-        "${MainNavigation.CHAPTER}/{mangaid}/{title}/{id}",
-        arguments = listOf(
-            navArgument("title") {
-                NavType.StringType
-            },
-            navArgument("id") {
-                NavType.StringType
-            }
-        )
+        "${MainNavigation.CHAPTER}/{id}/{title}/{komikdata}",
+        arguments = listOf(navArgument("title") {
+            type = NavType.StringType
+        }, navArgument("id") {
+            type = NavType.StringType
+        }, navArgument("komikdata") {
+            type = NavType.StringType
+        }),
     ) {
         val title = it.arguments?.getString("title")
-        val mangaId = it.arguments?.getString("mangaid")?.toIntOrNull() ?: 0;
-        val id = it.arguments?.getString("id")
-        ChapterScreen(navController, title ?: "", id?.toIntOrNull() ?: 0, mangaId)
+        ChapterScreen(navController, title ?: "")
 //        ChapterScreen(navController, "Chapter 1", 147943, "solo-leveling")
     }
 
-//    composable(
-//        MainNavigation.SETTINGS,
-//    ) {
-//        SettingsScreen(onBack = {
-//            navController.popBackStack()
-//        })
-//    }
-//
-//    composable(
-//        MainNavigation.RECENTDETAIL,
-//    ) {
-//        RecentDetailScreen()
-//    }
 
     composable(
         "${MainNavigation.WEBVIEW}/{url}"
@@ -90,23 +141,7 @@ fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
         )
     }
 
-//    composable(
-//        MainNavigation.NOTIFICATION_REQUEST,
-//    ) {
-//        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-//            navController.popBackStack()
-//        } else {
-//            NotificationsRequestScreen(onDismiss = {
-//                navController.popBackStack()
-//            })
-//        }
-//    }
-
-//    composable(
-//        MainNavigation.NOTIFICATION_LISTENER_REQUEST,
-//    ) {
-//        NotificationListenerRequestScreen(onDismiss = {
-//            navController.popBackStack()
-//        })
-//    }
+    composable(MainNavigation.SERVER_SELECTION) {
+        ServerSelectScreen(navController)
+    }
 }
