@@ -4,13 +4,13 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.database.chapterhistory.ChapterHistoryDao
 import com.crstlnz.komikchino.data.database.chapterhistory.ChapterHistoryItem
 import com.crstlnz.komikchino.data.database.favorite.FavoriteKomikDao
 import com.crstlnz.komikchino.data.database.favorite.FavoriteKomikItem
 import com.crstlnz.komikchino.data.database.komik.KomikHistoryDao
 import com.crstlnz.komikchino.data.database.komik.KomikHistoryItem
-import com.crstlnz.komikchino.data.datastore.KomikServer
 
 @Database(
     entities = [ChapterHistoryItem::class, KomikHistoryItem::class, FavoriteKomikItem::class],

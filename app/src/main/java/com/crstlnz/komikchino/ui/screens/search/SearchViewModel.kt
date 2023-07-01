@@ -1,13 +1,16 @@
 package com.crstlnz.komikchino.ui.screens.search
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.crstlnz.komikchino.config.AppSettings
-import com.crstlnz.komikchino.data.api.source.ScraperBase
-import com.crstlnz.komikchino.data.datastore.KomikServer
+import com.crstlnz.komikchino.data.api.KomikServer
+import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
-import com.crstlnz.komikchino.data.model.SearchItem
+import com.crstlnz.komikchino.data.model.SearchHistoryModel
+import com.crstlnz.komikchino.data.model.SearchResult
 import com.crstlnz.komikchino.data.util.StorageHelper
+import com.crstlnz.komikchino.ui.util.ScraperViewModel
 import com.crstlnz.komikchino.ui.util.ViewModelBase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -26,13 +29,12 @@ enum class InfiniteState {
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    @Named("searchCache") private val storage: StorageHelper<List<SearchItem>>,
+    @Named("searchCache") private val storage: StorageHelper<List<SearchResult.ExactMatch>>,
+    @Named("searchHistoryCache") private val searchHistoryCache: StorageHelper<SearchHistoryModel>,
     private val api: ScraperBase
-) :
-    ViewModelBase<List<SearchItem>>(
-        storage,
-        true
-    ) {
+) : ScraperViewModel<List<SearchResult.ExactMatch>>(
+    storage, true
+) {
     override var cacheKey = "search"
     private var query = ""
     private var page = 1
@@ -45,6 +47,36 @@ class SearchViewModel @Inject constructor(
         this.query = query
         this.page = page
         load()
+    }
+
+
+    private val _searchHistory = MutableStateFlow<List<SearchHistoryModel>>(listOf())
+    val searchHistory: StateFlow<List<SearchHistoryModel>> = _searchHistory.asStateFlow()
+
+    init {
+        _searchHistory.update {
+            searchHistoryCache.getAll().sortedByDescending { it.timestamp }
+        }
+    }
+
+    fun deleteSearchHistory(q: String) {
+        searchHistoryCache.delete(q)
+        _searchHistory.update {
+            searchHistoryCache.getAll().sortedByDescending { it.timestamp }
+        }
+    }
+
+    private fun updateSearchHistory(q: String) {
+        searchHistoryCache.set<SearchHistoryModel>(
+            q,
+            SearchHistoryModel(
+                q,
+                System.currentTimeMillis()
+            )
+        )
+        _searchHistory.update {
+            searchHistoryCache.getAll().sortedByDescending { it.timestamp }
+        }
     }
 
     private var lastFetch = 0L
@@ -65,62 +97,56 @@ class SearchViewModel @Inject constructor(
                     }
                 }
             }
-            val data = fetchSearch(query, page)
-            if (data.isNotEmpty()) {
-                _state.update {
-                    val oldData = it.getDataOrNull() ?: arrayListOf()
-                    DataState.Success(oldData.plus(data))
-//                    DataState.Success(listOf(*oldData.toTypedArray(), *data.toTypedArray()))
+
+            try {
+                val data = fetchSearch(query, page)
+                if (data.isNotEmpty()) {
+                    _state.update {
+                        val oldData = it.getDataOrNull() ?: arrayListOf()
+                        DataState.Success(oldData.plus(data))
+                    }
+                    _infiniteState.update { InfiniteState.IDLE }
+                } else {
+                    _infiniteState.update { InfiniteState.FINISH }
                 }
-                _infiniteState.update { InfiniteState.IDLE }
-            } else {
+            } catch (e: Exception) {
                 _infiniteState.update { InfiniteState.FINISH }
             }
         }
     }
 
-    private suspend fun fetchSearch(query: String, page: Int = 1): List<SearchItem> {
-        val result = api.search(query, page)
-        if (!result.hasNext) {
-            _infiniteState.update { InfiniteState.FINISH }
+    private val _exactMatch = MutableStateFlow<SearchResult.ExactMatch?>(null)
+    val exactMatch = _exactMatch.asStateFlow()
+
+    fun consumeExactMatch() {
+        _exactMatch.update {
+            null
         }
-        lastFetch = System.currentTimeMillis()
-        return result.result
-//        val body = api.search(page, query)
-//        val document: Document = Jsoup.parse(body.string())
-//        val hasNext = document.selectFirst(".pagination .page-numbers.next") != null
-//        val comics = document.select("#content .animepost")
-//        val result = arrayListOf<SearchItem>()
-//        for (comic in comics) {
-//            val title = comic.selectFirst(".bigors a")?.text() ?: ""
-//            val img = comic.selectFirst("a img")?.attr("src") ?: ""
-//            val score = comic.selectFirst(".bigors .rating")?.text()?.toFloatOrNull() ?: 0f
-//            val type =
-//                comic.selectFirst(".limit span.typeflag")?.classNames()?.toList()?.getOrNull(1)
-//                    ?: ""
-//            val isColored = comic.selectFirst(".warnalabel") != null
-//            val url = comic.selectFirst("a")?.attr("href") ?: ""
-//
-//            result.add(
-//                SearchItem(
-//                    title,
-//                    img,
-//                    score,
-//                    type,
-//                    isColored,
-//                    url = url,
-//                )
-//            )
-//        }
-//
-//        if (!hasNext) {
-//            _infiniteState.update { InfiniteState.FINISH }
-//        }
-//
-//        return result
     }
 
-    override suspend fun fetchData(): List<SearchItem> {
+    private suspend fun fetchSearch(query: String, page: Int = 1): List<SearchResult.ExactMatch> {
+        val result = api.search(query, page)
+        return if (result is SearchResult.SearchList) {
+            if (!result.hasNext) {
+                _infiniteState.update { InfiniteState.FINISH }
+            }
+            lastFetch = System.currentTimeMillis()
+            result.result
+        } else {
+            _infiniteState.update { InfiniteState.FINISH }
+
+            _exactMatch.update {
+                result as SearchResult.ExactMatch
+            }
+
+            listOf(result as SearchResult.ExactMatch)
+        }
+
+    }
+
+    override suspend fun fetchData(): List<SearchResult.ExactMatch> {
+        cacheKey = "${query}-search"
+        updateSearchHistory(query)
         return fetchSearch(query, 1)
     }
 }

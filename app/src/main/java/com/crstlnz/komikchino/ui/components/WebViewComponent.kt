@@ -1,22 +1,29 @@
 package com.crstlnz.komikchino.ui.components
 
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.os.Build.VERSION.SDK_INT
+import android.text.Html
 import android.util.Log
 import android.webkit.*
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.core.text.toHtml
+import com.crstlnz.komikchino.config.AppSettings
 import com.google.accompanist.web.*
+import org.jsoup.Jsoup
 
-@SuppressLint("SetJavaScriptEnabled")
+@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
 @Composable
 fun WebViewComponent(
     url: String,
     onProgressChanged: (view: WebView?, newProgress: Int) -> Unit = { _, _ -> },
     onReceivedTitle: (view: WebView?, title: String?) -> Unit = { _, _ -> },
     onCreated: (webView: WebView) -> Unit = { _ -> },
-    onRequestOpenBrowser: (url: String) -> Unit = {}
+    onRequestOpenBrowser: (url: String) -> Unit = {},
+    onPageFinished: (WebView, String?) -> Unit = { _, _ -> }
 ) {
     val state = rememberWebViewState(url)
     WebView(
@@ -27,11 +34,26 @@ fun WebViewComponent(
             it.settings.builtInZoomControls = true
             it.settings.displayZoomControls = false
             it.settings.domStorageEnabled = true
-            it.setBackgroundColor(Color.parseColor("#1E2124"))
+            if (SDK_INT >= 29) {
+                it.settings.forceDark = WebSettings.FORCE_DARK_ON
+            }
             it.settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+            it.settings.userAgentString = AppSettings.userAgent
+            it.addJavascriptInterface(object {
+            }, "helper")
             onCreated(it)
         },
         client = object : AccompanistWebViewClient() {
+            override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
+                onPageFinished(view, url)
+                super.onPageStarted(view, url, favicon)
+            }
+
+            override fun onPageFinished(view: WebView, url: String?) {
+//                onPageFinished(view, url)
+                super.onPageFinished(view, url)
+            }
+
             override fun shouldOverrideUrlLoading(
                 view: WebView?,
                 request: WebResourceRequest?

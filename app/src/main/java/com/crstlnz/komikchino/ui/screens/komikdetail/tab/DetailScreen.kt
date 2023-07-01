@@ -222,8 +222,10 @@ fun DetailScreen(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .background(color = if (similar.isColored) LightYellow else Color.Transparent)
-                                        .clip(RoundedCornerShape(15.dp))
+                                        .background(
+                                            color = if (similar.isColored) LightYellow else Color.Transparent,
+                                            shape = RoundedCornerShape(15.dp)
+                                        )
                                 ) {
                                     if (similar.isColored) {
                                         Row(

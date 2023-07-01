@@ -38,4 +38,5 @@
     <string name="home_bookmark">Rak</string>
     <string name="home_genre">Genre</string>
     <string name="home_adadeh">List</string>
+    <string name="home_latest_update">Latest</string>
 </resources>

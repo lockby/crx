@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.navigations
 
+import android.util.Log
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
@@ -8,14 +9,18 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.crstlnz.komikchino.config.AppSettings
+import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.database.komik.KomikHistoryItem
-import com.crstlnz.komikchino.data.datastore.KomikServer
 import com.crstlnz.komikchino.data.util.convertToStringURL
-import com.crstlnz.komikchino.ui.screens.WebViewScreen
+import com.crstlnz.komikchino.ui.screens.UnblockCloudflare
+import com.crstlnz.komikchino.ui.screens.CommentScreen
 import com.crstlnz.komikchino.ui.screens.chapter.ChapterScreen
 import com.crstlnz.komikchino.ui.screens.home.HomeScreen
+import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.HomeSelection
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.ServerSelectScreen
+import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.checkupdate.CheckUpdateScreen
 import com.crstlnz.komikchino.ui.screens.komikdetail.KomikScreen
+import com.crstlnz.komikchino.ui.screens.permissions.WriteExternalStorageScreen
 import com.crstlnz.komikchino.ui.screens.search.SearchScreen
 import com.google.accompanist.navigation.animation.composable
 import java.net.URLDecoder
@@ -35,16 +40,22 @@ object MainNavigation {
     const val SEARCH = "search"
     const val CHAPTER = "chapter"
     const val WEBVIEW = "webview"
-    const val SERVER_SELECTION = "server_select"
+    const val CLOUDFLARE_UNBLOCK = "cloudflare_unblock"
 
+    const val CHECK_UPDATE = "update"
+
+    const val SERVER_SELECTION = "server_select"
+    const val HOME_SELECTION = "home_select"
+
+    const val STORAGE_REQUEST = "storage_request"
     fun toChapter(
         navController: NavController,
         chapterId: String,
         chapterTitle: String,
-        komikData: KomikHistoryItem
+        komikData: KomikHistoryItem,
     ) {
         navController.navigate(
-            "${CHAPTER}/${convertToStringURL(chapterId)}/${chapterTitle}/${
+            "${CHAPTER}/id/${convertToStringURL(chapterId)}/${chapterTitle}/${
                 convertToStringURL(
                     komikData
                 )
@@ -52,33 +63,73 @@ object MainNavigation {
         )
     }
 
-    fun toWebView(navController: NavController, url: String) {
+    fun toChapter(
+        navController: NavController,
+        chapterSlug: String,
+        chapterTitle: String,
+    ) {
         navController.navigate(
-            "${WEBVIEW}/${
-                URLEncoder.encode(
-                    url, "utf-8"
-                )
-            }"
+            "${CHAPTER}/slug/${convertToStringURL(chapterSlug)}/${chapterTitle}",
         )
     }
 
-    fun toCommentView(
-        navController: NavController, slug: String, title: String, type: ContentType
-    ) {
-        if (AppSettings.komikServer == KomikServer.KIRYUU) {
-            toWebView(
-                navController,
-                "file:///android_asset/disqus.html?id=${slug}&title=${title}&type=${type}"
-            )
+    fun unblockCloudflare(navController: NavController, url: String) {
+        navController.navigate("${CLOUDFLARE_UNBLOCK}/${URLEncoder.encode(url, "utf-8")}")
+    }
+
+    private fun toWebView(navController: NavController, url: String, title: String? = null) {
+        val route = if (title.isNullOrEmpty()) {
+            "${WEBVIEW}/${URLEncoder.encode(url, "utf-8")}"
         } else {
-            val split = slug.split("/")
-            val mangaSlug = split.getOrNull(0)?.split(".")?.getOrNull(0) ?: ""
-            val chapterId = split.getOrNull(1)
-            val id = if (chapterId != null) "$mangaSlug/$chapterId" else mangaSlug
-            toWebView(
-                navController,
-                "file:///android_asset/mangakatanadisqus.html?url=https://mangakatana.com/manga/${slug}&id=${id}"
-            )
+            "${WEBVIEW}/${title}/${URLEncoder.encode(url, "utf-8")}"
+        }
+        navController.navigate(route)
+    }
+
+    fun toCommentView(
+        navController: NavController,
+        slug: String,
+        title: String,
+        url: String = "",
+        type: ContentType = ContentType.MANGA
+    ) {
+        when (AppSettings.komikServer) {
+            KomikServer.KIRYUU -> {
+                toWebView(
+                    navController,
+                    "file:///android_asset/kiryuudisqus.html?id=${slug}&title=${title}&type=${type}",
+                    title
+                )
+            }
+
+            KomikServer.MANGAKATANA -> {
+                val split = slug.split("/")
+                val mangaSlug = split.getOrNull(0)?.split(".")?.getOrNull(0) ?: ""
+                val chapterId = split.getOrNull(1)
+                val id = if (chapterId != null) "$mangaSlug/$chapterId" else mangaSlug
+                Log.d("SLUG DISQUS", slug)
+                Log.d("ID DISQUS", id)
+                toWebView(
+                    navController,
+                    "file:///android_asset/mangakatanadisqus.html?url=https://mangakatana.com/manga/${slug}&id=${id}&title=${title}",
+                    title
+                )
+            }
+
+            KomikServer.VOIDSCANS -> {
+                toWebView(
+                    navController,
+                    "file:///android_asset/voidscansdisqus.html?id=${
+                        URLEncoder.encode(
+                            slug,
+                            "UTF-8"
+                        )
+                    }&title=${title}&type=${type}url=${URLEncoder.encode(url, "UTF-8")}",
+                    title
+                )
+            }
+
+            else -> {}
         }
     }
 
@@ -115,7 +166,19 @@ fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
     }
 
     composable(
-        "${MainNavigation.CHAPTER}/{id}/{title}/{komikdata}",
+        "${MainNavigation.CHAPTER}/slug/{slug}/{title}",
+        arguments = listOf(navArgument("title") {
+            type = NavType.StringType
+        }, navArgument("slug") {
+            type = NavType.StringType
+        }),
+    ) {
+        val title = it.arguments?.getString("title")
+        ChapterScreen(navController, title ?: "")
+    }
+
+    composable(
+        "${MainNavigation.CHAPTER}/id/{id}/{title}/{komikdata}",
         arguments = listOf(navArgument("title") {
             type = NavType.StringType
         }, navArgument("id") {
@@ -126,22 +189,58 @@ fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
     ) {
         val title = it.arguments?.getString("title")
         ChapterScreen(navController, title ?: "")
-//        ChapterScreen(navController, "Chapter 1", 147943, "solo-leveling")
     }
 
 
     composable(
-        "${MainNavigation.WEBVIEW}/{url}"
+        "${MainNavigation.WEBVIEW}/{title}/{url}"
     ) {
         val context = LocalContext.current
-        WebViewScreen(
+        CommentScreen(
+            URLDecoder.decode(it.arguments?.getString("url") ?: "", "UTF-8"),
+            it.arguments?.getString("title") ?: "",
+            onBackPressed = {
+                navController.popBackStack()
+            }
+        )
+    }
+
+    composable(
+        "${MainNavigation.WEBVIEW}/{url}"
+    ) {
+        CommentScreen(
             URLDecoder.decode(it.arguments?.getString("url") ?: "", "UTF-8"), onBackPressed = {
                 navController.popBackStack()
-            }, title = context.getString(context.applicationInfo.labelRes)
+            }
         )
+    }
+
+    composable(
+        "${MainNavigation.CLOUDFLARE_UNBLOCK}/{url}"
+    ) {
+        UnblockCloudflare(
+            navController,
+            URLDecoder.decode(it.arguments?.getString("url") ?: "", "UTF-8"), onBackPressed = {
+                navController.popBackStack()
+            }
+        )
+    }
+
+    composable(MainNavigation.CHECK_UPDATE) {
+        CheckUpdateScreen(navController)
+    }
+
+    composable(MainNavigation.STORAGE_REQUEST) {
+        WriteExternalStorageScreen(onDismiss = {
+            navController.popBackStack()
+        })
     }
 
     composable(MainNavigation.SERVER_SELECTION) {
         ServerSelectScreen(navController)
+    }
+
+    composable(MainNavigation.HOME_SELECTION) {
+        HomeSelection(navController)
     }
 }

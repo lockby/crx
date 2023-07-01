@@ -29,7 +29,12 @@ fun BookmarkScreen(navController: NavController) {
             onKomikClick = {
                 MainNavigation.toKomik(navController, it.title, it.slug)
             }, onChapterClick = { komik, chapter ->
-                MainNavigation.toChapter(navController, chapter.id, chapter.title, komik)
+                MainNavigation.toChapter(
+                    navController,
+                    chapterId = chapter.id,
+                    chapter.title,
+                    komik
+                )
             }
         )
     }), TabRowItem(title = "Favorites", screen = {

@@ -19,6 +19,7 @@ import com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.BookmarkScreen
 import com.crstlnz.komikchino.ui.screens.home.fragments.genre.GenreScreen
 import com.crstlnz.komikchino.ui.screens.home.fragments.home.HomeFragment
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.SettingScreen
+import com.crstlnz.komikchino.ui.screens.latestupdate.LatestUpdateScreen
 
 enum class HomeSections(
     @StringRes val title: Int,
@@ -26,10 +27,11 @@ enum class HomeSections(
     private val selectedIcon: Any? = null,
     val route: String
 ) {
-    HOME(R.string.home, Icons.Outlined.Home, Icons.Filled.Home, "stats"),
-    LIST(
-        R.string.home_adadeh,
-        Icons.Filled.Create,
+    HOME(R.string.home, Icons.Outlined.Home, Icons.Filled.Home, "home"),
+    LATEST_UPDATE(
+        R.string.home_latest_update,
+        R.drawable.ic_new,
+        R.drawable.ic_new_filled,
         route = "live"
     ),
     GENRE(R.string.home_genre, R.drawable.book_open, R.drawable.book_open_filled, "members"),
@@ -40,6 +42,12 @@ enum class HomeSections(
     fun Icon(isSelected: Boolean = false) {
         val iconData = if (isSelected) selectedIcon ?: icon else icon
         IconView(iconData, title)
+    }
+
+    companion object {
+        fun getByRoute(route: String): HomeSections? {
+            return enumValues<HomeSections>().find { it.route == route }
+        }
     }
 }
 
@@ -71,8 +79,8 @@ fun NavGraphBuilder.addBottomNav(
         GenreScreen()
     }
 
-    composable(HomeSections.LIST.route) {
-        GenreScreen()
+    composable(HomeSections.LATEST_UPDATE.route) {
+        LatestUpdateScreen(navController)
     }
 
     composable(HomeSections.SETTINGS.route) {

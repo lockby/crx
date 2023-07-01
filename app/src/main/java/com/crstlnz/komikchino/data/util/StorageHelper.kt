@@ -21,12 +21,36 @@ class StorageHelper<T>(
         context.getSharedPreferences(sharedPreferencesName, Context.MODE_PRIVATE)
     }
 
+    fun getAll(): List<T> {
+        val listData = arrayListOf<T>()
+        for (data in sharedPreferences.all.values) {
+            try {
+                val storageItems = objectMapper.readValue(data.toString(), StorageItem::class.java)
+                if (storageItems.isValid()) {
+                    listData.add(
+                        objectMapper.readValue(
+                            storageItems.getValue(),
+                            objectType
+                        )
+                    )
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+        return listData
+    }
+
     fun getContext(): Context {
         return context
     }
 
     private val objectMapper: ObjectMapper by lazy {
         jacksonObjectMapper()
+    }
+
+    fun delete(key: String) {
+        sharedPreferences.edit().remove(key).apply()
     }
 
     fun <T> set(key: String, value: Any?) {
@@ -62,7 +86,7 @@ class StorageHelper<T>(
         if (jsonString != null) {
             try {
                 val storageItems = objectMapper.readValue(jsonString, StorageItem::class.java)
-                if (expireTimeInMillis == 0L || storageItems.isValid()) {
+                if (storageItems.isValid()) {
                     return objectMapper.readValue(
                         storageItems.getValue().toString(),
                         type.let { type } ?: objectType)

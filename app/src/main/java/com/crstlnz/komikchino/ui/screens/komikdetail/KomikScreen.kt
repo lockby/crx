@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.komikdetail
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.background
@@ -18,10 +19,14 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -84,8 +89,10 @@ import com.crstlnz.komikchino.ui.util.BlurTransformation
 import kotlinx.coroutines.launch
 
 @OptIn(
-    ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class,
-    ExperimentalLayoutApi::class
+    ExperimentalFoundationApi::class,
+    ExperimentalMaterial3Api::class,
+    ExperimentalLayoutApi::class,
+    ExperimentalMaterialApi::class
 )
 @Composable
 fun KomikScreen(
@@ -103,21 +110,20 @@ fun KomikScreen(
     var progress: Float by remember { mutableFloatStateOf(0f) }
     val scrollState = rememberScrollState()
     LaunchedEffect(scrollState) {
-        snapshotFlow { scrollState.value }
-            .collect {
+        snapshotFlow { scrollState.value }.collect {
                 progress = (it / imageHeight).takeIf { it <= 1 } ?: 1f
             }
     }
     val dataState by v.state.collectAsState()
+    val pullRefreshState =
+        rememberPullRefreshState(dataState.state == State.LOADING && !v.isFirstLaunch, { v.load() })
     val isFavorite by v.isFavorite(dataState.getDataOrNull()?.id ?: "").observeAsState()
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets.ime,
-//        modifier = Modifier.padding(top = LocalStatusBarPadding.current)
     ) {
         Surface(
-            Modifier
-                .padding(it)
+            Modifier.padding(it)
         ) {
             val pagerState = com.google.accompanist.pager.rememberPagerState(initialPage = 0)
             val tabItems: List<TabRowItem> = arrayListOf(TabRowItem(title = "Informasi", screen = {
@@ -134,7 +140,7 @@ fun KomikScreen(
                     }) { title, id ->
                     val data = (dataState as DataState.Success).data
                     MainNavigation.toChapter(
-                        navController, id, title, KomikHistoryItem(
+                        navController, chapterId = id, title, KomikHistoryItem(
                             title = data.title,
                             id = data.id,
                             slug = data.slug,
@@ -149,167 +155,186 @@ fun KomikScreen(
             CompositionLocalProvider(
                 LocalOverscrollConfiguration provides null
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(state = scrollState)
-                ) {
-                    TopAppBar(
-                        windowInsets = WindowInsets.ime,
-                        title = {
-                            Text(stringResource(R.string.detail))
-                        },
+                Box(Modifier.pullRefresh(pullRefreshState)) {
+                    Column(
                         modifier = Modifier
-                            .padding(top = LocalStatusBarPadding.current)
-                            .fillMaxWidth(),
+                            .fillMaxSize()
+                            .verticalScroll(state = scrollState)
+                    ) {
+                        TopAppBar(
+                            windowInsets = WindowInsets.ime,
+                            title = {
+                                Text(stringResource(R.string.detail))
+                            },
+                            modifier = Modifier
+                                .padding(top = LocalStatusBarPadding.current)
+                                .fillMaxWidth(),
 //                            .height(60.dp),
 //                        backgroundColor = Color.Transparent,
-                        navigationIcon = {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(Icons.Filled.ArrowBack, "backIcon")
-                            }
-                        },
-                        actions = {
-                            IconButton(onClick = {
-                                val komik = dataState.getDataOrNull()
-                                if (komik != null) {
-                                    MainNavigation.toCommentView(
-                                        navController,
-                                        komik.slug,
-                                        komik.title,
-                                        ContentType.MANGA
+                            navigationIcon = {
+                                IconButton(onClick = { navController.popBackStack() }) {
+                                    Icon(Icons.Filled.ArrowBack, "backIcon")
+                                }
+                            },
+                            actions = {
+                                IconButton(onClick = {
+                                    val komik = dataState.getDataOrNull()
+                                    if (komik != null) {
+                                        Log.d("DISQUS CONFIG",komik.disqusConfig.toString())
+                                        MainNavigation.toCommentView(
+                                            navController,
+                                            slug = komik.disqusConfig?.identifier ?: komik.slug,
+                                            title = komik.title,
+                                            url = komik.disqusConfig?.url ?: komik.url,
+                                            type = ContentType.MANGA
+                                        )
+                                    }
+                                }) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.chat),
+                                        contentDescription = "Comments",
                                     )
                                 }
-                            }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.chat),
-                                    contentDescription = "Comments",
-                                )
-                            }
-                            IconButton(onClick = { v.setFavorite(isFavorite != 1) }) {
-                                if (isFavorite == 1) {
-                                    Icon(
-                                        Icons.Filled.Favorite,
-                                        contentDescription = "Favorite",
-                                        tint = Red
-                                    )
-                                } else {
-                                    Icon(
-                                        Icons.Filled.FavoriteBorder, contentDescription = "Favorite"
-                                    )
+                                IconButton(onClick = { v.setFavorite(isFavorite != 1) }) {
+                                    if (isFavorite == 1) {
+                                        Icon(
+                                            Icons.Filled.Favorite,
+                                            contentDescription = "Favorite",
+                                            tint = Red
+                                        )
+                                    } else {
+                                        Icon(
+                                            Icons.Filled.FavoriteBorder,
+                                            contentDescription = "Favorite"
+                                        )
+                                    }
                                 }
-                            }
-                        },
+                            },
 //                        elevation = 0.dp
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(color = Black2)
-                            .aspectRatio(imageAspectRatio)
-                    ) {
-                        ImageView(
-                            url = dataState.getDataOrNull()?.banner
-                                ?: dataState.getDataOrNull()?.img ?: "",
-                            modifier = Modifier.fillMaxSize(),
-                            applyImageRequest = { imageRequest ->
-                                val banner = dataState.getDataOrNull()?.banner
-                                if (banner?.isEmpty() == true || banner == dataState.getDataOrNull()?.img) {
-                                    imageRequest.transformations(
-                                        BlurTransformation(context)
-                                    )
-                                } else {
-                                    imageRequest
-                                }
-                            }, contentDescription = "Thumbnail"
                         )
 
-                        if (dataState.state == State.DATA) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(color = Black2)
+                                .aspectRatio(imageAspectRatio)
+                        ) {
+                            ImageView(
+                                url = dataState.getDataOrNull()?.banner
+                                    ?: dataState.getDataOrNull()?.img ?: "",
+                                modifier = Modifier.fillMaxSize(),
+                                applyImageRequest = { imageRequest ->
+                                    val banner = dataState.getDataOrNull()?.banner
+                                    if (banner?.isEmpty() == true || banner == dataState.getDataOrNull()?.img) {
+                                        imageRequest.transformations(
+                                            BlurTransformation(context)
+                                        )
+                                    } else {
+                                        imageRequest
+                                    }
+                                },
+                                contentDescription = "Thumbnail"
+                            )
+
+                            if (dataState.state == State.DATA) {
+                                Box(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.verticalGradient(
+                                                listOf(
+                                                    Color.Transparent,
+                                                    Color.Black.copy(alpha = 0.7f)
+                                                ), 120F, 420F
+                                            )
+                                        )
+                                )
+                            }
+                            Row(
+                                verticalAlignment = Alignment.Bottom,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 15.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    dataState.getDataOrNull()?.title ?: title,
+                                    style = MaterialTheme.typography.headlineSmall.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        shadow = Shadow(color = Black, blurRadius = 8f)
+                                    ),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                             Box(
                                 Modifier
                                     .fillMaxSize()
-                                    .background(
-                                        Brush.verticalGradient(
-                                            listOf(
-                                                Color.Transparent, Color.Black.copy(alpha = 0.7f)
-                                            ), 120F, 420F
-                                        )
-                                    )
+                                    .background(color = MaterialTheme.colorScheme.surface.copy(alpha = progress))
                             )
                         }
-                        Row(
-                            verticalAlignment = Alignment.Bottom,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 15.dp, vertical = 8.dp)
-                        ) {
-                            Text(
-                                dataState.getDataOrNull()?.title ?: title,
-                                style = MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    shadow = Shadow(color = Black, blurRadius = 8f)
-                                ),
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .background(color = MaterialTheme.colorScheme.surface.copy(alpha = progress))
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(1.dp))
-                    Column(Modifier.height(screenHeight.dp)) {
-                        TabRow(
-                            selectedTabIndex = pagerState.currentPage
-                        ) {
-                            tabItems.forEachIndexed { index, item ->
-                                Tab(
-                                    selected = index == pagerState.currentPage,
-                                    unselectedContentColor = WhiteGray,
-                                    onClick = {
-                                        scope.launch {
-                                            pagerState.animateScrollToPage(
-                                                index
-                                            )
-                                        }
-                                    },
-                                    text = { Text(text = item.title) })
-                            }
-                        }
-
-
-
-                        CompositionLocalProvider(
-                            LocalOverscrollConfiguration provides overscroll,
-                        ) {
-                            com.google.accompanist.pager.HorizontalPager(
-                                count = tabItems.size,
-                                verticalAlignment = Alignment.Top,
-                                state = pagerState,
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .nestedScroll(remember {
-                                        object : NestedScrollConnection {
-                                            override fun onPreScroll(
-                                                available: Offset, source: NestedScrollSource
-                                            ): Offset {
-                                                return if (available.y > 0) Offset.Zero else Offset(
-                                                    x = 0f,
-                                                    y = -scrollState.dispatchRawDelta(-available.y)
+                        Spacer(modifier = Modifier.height(1.dp))
+                        Column(Modifier.height(screenHeight.dp)) {
+                            TabRow(
+                                selectedTabIndex = pagerState.currentPage
+                            ) {
+                                tabItems.forEachIndexed { index, item ->
+                                    Tab(selected = index == pagerState.currentPage,
+                                        unselectedContentColor = WhiteGray,
+                                        onClick = {
+                                            scope.launch {
+                                                pagerState.animateScrollToPage(
+                                                    index
                                                 )
                                             }
+                                        },
+                                        text = { Text(text = item.title) })
+                                }
+                            }
+
+
+
+                            CompositionLocalProvider(
+                                LocalOverscrollConfiguration provides overscroll,
+                            ) {
+                                com.google.accompanist.pager.HorizontalPager(
+                                    count = tabItems.size,
+                                    verticalAlignment = Alignment.Top,
+                                    state = pagerState,
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .nestedScroll(remember {
+                                            object : NestedScrollConnection {
+                                                override fun onPreScroll(
+                                                    available: Offset, source: NestedScrollSource
+                                                ): Offset {
+                                                    return if (available.y > 0) Offset.Zero else Offset(
+                                                        x = 0f,
+                                                        y = -scrollState.dispatchRawDelta(-available.y)
+                                                    )
+                                                }
+                                            }
+                                        })
+                                ) { page ->
+                                    when (dataState.state) {
+                                        State.DATA -> {
+                                            if (dataState.getDataOrNull() != null) {
+                                                tabItems[page].screen()
+                                            } else {
+                                                Column(modifier = Modifier.aspectRatio(4f / 5f)) {
+                                                    ErrorView(
+                                                        resId = R.drawable.error,
+                                                        message = stringResource(id = R.string.unknown_error)
+                                                    ) {
+                                                        v.load()
+                                                    }
+                                                }
+                                            }
                                         }
-                                    })
-                            ) { page ->
-                                when (dataState.state) {
-                                    State.DATA -> {
-                                        if (dataState.getDataOrNull() != null) {
-                                            tabItems[page].screen()
-                                        } else {
-                                            Column(modifier = Modifier.aspectRatio(4f / 5f)) {
+
+                                        State.ERROR -> {
+                                            Box(
+                                                modifier = Modifier.aspectRatio(4f / 5f)
+                                            ) {
                                                 ErrorView(
                                                     resId = R.drawable.error,
                                                     message = stringResource(id = R.string.unknown_error)
@@ -318,39 +343,31 @@ fun KomikScreen(
                                                 }
                                             }
                                         }
-                                    }
 
-                                    State.ERROR -> {
-                                        Box(
-                                            modifier = Modifier.aspectRatio(4f / 5f)
-                                        ) {
-                                            ErrorView(
-                                                resId = R.drawable.error,
-                                                message = stringResource(id = R.string.unknown_error)
+                                        else -> {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .aspectRatio(5f / 3f),
+                                                contentAlignment = Alignment.Center
                                             ) {
-                                                v.load()
+                                                CircularProgressIndicator()
                                             }
-                                        }
-                                    }
-
-                                    else -> {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .aspectRatio(5f / 3f),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            CircularProgressIndicator()
                                         }
                                     }
                                 }
                             }
-                        }
 
+                        }
                     }
+
+                    PullRefreshIndicator(
+                        dataState.state == State.LOADING && !v.isFirstLaunch,
+                        pullRefreshState,
+                        Modifier.align(Alignment.TopCenter)
+                    )
                 }
             }
-
         }
     }
 }

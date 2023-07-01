@@ -5,6 +5,7 @@ import java.util.Date
 data class KomikDetail(
     val id: String = "",
     val slug: String = "",
+    val url: String = "",
     val title: String = "",
     val img: String = "",
     val banner: String = "",
@@ -13,7 +14,13 @@ data class KomikDetail(
     val score: Float? = 0f,
     val genre: List<Genre> = listOf<Genre>(),
     val similar: List<SimilarTitle> = listOf<SimilarTitle>(),
-    val chapters: List<Chapter> = listOf<Chapter>()
+    val chapters: List<Chapter> = listOf<Chapter>(),
+    val disqusConfig: DisqusConfig? = null
+)
+
+data class DisqusConfig(
+    val url: String,
+    val identifier: String
 )
 
 data class Chapter(

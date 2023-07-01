@@ -1,14 +1,22 @@
 package com.crstlnz.komikchino.data.util
 
+import android.content.Context
+import android.content.pm.PackageManager
 import android.content.res.Resources.getSystem
+import android.util.Log
+import com.crstlnz.komikchino.config.AppSettings
+import com.crstlnz.komikchino.data.api.KomikServer
+import com.crstlnz.komikchino.data.model.DisqusConfig
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.regex.Pattern
 
 //val Int.dp: Int get() = (this / getSystem().displayMetrics.density).toInt()
 val Int.px: Int get() = (this * getSystem().displayMetrics.density).toInt()
@@ -25,7 +33,14 @@ fun getLastTwoSegments(url: String): String {
     val lastTwoSegments = segments.takeLast(2)
     return lastTwoSegments.joinToString("/")
 }
+
+fun isPlural(num: Long, isEnglish: Boolean = true): String {
+    if (!isEnglish || num == 1L) return ""
+    return "s"
+}
+
 fun formatRelativeDate(date: Date): String {
+    val isEnglish = AppSettings.komikServer != KomikServer.KIRYUU
     val now = Calendar.getInstance().time
     val difference = now.time - date.time
 
@@ -37,14 +52,24 @@ fun formatRelativeDate(date: Date): String {
     val months = days / 30
     val years = days / 365
 
+    val SECONDS = if (isEnglish) "second" else "detik"
+    val MINUTES = if (isEnglish) "minute" else "menit"
+    val HOURS = if (isEnglish) "hour" else "jam"
+    val DAYS = if (isEnglish) "day" else "hari"
+    val WEEKS = if (isEnglish) "week" else "minggu"
+    val MONTHS = if (isEnglish) "month" else "bulan"
+    val YEARS = if (isEnglish) "year" else "tahun"
+
+    val suffix = if (isEnglish) "ago" else "lalu"
+
     return when {
-        years >= 1 -> "$years tahun yang lalu"
-        months >= 1 -> "$months bulan yang lalu"
-        weeks >= 1 -> "$weeks minggu yang lalu"
-        days >= 1 -> "$days hari yang lalu"
-        hours >= 1 -> "$hours jam yang lalu"
-        minutes >= 1 -> "$minutes menit yang lalu"
-        else -> "$seconds detik yang lalu"
+        years >= 1 -> "$years $YEARS${isPlural(years, isEnglish)} $suffix"
+        months >= 1 -> "$months $MONTHS${isPlural(months, isEnglish)} $suffix"
+        weeks >= 1 -> "$weeks $WEEKS${isPlural(weeks, isEnglish)} $suffix"
+        days >= 1 -> "$days $DAYS${isPlural(days, isEnglish)} $suffix"
+        hours >= 1 -> "$hours $HOURS${isPlural(hours, isEnglish)} $suffix"
+        minutes >= 1 -> "$minutes $MINUTES${isPlural(minutes, isEnglish)} $suffix"
+        else -> "$seconds $SECONDS${isPlural(seconds, isEnglish)} $suffix"
     }
 }
 
@@ -126,5 +151,148 @@ fun parseMangaKatanaChapterImages(html: String): List<String> {
     } catch (e: Exception) {
         emptyList()
     }
+}
 
+fun extractDomain(url: String): String? {
+    try {
+        val uri = URI(url)
+        val host = uri.host
+        if (host != null) {
+            val parts = host.split(".")
+            return parts.takeLast(2).joinToString(".")
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    return null
+}
+
+fun getAppVersion(context: Context): String {
+    val packageName = context.packageName
+    try {
+        val packageInfo = context.packageManager.getPackageInfo(packageName, 0)
+        return packageInfo.versionName
+    } catch (e: PackageManager.NameNotFoundException) {
+        e.printStackTrace()
+    }
+    return ""
+}
+
+
+fun parseKiryuUpdateTime(timeExpression: String): Date? {
+    val regex = "(\\d+)\\s+(detik|menit|jam|hari|minggu|bulan|tahun)\\s+ago".toRegex()
+    val matchResult = regex.find(timeExpression)
+
+    if (matchResult != null) {
+        val (value, unit) = matchResult.destructured
+        val now = Calendar.getInstance()
+        return when (unit) {
+            "detik" -> {
+                now.add(Calendar.SECOND, -value.toInt())
+                now.time
+            }
+
+            "menit" -> {
+                now.add(Calendar.MINUTE, -value.toInt())
+                now.time
+            }
+
+            "jam" -> {
+                now.add(Calendar.HOUR_OF_DAY, -value.toInt())
+                now.time
+            }
+
+            "hari" -> {
+                now.add(Calendar.DAY_OF_YEAR, -value.toInt())
+                now.time
+            }
+
+            "minggu" -> {
+                now.add(Calendar.WEEK_OF_YEAR, -value.toInt())
+                now.time
+            }
+
+            "bulan" -> {
+                now.add(Calendar.MONTH, -value.toInt())
+                now.time
+            }
+
+            "tahun" -> {
+                now.add(Calendar.YEAR, -value.toInt())
+                now.time
+            }
+
+            else -> null
+        }
+    }
+    return null
+}
+
+fun parseRelativeTime(relativeTime: String): Date {
+    val calendar = Calendar.getInstance()
+    when {
+        relativeTime.contains("second") -> {
+            val seconds = relativeTime.split(" ")[0].toInt()
+            calendar.add(Calendar.SECOND, -seconds)
+        }
+
+        relativeTime.contains("minute") -> {
+            val minutes = relativeTime.split(" ")[0].toInt()
+            calendar.add(Calendar.MINUTE, -minutes)
+        }
+
+        relativeTime.contains("hour") -> {
+            val hours = relativeTime.split(" ")[0].toInt()
+            calendar.add(Calendar.HOUR, -hours)
+        }
+
+        relativeTime.contains("day") -> {
+            val days = relativeTime.split(" ")[0].toInt()
+            calendar.add(Calendar.DAY_OF_YEAR, -days)
+        }
+
+        relativeTime.contains("week") -> {
+            val weeks = relativeTime.split(" ")[0].toInt()
+            calendar.add(Calendar.WEEK_OF_YEAR, -weeks)
+        }
+
+        relativeTime.contains("month") -> {
+            val months = relativeTime.split(" ")[0].toInt()
+            calendar.add(Calendar.MONTH, -months)
+        }
+
+        relativeTime.contains("year") -> {
+            val years = relativeTime.split(" ")[0].toInt()
+            calendar.add(Calendar.YEAR, -years)
+        }
+    }
+    return calendar.time
+}
+
+fun getVoidScansDisqus(string: String): DisqusConfig? {
+    val identifierPattern = Pattern.compile("\"disqusIdentifier\":\"([^\"]+)\"")
+    val urlPattern = Pattern.compile("\"disqusUrl\":\"([^\"]+)\"")
+
+    val identifierMatcher = identifierPattern.matcher(string)
+    val urlMatcher = urlPattern.matcher(string)
+
+    var id: String? = null
+    var url: String? = null
+
+    if (identifierMatcher.find()) {
+        id = identifierMatcher.group(1)
+    }
+
+    if (urlMatcher.find()) {
+        url = urlMatcher.group(1)
+    }
+
+    return if (id != null && url != null) {
+        DisqusConfig(
+            identifier = id,
+            url = url
+        )
+    } else {
+        null
+    }
 }

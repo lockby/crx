@@ -26,9 +26,10 @@
        *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
       var url_string = window.location.href;
       var url = new URL(url_string);
+      var title = url.searchParams.get("title");
       var id = url.searchParams.get("id");
       var url = url.searchParams.get("url");
-      document.title = id;
+      document.title = title;
        var disqus_config = function () {
         this.page.url = url
         this.page.identifier = id;
@@ -58,9 +59,9 @@
       //   }
       // };
 
-      const observer = new MutationObserver(callback);
+      //const observer = new MutationObserver(callback);
       // Start observing the target node for configured mutations
-      observer.observe(targetNode, config);
+      //observer.observe(targetNode, config);
     </script>
         <noscript>
             Please enable JavaScript to view the

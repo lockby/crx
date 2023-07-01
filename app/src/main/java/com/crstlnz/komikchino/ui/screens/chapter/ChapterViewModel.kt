@@ -1,10 +1,11 @@
 package com.crstlnz.komikchino.ui.screens.chapter
 
+import android.util.Log
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import com.crstlnz.komikchino.data.api.source.ScraperBase
+import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.database.chapterhistory.ChapterHistoryItem
 import com.crstlnz.komikchino.data.database.chapterhistory.ChapterHistoryRepository
 import com.crstlnz.komikchino.data.database.favorite.FavoriteKomikItem
@@ -13,14 +14,17 @@ import com.crstlnz.komikchino.data.database.komik.KomikHistoryItem
 import com.crstlnz.komikchino.data.database.komik.KomikHistoryRepository
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterHistoryData
-import com.crstlnz.komikchino.data.model.ChapterModel
+import com.crstlnz.komikchino.data.model.ChapterApi
+import com.crstlnz.komikchino.data.model.ChapterData
+import com.crstlnz.komikchino.data.model.ChapterScrollPostition
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.DataState.Loading.getDataOrNull
+import com.crstlnz.komikchino.data.model.ImageSize
 import com.crstlnz.komikchino.data.model.PreloadedImages
 import com.crstlnz.komikchino.data.model.State
 import com.crstlnz.komikchino.data.util.StorageHelper
 import com.crstlnz.komikchino.data.util.decodeStringURL
-import com.crstlnz.komikchino.ui.util.ViewModelBase
+import com.crstlnz.komikchino.ui.util.ScraperViewModel
 import com.fasterxml.jackson.databind.type.TypeFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Deferred
@@ -37,17 +41,19 @@ import javax.inject.Named
 
 @HiltViewModel
 class ChapterViewModel @Inject constructor(
-    @Named("chapterCache") private val storage: StorageHelper<ChapterModel>,
+    @Named("chapterCache") private val storage: StorageHelper<ChapterData>,
+    @Named("chapterScrollPostitionCache") private val chapterScrollPostition: StorageHelper<ChapterScrollPostition>,
     private val chapterRepository: ChapterHistoryRepository,
     private val favoriteRepository: FavoriteKomikRepository,
     private val komikRepository: KomikHistoryRepository,
     savedStateHandle: SavedStateHandle,
     private val api: ScraperBase
-) : ViewModelBase<ChapterModel>(
-    storage, true
+) : ScraperViewModel<ChapterData>(
+    storage, false
 ) {
-    var id = "0"
-    override var cacheKey = "chapter-${id}"
+    var id = ""
+    var slug = ""
+    override var cacheKey = "chapter"
 
 
     private val _chapterList = MutableStateFlow<DataState<List<Chapter>>>(DataState.Idle)
@@ -65,24 +71,37 @@ class ChapterViewModel @Inject constructor(
         )
     )
 
-    private var preloadJob: Job? = Job()
-    private var asyncResults: List<Deferred<ImageBitmap?>> = listOf()
-    var chapterHistoryData = ChapterHistoryData()
+    //    private var preloadJob: Job? = Job()
+//    private var asyncResults: List<Deferred<ImageBitmap?>> = listOf()
+    private var chapterHistoryData = ChapterHistoryData()
     var komikData: KomikHistoryItem? = null
 
-    init {
-        komikData = decodeStringURL(
-            savedStateHandle.get<String>("komikdata").orEmpty(),
-            TypeFactory.defaultInstance().constructType(KomikHistoryItem::class.java)
-        )
+    private var isChapterListFetched = false
 
-        id = decodeStringURL(
-            savedStateHandle.get<String>("id") ?: "id",
-            TypeFactory.defaultInstance().constructType(String::class.java)
-        ) ?: ""
-        cacheKey = "chapter-${id}"
+    init {
+        val komikDataRaw = savedStateHandle.get<String>("komikdata")
+        val idRaw = savedStateHandle.get<String>("id")
+        val slugRaw = savedStateHandle.get<String>("slug")
+        if (komikDataRaw != null)
+            komikData = decodeStringURL(
+                komikDataRaw,
+                TypeFactory.defaultInstance().constructType(KomikHistoryItem::class.java)
+            )
+
+        if (idRaw != null)
+            id = decodeStringURL(
+                idRaw,
+                TypeFactory.defaultInstance().constructType(String::class.java)
+            ) ?: ""
+
+        if (slugRaw != null)
+            slug = decodeStringURL(
+                savedStateHandle.get<String>("slug") ?: "slug",
+                TypeFactory.defaultInstance().constructType(String::class.java)
+            ) ?: ""
+
+        cacheKey = "chapter-${id.ifEmpty { slug }}"
         load(false)
-        loadChapterList(false)
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 chapterHistoryData = ChapterHistoryData(
@@ -94,18 +113,14 @@ class ChapterViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _state.collect {
-                _currentPosition.update {
-                    calculatePosition()
+                if (it.state == State.DATA && !isChapterListFetched) {
+                    isChapterListFetched = true
+                    loadChapterList(false)
+                } else {
+                    _currentPosition.update {
+                        calculatePosition()
+                    }
                 }
-
-//                if (it.state == State.DATA) {
-//                    val data = (it as DataState.Success).data
-//                    preloadImages(storage.getContext(), data.imgs ?: listOf())
-//                } else {
-//                    _loadedImages.update { preload ->
-//                        preload.copy(isLoading = true)
-//                    }
-//                }
             }
         }
         viewModelScope.launch {
@@ -143,13 +158,40 @@ class ChapterViewModel @Inject constructor(
         }
     }
 
-    fun saveHistory(firstVisibleItemIndex: Int = 0, firstVisibleItemScrollOffset: Int = 0) {
+    fun getChapterScrollPosition(): ChapterScrollPostition? {
+        val mangaId = komikData?.id
+        return if (mangaId != null) {
+            val pos = chapterScrollPostition.get<ChapterScrollPostition>(mangaId)
+            if (pos?.chapterId == id) pos else null
+        } else {
+            null
+        }
+    }
+
+    fun saveHistory(
+        firstVisibleItemIndex: Int = 0,
+        firstVisibleItemScrollOffset: Int = 0,
+        calculatedImageSize: List<ImageSize> = listOf()
+    ) {
         val chapter = ChapterHistoryItem(
             id = id,
             mangaId = komikData?.id ?: "id",
             title = state.value.getDataOrNull()?.title ?: "",
             slug = state.value.getDataOrNull()?.slug ?: "",
         )
+
+        if (komikData?.id != null) {
+            chapterScrollPostition.set<ChapterScrollPostition>(
+                komikData!!.id,
+                ChapterScrollPostition(
+                    calculatedImageSize,
+                    mangaId = komikData!!.id,
+                    chapterId = id,
+                    initialFirstVisibleItemIndex = firstVisibleItemIndex,
+                    initialFirstVisibleItemScrollOffset = firstVisibleItemScrollOffset
+                )
+            )
+        }
 
         viewModelScope.launch {
             komikData?.let {
@@ -171,6 +213,7 @@ class ChapterViewModel @Inject constructor(
     }
 
     fun loadChapter(id: String) {
+        Log.d("CHAPTER","LOADING CHAPTER ID $id")
         this.id = id
         cacheKey = "chapter-${id}"
         load(false)
@@ -178,6 +221,7 @@ class ChapterViewModel @Inject constructor(
 
     fun loadChapterList(force: Boolean = true) {
         viewModelScope.launch {
+            Log.d("IS CACHE", "load Chapter list...")
             loadWithCache<List<Chapter>>(
                 key = "chapterlist-${komikData?.id}",
                 fetch = {
@@ -190,7 +234,46 @@ class ChapterViewModel @Inject constructor(
 
     }
 
-    override suspend fun fetchData(): ChapterModel {
-        return api.getChapter(id)
+    override suspend fun fetchData(): ChapterData {
+        Log.d("CHAPTER", "LOADING CHAPTER $id dan slug : $slug")
+        val chapterApi = if (id.isNotEmpty()) {
+            api.getChapter(id)
+        } else if (slug.isNotEmpty()) {
+            api.getChapterBySlug(slug)
+        } else {
+            throw Exception("Data is missing!")
+        }
+
+        id = chapterApi.id
+        slug = chapterApi.slug
+        return if (komikData != null) {
+            ChapterData(
+                komik = komikData!!,
+                title = chapterApi.title,
+                slug = chapterApi.slug,
+                id = chapterApi.slug,
+                imgs = chapterApi.imgs,
+                disqusConfig = chapterApi.disqusConfig
+            )
+        } else {
+            val komik = api.getDetailKomik(chapterApi.mangaSlug)
+            komikData = KomikHistoryItem(
+                id = komik.id,
+                title = komik.title,
+                slug = komik.slug,
+                img = komik.img,
+                type = komik.type,
+                description = komik.description
+            )
+
+            ChapterData(
+                komik = komikData!!,
+                title = chapterApi.title,
+                slug = chapterApi.slug,
+                id = chapterApi.slug,
+                imgs = chapterApi.imgs,
+                disqusConfig = chapterApi.disqusConfig
+            )
+        }
     }
 }

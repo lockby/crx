@@ -18,10 +18,17 @@ import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
 import coil.size.Size
 import com.crstlnz.komikchino.R
+import com.crstlnz.komikchino.config.AppSettings
 
 @Composable
-fun ChapterImageView(data: ChapterImage, onDisableHardware: () -> Unit = {}) {
+fun ChapterImageView(
+    data: ChapterImage,
+    onDisableHardware: () -> Unit = {},
+    onImageSizeCalculated: (height: Float, width: Float) -> Unit = { _, _ -> },
+    defaultAspectRatio: Float = 5f / 8f
+) {
     val painter = rememberAsyncImagePainter(
+        imageLoader = AppSettings.imageLoader!!,
         model = ImageRequest.Builder(LocalContext.current).data(data.url)
             .crossfade(true)
             .setHeader("Content-Type", "image/jpeg")
@@ -31,15 +38,25 @@ fun ChapterImageView(data: ChapterImage, onDisableHardware: () -> Unit = {}) {
             .build()
     )
 
-    if (painter.state is AsyncImagePainter.State.Error) {
-        if (data.useHardware) {
-            onDisableHardware()
-        }
-//        val error = painter.state as AsyncImagePainter.State.Error
+    if (painter.state is AsyncImagePainter.State.Success) {
+        val intrinsicSize =
+            (painter.state as? AsyncImagePainter.State.Success)?.painter?.intrinsicSize
+        Image(
+            painter = painter,
+            contentDescription = "Komik Images",
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    Modifier.aspectRatio(if (intrinsicSize != null) intrinsicSize.width / intrinsicSize.height else defaultAspectRatio)
+                )
+        )
+        if (intrinsicSize != null)
+            onImageSizeCalculated(intrinsicSize.height, intrinsicSize.width)
+    } else if (painter.state is AsyncImagePainter.State.Error && !data.useHardware) {
         Box(
             Modifier
                 .fillMaxWidth()
-                .aspectRatio(5f / 7f),
+                .aspectRatio(5f / 8f),
             contentAlignment = Alignment.Center
         ) {
             Image(
@@ -49,11 +66,12 @@ fun ChapterImageView(data: ChapterImage, onDisableHardware: () -> Unit = {}) {
                 modifier = Modifier.fillMaxWidth()
             )
         }
-    } else if (painter.state is AsyncImagePainter.State.Loading) {
+    } else {
+        if (painter.state is AsyncImagePainter.State.Error) onDisableHardware()
         Box(
             Modifier
                 .fillMaxWidth()
-                .aspectRatio(5f / 7f),
+                .aspectRatio(defaultAspectRatio),
             contentAlignment = Alignment.Center
         ) {
             Image(
@@ -63,14 +81,5 @@ fun ChapterImageView(data: ChapterImage, onDisableHardware: () -> Unit = {}) {
                 modifier = Modifier.fillMaxWidth(0.8f)
             )
         }
-    } else {
-        Image(painter = painter,
-            contentDescription = "Komik Images",
-            modifier = Modifier
-                .fillMaxWidth()
-                .then((painter.state as? AsyncImagePainter.State.Success)?.painter?.intrinsicSize?.let { intrinsicSize ->
-                    Modifier.aspectRatio(intrinsicSize.width / intrinsicSize.height)
-                } ?: Modifier.aspectRatio(5f / 7f)))
     }
-
 }

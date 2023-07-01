@@ -2,14 +2,17 @@ package com.crstlnz.komikchino.data.api.source
 
 import android.util.Log
 import com.crstlnz.komikchino.data.api.KomikClient
+import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.Chapter
-import com.crstlnz.komikchino.data.model.ChapterModel
+import com.crstlnz.komikchino.data.model.ChapterApi
+import com.crstlnz.komikchino.data.model.ChapterUpdate
 import com.crstlnz.komikchino.data.model.FeaturedComic
 import com.crstlnz.komikchino.data.model.Genre
 import com.crstlnz.komikchino.data.model.HomeData
 import com.crstlnz.komikchino.data.model.KomikDetail
-import com.crstlnz.komikchino.data.model.SearchItem
-import com.crstlnz.komikchino.data.model.SearchQuery
+import com.crstlnz.komikchino.data.model.LatestUpdate
+import com.crstlnz.komikchino.data.model.LatestUpdatePage
+import com.crstlnz.komikchino.data.model.SearchResult
 import com.crstlnz.komikchino.data.model.Section
 import com.crstlnz.komikchino.data.model.SectionComic
 import com.crstlnz.komikchino.data.model.SimilarTitle
@@ -19,11 +22,12 @@ import com.crstlnz.komikchino.data.util.parseDateString
 import com.crstlnz.komikchino.data.util.parseMangaKatanaChapterImages
 import okhttp3.ResponseBody
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
+import java.util.Date
 import java.util.Locale
 
 class Mangakatana : ScraperBase {
     private val api = KomikClient.getMangaKatanaClient()
-
     override suspend fun getHome(): HomeData {
         val body = api.getHome()
         val document = Jsoup.parse(body.string())
@@ -82,37 +86,111 @@ class Mangakatana : ScraperBase {
         )
 
         return HomeData(
-            featured = featuredList, sections = listOf(section)
+            featured = featuredList,
+            sections = listOf(section)
         )
     }
 
-    override suspend fun search(query: String, page: Int): SearchQuery {
-        val body = api.search(page, query)
+    override suspend fun getLatestUpdate(page: Int): LatestUpdatePage {
+        val body = api.getLatestUpdate(page)
         val document = Jsoup.parse(body.string())
-        val searchItems = arrayListOf<SearchItem>()
-        val searchList = document.select("#book_list .item")
-        for (search in searchList) {
-            val url = search.selectFirst(".text .title a")?.attr("href") ?: ""
-            searchItems.add(
-                SearchItem(
-                    title = search.selectFirst(".text .title a")?.text()?.trim() ?: "",
-                    img = search.selectFirst(".media .wrap_img img")?.attr("src") ?: "",
-                    score = null,
-                    type = "",
-                    isColored = false,
-                    isComplete = search.selectFirst(".status.Completed") != null,
-                    isHot = false,
+        val latestUpdateElemets = document.select("#book_list .item")
+        val latestUpdate = arrayListOf<LatestUpdate>()
+
+        for (latest in latestUpdateElemets) {
+            val url = latest.selectFirst(".title a")?.attr("href") ?: ""
+            val chapterElements = latest.select(".chapters .chapter")
+            val chapters = arrayListOf<ChapterUpdate>()
+
+            val dates = latest.select(".chapters .update_time")
+            val updateTime = arrayListOf<Date?>()
+
+            for (date in dates) {
+                updateTime.add(
+                    parseDateString(
+                        date.text()?.trim() ?: "",
+                        "MMM-dd-yyyy",
+                        Locale.ENGLISH
+                    )
+                )
+            }
+
+            for ((index, chapter) in chapterElements.withIndex()) {
+                val cUrl = chapter.selectFirst("a")?.attr("href") ?: ""
+                chapters.add(
+                    ChapterUpdate(
+                        title = chapter.selectFirst("a")?.text()?.trim() ?: "",
+                        slug = getLastPathSegment(cUrl) ?: "",
+                        url = cUrl,
+                        date = updateTime.getOrNull(index)
+                    )
+                )
+            }
+            latestUpdate.add(
+                LatestUpdate(
+                    title = latest.selectFirst(".title a")?.text() ?: "",
+                    img = latest.selectFirst(".wrap_img img")?.attr("src") ?: "",
+                    description = latest.selectFirst(".summary")?.text() ?: "",
+                    slug = getLastPathSegment(url) ?: "",
                     url = url,
-                    slug = getLastPathSegment(url) ?: ""
+                    chapters = chapters
                 )
             )
         }
 
-        return SearchQuery(
+        val hasNext = document.selectFirst(".uk-pagination .next") != null
+        return LatestUpdatePage(
             page = page,
-            result = searchItems,
-            hasNext = document.selectFirst(".uk-pagination .next") != null
+            result = latestUpdate,
+            hasNext = hasNext
         )
+    }
+
+    override suspend fun search(query: String, page: Int): SearchResult {
+        val body = api.search(page, query)
+        val document = Jsoup.parse(body.string())
+        val book = document.selectFirst("#single_book")
+        if (book != null) {
+            val url = document.selectFirst("link[rel='canonical']")?.attr("href") ?: ""
+            return SearchResult.ExactMatch(
+                title = book.selectFirst(".info .heading")?.text()?.trim() ?: "",
+                img = book.selectFirst(".cover img")?.attr("src") ?: "",
+                score = null,
+                type = "",
+                isColored = false,
+                isComplete = book.selectFirst(".status.Completed") != null,
+                isHot = false,
+                url = url,
+                slug = getLastPathSegment(url) ?: ""
+            )
+        } else {
+            val searchItems = arrayListOf<SearchResult.ExactMatch>()
+            val searchList = document.select("#book_list .item")
+            for (search in searchList) {
+                val url = search.selectFirst(".text .title a")?.attr("href") ?: ""
+                searchItems.add(
+                    SearchResult.ExactMatch(
+                        title = search.selectFirst(".text .title a")?.text()?.trim() ?: "",
+                        img = search.selectFirst(".media .wrap_img img")?.attr("src") ?: "",
+                        score = null,
+                        type = "",
+                        isColored = false,
+                        isComplete = search.selectFirst(".status.Completed") != null,
+                        isHot = false,
+                        url = url,
+                        slug = getLastPathSegment(url) ?: ""
+                    )
+                )
+            }
+
+            return SearchResult.SearchList(
+                page = page,
+                result = searchItems,
+                hasNext = document.selectFirst(".uk-pagination .next") != null
+            )
+        }
+
+
     }
 
     override suspend fun getDetailKomik(slug: String): KomikDetail {
@@ -138,11 +216,11 @@ class Mangakatana : ScraperBase {
         val similarList = arrayListOf<SimilarTitle>()
         val similars = document.select("#hot_book .widget-body .item")
         for (similar in similars) {
-            val url = similar.selectFirst(".bsx a")?.attr("href") ?: ""
+            val url = similar.selectFirst(".wrap_img a")?.attr("href") ?: ""
             similarList.add(
                 SimilarTitle(
                     title = similar.selectFirst(".text .title a")?.text()?.trim() ?: "",
-                    img = similar.selectFirst(".media .wrap_img img")?.attr("src") ?: "",
+                    img = similar.selectFirst(".media .wrap_img img")?.attr("data-src") ?: "",
                     genre = null,
                     type = similar.selectFirst(".text .status")?.text()?.trim() ?: "",
                     isColored = false,
@@ -225,19 +303,13 @@ class Mangakatana : ScraperBase {
         return chapterList
     }
 
-    override suspend fun getChapter(id: String): ChapterModel {
-        Log.d("CHAPTER SLUG ", id)
-        val split = id.split("/")
-        val body = api.getChapter(split.getOrNull(0) ?: "", split.getOrNull(1) ?: "")
-        val document = Jsoup.parse(body.string())
+    private fun parseChapter(document: Document): ChapterApi {
         var imgList = listOf<String>()
         try {
             imgList = parseMangaKatanaChapterImages(document.html())
         } catch (e: Exception) {
             Log.d("ERROR PARSE CHAPTER IMGS", e.stackTraceToString())
         }
-
-        Log.d("IMAGE LIST", imgList.toString())
 
         val breadCrumbs = document.select("#breadcrumb_wrap ol li")
         val mangaTitle = breadCrumbs.getOrNull(1)?.selectFirst("span")?.text()?.trim()
@@ -246,15 +318,31 @@ class Mangakatana : ScraperBase {
                 ?.trim() ?: ""
 
         val slug =
-            getLastTwoSegments(breadCrumbs.getOrNull(2)?.selectFirst("a")?.attr("href") ?: "") ?: ""
+            getLastTwoSegments(document.selectFirst("link[rel='canonical']")?.attr("href") ?: "")
 
         val mangaId: String = slug.split(".").getOrNull(1) ?: ""
-        return ChapterModel(
-            id = id,
+        val mangaSlug = slug.split("/").getOrNull(0) ?: ""
+        return ChapterApi(
+            id = slug,
             imgs = imgList,
             title = chapterTitle,
             slug = slug,
             mangaId = mangaId,
+            mangaSlug = mangaSlug
         )
+    }
+
+    override suspend fun getChapter(id: String): ChapterApi {
+        val split = id.split("/")
+        val body = api.getChapter(split.getOrNull(0) ?: "", split.getOrNull(1) ?: "")
+        val document = Jsoup.parse(body.string())
+        return parseChapter(document)
+    }
+
+    override suspend fun getChapterBySlug(slug: String): ChapterApi {
+        val split = slug.split("/")
+        val body = api.getChapter(split.getOrNull(0) ?: "", split.getOrNull(1) ?: "")
+        val document = Jsoup.parse(body.string())
+        return parseChapter(document)
     }
 }

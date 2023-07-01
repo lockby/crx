@@ -1,0 +1,342 @@
+package com.crstlnz.komikchino.data.api.source
+
+import com.crstlnz.komikchino.data.api.KomikClient
+import com.crstlnz.komikchino.data.api.ScraperBase
+import com.crstlnz.komikchino.data.model.Chapter
+import com.crstlnz.komikchino.data.model.ChapterApi
+import com.crstlnz.komikchino.data.model.ChapterUpdate
+import com.crstlnz.komikchino.data.model.FeaturedComic
+import com.crstlnz.komikchino.data.model.Genre
+import com.crstlnz.komikchino.data.model.HomeData
+import com.crstlnz.komikchino.data.model.KomikDetail
+import com.crstlnz.komikchino.data.model.LatestUpdate
+import com.crstlnz.komikchino.data.model.LatestUpdatePage
+import com.crstlnz.komikchino.data.model.SearchResult
+import com.crstlnz.komikchino.data.model.Section
+import com.crstlnz.komikchino.data.model.SectionComic
+import com.crstlnz.komikchino.data.model.SimilarTitle
+import com.crstlnz.komikchino.data.util.getLastPathSegment
+import com.crstlnz.komikchino.data.util.getQuery
+import com.crstlnz.komikchino.data.util.getVoidScansDisqus
+import com.crstlnz.komikchino.data.util.parseDateString
+import com.crstlnz.komikchino.data.util.parseRelativeTime
+import okhttp3.ResponseBody
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
+import java.util.Locale
+import java.util.regex.Pattern
+
+
+class VoidScans : ScraperBase {
+    private val api = KomikClient.getVoidScansClient()
+    override suspend fun getHome(): HomeData {
+        val body = api.getHome()
+        val document = Jsoup.parse(body.string())
+        val featureds = document.select("#content .owl-carousel .slide-item")
+        val featuredList = arrayListOf<FeaturedComic>()
+        for (featured in featureds) {
+            val url = featured.selectFirst(".poster a")?.attr("href") ?: ""
+            // mangakatana tak ade genre di home
+            val genreList = arrayListOf<Genre>()
+            val genres = featured.select(".extras .extra-category a")
+            for (genre in genres) {
+                genreList.add(
+                    Genre(
+                        title = genre.text() ?: "",
+                        url = genre.attr("href") ?: "",
+                        slug = getLastPathSegment(genres.attr("href") ?: "") ?: ""
+                    )
+                )
+            }
+            featuredList.add(
+                FeaturedComic(
+                    title = featured.selectFirst(".title .ellipsis a")?.text()?.trim() ?: "",
+                    url = url,
+                    description = featured.selectFirst(".excerpt > p:nth-child(3)")?.text()?.trim()
+                        ?: "No description.",
+                    genre = genreList,
+                    type = featured.selectFirst(".title .release-year")?.text()?.trim() ?: "",
+                    img = featured.selectFirst(".poster img")?.attr("src") ?: "",
+                    slug = getLastPathSegment(url) ?: "",
+                    score = featured.selectFirst(".rating .vote")?.text()?.toFloatOrNull()
+                )
+            )
+        }
+
+        val sectionList = arrayListOf<SectionComic>()
+        val comics = document.select(".hothome .listupd .bs")
+
+        for (comic in comics) {
+            val url = comic.selectFirst(".bsx a")?.attr("href") ?: ""
+            sectionList.add(
+                SectionComic(
+                    title = comic.selectFirst(".bigor .tt")?.text()?.trim() ?: "",
+                    url = url,
+                    type = comic.selectFirst(".limit .type")?.classNames()?.toList()?.getOrNull(1)
+                        ?.toString() ?: "",
+                    img = comic.selectFirst(".limit img")?.attr("src") ?: "",
+                    slug = getLastPathSegment(url) ?: "",
+                    score = comic.selectFirst(".rating .numscore")?.text()?.trim()
+                        ?.toFloatOrNull() ?: 0f,
+                    chapterString = comic.selectFirst(".bigor .epxs")?.text()?.trim() ?: ""
+                )
+            )
+        }
+
+        val section = Section(
+            title = document.selectFirst(".hothome .releases h2")?.text()?.trim()
+                ?.split(" ")?.joinToString(" ") { it.capitalize(Locale.ROOT) } ?: "",
+            list = sectionList
+        )
+
+        return HomeData(
+            featured = featuredList, sections = listOf(section)
+        )
+    }
+
+    override suspend fun getLatestUpdate(page: Int): LatestUpdatePage {
+        val body = api.getHome()
+        val document = Jsoup.parse(body.string())
+        val latestUpdateElemets = document.select(".listupd .utao")
+        val latestUpdate = arrayListOf<LatestUpdate>()
+
+        for (latest in latestUpdateElemets) {
+            val url = latest.selectFirst(".imgu a")?.attr("href") ?: ""
+            val chapterElements = latest.select("ul li")
+            val chapters = arrayListOf<ChapterUpdate>()
+
+            for (chapter in chapterElements) {
+                val cUrl = chapter.selectFirst("a")?.attr("href") ?: ""
+                chapters.add(
+                    ChapterUpdate(
+                        title = chapter.selectFirst("a")?.text()?.trim() ?: "",
+                        slug = getLastPathSegment(url) ?: "",
+                        url = url,
+                        date = parseRelativeTime(chapter.selectFirst("span")?.text() ?: "")
+                    )
+                )
+            }
+            latestUpdate.add(
+                LatestUpdate(
+                    title = latest.selectFirst(".luf a")?.text() ?: "",
+                    img = latest.selectFirst("img")?.attr("src") ?: "",
+                    description = "",
+                    slug = getLastPathSegment(url) ?: "",
+                    url = url,
+                    chapters = chapters
+                )
+            )
+        }
+
+        return LatestUpdatePage(
+            page = page,
+            result = latestUpdate,
+            hasNext = false
+        )
+    }
+
+    override suspend fun search(query: String, page: Int): SearchResult {
+        val body = api.search(page, query)
+        val document = Jsoup.parse(body.string())
+        val searchItems = arrayListOf<SearchResult.ExactMatch>()
+        val searchList = document.select("#book_list .item")
+        for (search in searchList) {
+            val url = search.selectFirst(".text .title a")?.attr("href") ?: ""
+            searchItems.add(
+                SearchResult.ExactMatch(
+                    title = search.selectFirst(".text .title a")?.text()?.trim() ?: "",
+                    img = search.selectFirst(".media .wrap_img img")?.attr("src") ?: "",
+                    score = null,
+                    type = "",
+                    isColored = false,
+                    isComplete = search.selectFirst(".status.Completed") != null,
+                    isHot = false,
+                    url = url,
+                    slug = getLastPathSegment(url) ?: ""
+                )
+            )
+        }
+
+        return SearchResult.SearchList(
+            page = page,
+            result = searchItems,
+            hasNext = document.selectFirst(".uk-pagination .next") != null
+        )
+    }
+
+
+    private fun parseKomik(document: Document): KomikDetail {
+        val table = document.select(".infotable tbody tr")
+        val id = document.selectFirst(".bookmark")?.attr("data-id")?.toIntOrNull() ?: 0
+        val title = document.selectFirst(".infox .entry-title")?.text()
+        val genreList = arrayListOf<Genre>()
+        val genres = document.select(".seriestugenre a")
+
+        for (genre in genres) {
+            val url = genre.attr("url") ?: ""
+            genreList.add(
+                Genre(
+                    title = genre.text(),
+                    slug = getLastPathSegment(url) ?: "",
+                    url = url,
+                )
+            )
+        }
+
+        val similarList = arrayListOf<SimilarTitle>()
+        val similars = document.select(".bixbox .bs")
+        for (similar in similars) {
+            val url = similar.selectFirst(".bsx a")?.attr("href") ?: ""
+            similarList.add(
+                SimilarTitle(
+                    title = similar.selectFirst(".tt")?.text()?.trim() ?: "",
+                    img = similar.selectFirst("a img")?.attr("src") ?: "",
+                    genre = null,
+                    type = similar.selectFirst(".limit .type")?.classNames()?.toList()?.getOrNull(1)
+                        ?.toString()
+                        ?: if (similar.selectFirst(".novelabel") != null) "Novel" else "",
+                    isColored = similar.selectFirst(".colored") != null,
+                    slug = getLastPathSegment(url) ?: "",
+                    url = url
+                )
+            )
+        }
+
+        val chapterList = arrayListOf<Chapter>()
+        val chapters = document.select("#chapterlist ul li")
+
+        for (chapter in chapters) {
+            val url = chapter.selectFirst(".eph-num a")?.attr("href") ?: ""
+            chapterList.add(
+                Chapter(
+                    title = chapter.selectFirst(".chbox .chapternum")?.text()
+                        ?.replace(title ?: "", "")?.trim()
+                        ?: "",
+                    date = parseDateString(
+                        chapter.selectFirst(".eph-num .chapterdate")?.text()?.trim() ?: "",
+                        "MMMM d, yyyy",
+                        Locale.US
+                    ),
+                    slug = getLastPathSegment(url) ?: "",
+                    id = getLastPathSegment(url) ?: "",
+                    mangaId = id.toString(),
+                    url = url,
+                )
+            )
+        }
+
+
+        val url = document.selectFirst("link[rel='canonical']")?.attr("href") ?: ""
+        return KomikDetail(
+            id = id.toString(),
+            slug = getLastPathSegment(
+                url
+            ) ?: "",
+            url = url,
+            title = title?.trim() ?: "",
+            img = document.selectFirst("#content .thumb img")?.attr("src") ?: "",
+            banner = document.selectFirst("#content .thumb img")?.attr("src") ?: "",
+            type = document.selectFirst(".tsinfo .imptdt:nth-child(2) a")?.text()?.trim() ?: "",
+            description = document.selectFirst(".entry-content p")?.text()?.trim() ?: "",
+            score = document.selectFirst(".rating .num")?.text()?.trim()?.toFloatOrNull() ?: 0f,
+            genre = genreList,
+            similar = similarList,
+            chapters = chapterList,
+            disqusConfig = getVoidScansDisqus(document.html())
+        )
+    }
+
+    override suspend fun getDetailKomik(id: String): KomikDetail {
+        val intId = id.toIntOrNull()
+        val body: ResponseBody = if (intId != null) {
+            api.getKomikById(id)
+        } else {
+            api.getKomikPage(id)
+        }
+        val document = Jsoup.parse(body.string())
+        return parseKomik(document)
+    }
+
+    override suspend fun getChapterList(id: String): List<Chapter> {
+        val body = api.getKomikPage(id)
+        val document = Jsoup.parse(body.string())
+        val title = document.selectFirst("#single_book .heading")?.text()
+        val mangaId = document.selectFirst(".bookmark")?.attr("data-id") ?: "0"
+        val chapterList = arrayListOf<Chapter>()
+        val chapters = document.select("#chapterlist ul li")
+
+        for (chapter in chapters) {
+            val url = chapter.selectFirst(".eph-num a")?.attr("href") ?: ""
+            val dlUrl = chapter.selectFirst(".dt a")?.attr("href") ?: ""
+            chapterList.add(
+                Chapter(
+                    title = chapter.selectFirst(".chbox .chapternum")?.text()
+                        ?.replace(title ?: "", "")?.trim()
+                        ?: "",
+                    date = parseDateString(
+                        chapter.selectFirst(".eph-num .chapterdate")?.text()?.trim() ?: "",
+                        "MMMM d, yyyy",
+                        Locale.US
+                    ),
+                    slug = getLastPathSegment(url) ?: "",
+                    id = getLastPathSegment(url) ?: "",
+                    mangaId = id.toString(),
+                    url = url,
+                )
+            )
+        }
+
+        return chapterList
+    }
+
+
+    private fun parseChapter(document: Document): ChapterApi {
+        val imgs = document.select("#readerarea img")
+        val imgList = arrayListOf<String>()
+        for (img in imgs) {
+            imgList.add(img.attr("src") ?: "")
+        }
+        val id =
+            getQuery(document.selectFirst("link[rel='shortlink']")?.attr("href") ?: "", "p") ?: ""
+        val breadCrumbs = document.select(".ts-breadcrumb li")
+        val mangaTitle = breadCrumbs.getOrNull(1)?.selectFirst("span")?.text()?.trim()
+        val chapterTitle =
+            breadCrumbs.getOrNull(2)?.selectFirst("span")?.text()?.replace(mangaTitle ?: "", "")
+                ?.replace("–", "")
+                ?.trim() ?: ""
+
+        val slug =
+            getLastPathSegment(breadCrumbs.getOrNull(2)?.selectFirst("a")?.attr("href") ?: "") ?: ""
+
+        val regex = "var post_id = (\\d+);"
+        val pattern = Pattern.compile(regex)
+        val matcher = pattern.matcher(document.select("script").html())
+
+        var mangaId: String = ""
+        if (matcher.find()) {
+            mangaId = matcher.group(1)?.toString() ?: ""
+        }
+
+        val mangaSlug =
+            getLastPathSegment(document.selectFirst(".allc a")?.attr("href") ?: "") ?: ""
+        return ChapterApi(
+            id = id,
+            imgs = imgList,
+            title = chapterTitle,
+            slug = slug,
+            mangaId = mangaId,
+            mangaSlug = mangaSlug,
+            disqusConfig = getVoidScansDisqus(document.html())
+        )
+    }
+
+    override suspend fun getChapter(id: String): ChapterApi {
+        return getChapterBySlug(id)
+    }
+
+    override suspend fun getChapterBySlug(slug: String): ChapterApi {
+        val body = api.getChapterBySlug(slug)
+        val document = Jsoup.parse(body.string())
+        return parseChapter(document)
+    }
+}

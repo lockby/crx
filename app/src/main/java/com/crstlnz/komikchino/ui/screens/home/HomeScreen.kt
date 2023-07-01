@@ -203,15 +203,16 @@ fun HomeScreen(
                     }
                 }
             }) { contentPadding ->
-            Surface {
+            Surface(
+                Modifier
+                    .padding(contentPadding)
+                    .fillMaxSize()
+            ) {
                 @Suppress("DEPRECATION")
                 AnimatedNavHost(
                     bottomNav,
-                    startDestination = HomeSections.HOME.route,
-//                    startDestination = HomeSections.BOOKMARK.route,
-//                    startDestination = HomeSections.SETTINGS.route,
+                    startDestination = AppSettings.homepage?.route ?: HomeSections.HOME.route,
                     modifier = Modifier
-                        .padding(contentPadding)
                         .fillMaxSize(),
                     enterTransition = {
                         fadeIn(

@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.chapter
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -17,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.rememberScaffoldState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -57,7 +57,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.data.model.Chapter
-import com.crstlnz.komikchino.data.model.ChapterModel
+import com.crstlnz.komikchino.data.model.ChapterApi
+import com.crstlnz.komikchino.data.model.ChapterData
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
 import com.crstlnz.komikchino.data.model.State
@@ -70,77 +71,62 @@ import com.crstlnz.komikchino.ui.theme.Blue
 import com.crstlnz.komikchino.ui.theme.WhiteGray
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.launch
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChapterScreen(navController: NavController, chapterTitle: String) {
     val v: ChapterViewModel = hiltViewModel()
-    var title by remember { mutableStateOf(chapterTitle) }
-    var navShow by remember { mutableStateOf(true) }
     val systemUiController = rememberSystemUiController()
-
-    val nonActiveNested = rememberNestedScrollInteropConnection()
-    val activeNested = remember {
-        object : NestedScrollConnection {
-            override fun onPostScroll(
-                consumed: Offset, available: Offset, source: NestedScrollSource
-            ): Offset {
-                if (navShow) navShow = false
-                return Offset.Zero
-            }
-        }
-    }
-
-    val scope = rememberCoroutineScope()
-    var nestedScroll by remember { mutableStateOf<NestedScrollConnection>(activeNested) }
-
-    LaunchedEffect(navShow) {
-        if (systemUiController.isSystemBarsVisible != navShow)
-            systemUiController.isSystemBarsVisible = navShow
-        nestedScroll = if (navShow) activeNested else nonActiveNested
-
-    }
-
     DisposableEffect(Unit) {
         onDispose {
             systemUiController.isSystemBarsVisible = true
         }
     }
-
-    val scaffoldState = rememberScaffoldState()
-
-    fun goToChapter(id: String, _title: String) {
-        v.loadChapter(id)
-        title = _title
-    }
-
-    val chapterList by v.chapterList.collectAsState()
-    val chapterPosition by v.currentPosition.collectAsState()
-    val lazyListState = rememberLazyListState()
-    var isFirst by remember { mutableStateOf(true) }
-    LaunchedEffect(chapterList.state) {
-        if (chapterList.state == State.DATA) {
-            if (isFirst && chapterPosition >= 0) {
-                lazyListState.scrollToItem(chapterPosition)
-            }
-            isFirst = false
-        }
-    }
-
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
-
-
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         Modifier.fillMaxSize(), contentWindowInsets = WindowInsets.ime
-//        scaffoldState = scaffoldState,
-//        drawerGesturesEnabled = false,
-//        drawerContent = {
-//
-//        },
-//        drawerBackgroundColor = Black1,
-//        drawerScrimColor = Color.Black.copy(alpha = 0.5f)
     ) {
         val dataState by v.state.collectAsState()
+        var title by remember { mutableStateOf(chapterTitle) }
+        var navShow by remember { mutableStateOf(true) }
+        val activeNested = remember {
+            object : NestedScrollConnection {
+                override fun onPostScroll(
+                    consumed: Offset, available: Offset, source: NestedScrollSource
+                ): Offset {
+                    if (navShow) navShow = false
+                    return Offset.Zero
+                }
+            }
+        }
+        var nestedScroll by remember { mutableStateOf<NestedScrollConnection>(activeNested) }
+        val nonActiveNested = rememberNestedScrollInteropConnection()
+        LaunchedEffect(navShow) {
+            if (systemUiController.isSystemBarsVisible != navShow)
+                systemUiController.isSystemBarsVisible = navShow
+            nestedScroll = if (navShow) activeNested else nonActiveNested
+
+        }
+        fun goToChapter(id: String, _title: String) {
+            v.loadChapter(id)
+            title = _title
+        }
+
+        val chapterList by v.chapterList.collectAsState()
+        val chapterPosition by v.currentPosition.collectAsState()
+        val lazyListState = rememberLazyListState()
+        var isFirst by remember { mutableStateOf(true) }
+        LaunchedEffect(chapterList.state) {
+            if (chapterList.state == State.DATA) {
+                if (isFirst && chapterPosition >= 0) {
+                    lazyListState.scrollToItem(chapterPosition)
+                }
+                isFirst = false
+            }
+        }
+
+        val drawerState = rememberDrawerState(DrawerValue.Closed)
         ModalNavigationDrawer(modifier = Modifier.fillMaxSize(),
             gesturesEnabled = true,
             drawerState = drawerState,
@@ -231,11 +217,12 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
             ) {
                 when (dataState) {
                     is DataState.Success -> {
-                        if ((dataState as DataState.Success<ChapterModel>).data.imgs.isNotEmpty()) {
+                        if ((dataState as DataState.Success<ChapterData>).data.imgs.isNotEmpty()) {
+                            Log.d("CHAPTER SCREEN", dataState.state.toString())
 //                        if (!preloadImages.isLoading) {
                             ChapterImageList(
                                 Modifier.nestedScroll(nestedScroll),
-                                images = (dataState as DataState.Success<ChapterModel>).data.imgs,
+                                images = (dataState as DataState.Success<ChapterData>).data.imgs,
 //                                images = preloadImages.images ?: listOf(),
                                 onNavChange = { it ->
                                     if (it == null) {
@@ -255,28 +242,6 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                 },
                                 viewModel = v
                             )
-//                        } else {
-//                            Box(
-//                                modifier = Modifier.fillMaxSize(),
-//                                contentAlignment = Alignment.Center
-//                            ) {
-//                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-//                                    Text(
-//                                        "Loading gambar",
-//                                        style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.Bold)
-//                                    )
-//                                    Spacer(Modifier.height(10.dp))
-//                                    Text(
-//                                        "${(preloadImages.progress * 100).roundToInt()}%",
-//                                        style = MaterialTheme.typography.body2.copy(fontWeight = FontWeight.Bold)
-//                                    )
-//                                    Spacer(Modifier.height(15.dp))
-//                                    LinearProgressIndicator(
-//                                        Modifier.fillMaxWidth(0.45f), color = Blue
-//                                    )
-//                                }
-//                            }
-//                        }
                         } else {
                             ErrorView(
                                 resId = R.drawable.error, message = "Gambar tidak ditemukan!"
@@ -319,9 +284,13 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                         goToChapter(id, slug)
                     }, onCommentClick = {
                         if (dataState is DataState.Success) {
-                            val data = (dataState as DataState.Success<ChapterModel>).data
+                            val data = (dataState as DataState.Success<ChapterData>).data
                             MainNavigation.toCommentView(
-                                navController, data.slug, data.title, ContentType.CHAPTER
+                                navController,
+                                slug = data.disqusConfig?.identifier ?: data.slug,
+                                title = data.title,
+                                url = data.disqusConfig?.url ?: data.slug,
+                                ContentType.CHAPTER
                             )
                         }
                     })

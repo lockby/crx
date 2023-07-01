@@ -7,22 +7,28 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
@@ -41,6 +47,7 @@ import com.crstlnz.komikchino.ui.components.ErrorView
 import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.BookmarkViewModel
 import com.crstlnz.komikchino.ui.util.getComicTypeColor
+import com.crstlnz.komikchino.ui.util.noRippleClickable
 
 
 @Composable
@@ -58,11 +65,127 @@ fun RecentView(
         }
     } else {
         val sortedData = data!!.sortedByDescending { it.chapter?.data_id }
-        RecentGridView(sortedData, onKomikClick = {
+        RecentListView(viewModel, sortedData, onKomikClick = {
             onKomikClick(it)
         }, onChapterClick = { komik, chapter ->
             onChapterClick(komik, chapter)
         })
+    }
+}
+
+@Composable
+fun RecentListView(
+    viewModel: BookmarkViewModel,
+    histories: List<KomikReadHistory>,
+    onKomikClick: (komik: KomikHistoryItem) -> Unit,
+    onChapterClick: (komik: KomikHistoryItem, chapter: ChapterHistoryItem) -> Unit
+) {
+    LazyColumn(contentPadding = PaddingValues(vertical = 10.dp)) {
+        items(histories.size) {
+            val komik = histories[it].komik
+            val chapter = histories[it].chapter
+            Box(Modifier.noRippleClickable {
+                if (chapter != null) {
+                    onChapterClick(komik, chapter)
+                } else {
+                    onKomikClick(komik)
+                }
+
+            }) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 15.dp, vertical = 8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(90.dp)
+                            .aspectRatio(5f / 7f)
+                            .noRippleClickable {
+                                onKomikClick(komik)
+                            }
+                            .clip(RoundedCornerShape(8.dp))
+                    ) {
+                        ImageView(
+                            url = histories[it].komik.img,
+                            contentDescription = "Thumbnail",
+                            modifier = Modifier
+                                .fillMaxSize()
+                        )
+
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                                        100F,
+                                        340F
+                                    )
+                                )
+                        )
+
+
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.BottomCenter)
+                        ) {
+                            Text(
+                                text = "Detail",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .padding(5.dp)
+                                    .fillMaxWidth()
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            komik.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier
+                        )
+                        if (komik.type.isNotEmpty())
+                            Text(
+                                komik.type,
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    color = getComicTypeColor(komik.type)
+                                ),
+                                overflow = TextOverflow.Ellipsis,
+                                maxLines = 2,
+                            )
+
+                        if (chapter != null) {
+                            val scrollPos = viewModel.getChapterScrollPosition(komik.id, chapter.id)
+
+                            val title = if (scrollPos != null) {
+                                val imagePos = if (scrollPos.initialFirstVisibleItemIndex - 1 < 0) {
+                                    0
+                                } else {
+                                    scrollPos.initialFirstVisibleItemIndex - 1
+                                }
+
+                                "${chapter.title} - Gambar ke ${imagePos + 1} / ${scrollPos.imageSize.size}"
+                            } else {
+                                chapter.title
+                            }
+                            Spacer(modifier = Modifier.height(5.dp))
+                            Text(
+                                title,
+                                style = MaterialTheme.typography.labelMedium,
+                                overflow = TextOverflow.Ellipsis,
+                                maxLines = 2,
+                            )
+                        }
+
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -123,7 +246,7 @@ fun RecentGridView(
                                         modifier = Modifier
                                             .fillMaxWidth(),
                                         color = getComicTypeColor(histories[it].komik.type),
-                                        style = MaterialTheme.typography.caption.copy(
+                                        style = MaterialTheme.typography.labelMedium.copy(
                                             fontWeight = FontWeight.Bold,
                                         ),
                                         textAlign = TextAlign.Center
@@ -137,7 +260,7 @@ fun RecentGridView(
                                     modifier = Modifier
                                         .fillMaxWidth(),
                                     color = Color.White,
-                                    style = MaterialTheme.typography.caption.copy(
+                                    style = MaterialTheme.typography.labelMedium.copy(
                                         fontWeight = FontWeight.Bold,
                                         shadow = Shadow(color = Color.Black, blurRadius = 8f)
                                     ),

@@ -19,8 +19,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -54,6 +58,7 @@ import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.FeaturedComic
 import com.crstlnz.komikchino.data.model.Section
 import com.crstlnz.komikchino.data.model.State
+import com.crstlnz.komikchino.ui.components.ErrorView
 import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.navigations.MainNavigation
 import com.crstlnz.komikchino.ui.theme.Black1
@@ -68,29 +73,57 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun HomeFragment(navController: NavController) {
     val v: HomeFragmenViewModel = hiltViewModel()
     val dataState by v.state.collectAsState()
 
-    LazyColumn(Modifier.fillMaxSize()) {
-        when (dataState.state) {
-            State.DATA -> {
-                val data = (dataState as DataState.Success).data
-                featuredView(
-                    data.featured, onKomikClick = { title, slug ->
+    val pullRefreshState =
+        rememberPullRefreshState(dataState.state == State.LOADING, { v.load() })
+    Box(Modifier.pullRefresh(pullRefreshState)) {
+        LazyColumn(Modifier.fillMaxSize()) {
+            when (dataState.state) {
+                State.DATA -> {
+                    val data = (dataState as DataState.Success).data
+                    featuredView(
+                        data.featured, onKomikClick = { title, slug ->
+                            MainNavigation.toKomik(navController, title, slug)
+                        }, 4
+                    )
+                    sectionView(data.sections) { title, slug ->
                         MainNavigation.toKomik(navController, title, slug)
-                    }, 4
-                )
-                sectionView(data.sections) { title, slug ->
-                    MainNavigation.toKomik(navController,title,slug)
+                    }
+                }
+
+                State.ERROR -> {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(5f / 8f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            ErrorView(
+                                resId = R.drawable.error,
+                                message = "Gagal mendapatkan data!",
+                                onClick = {
+                                    v.load()
+                                })
+                        }
+                    }
+                }
+
+                else -> {
+                    komikLoading()
                 }
             }
-
-            else -> {
-                komikLoading()
-            }
         }
+        PullRefreshIndicator(
+            dataState.state == State.LOADING && !v.isFirstLaunch,
+            pullRefreshState,
+            Modifier.align(Alignment.TopCenter)
+        )
     }
 }
 
@@ -224,136 +257,144 @@ fun LazyListScope.featuredView(
                 }
             }
         }
-        HorizontalPager(
-            count = Int.MAX_VALUE, state = pagerState, modifier = Modifier.nestedScroll(remember {
-                object : NestedScrollConnection {
-                    override fun onPostScroll(
-                        consumed: Offset, available: Offset, source: NestedScrollSource
-                    ): Offset {
-                        elapsedTime = 0
-                        return Offset.Zero
+        if (featureds.isNotEmpty())
+            HorizontalPager(
+                count = Int.MAX_VALUE,
+                state = pagerState,
+                modifier = Modifier.nestedScroll(remember {
+                    object : NestedScrollConnection {
+                        override fun onPostScroll(
+                            consumed: Offset, available: Offset, source: NestedScrollSource
+                        ): Offset {
+                            elapsedTime = 0
+                            return Offset.Zero
+                        }
                     }
-                }
-            })
-        ) { index ->
-            val it = index % featureds.size
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 10f)
-                    .background(color = Black3)
-                    .clickable {
-                        onKomikClick(featureds[it].title, featureds[it].slug)
-                    }) {
-                ImageView(
-                    url = featureds[it].img,
-                    modifier = Modifier.fillMaxSize(),
-                    contentDescription = "Thumbnail"
-                )
+                })
+            ) { index ->
+                val it = index % featureds.size
                 Box(
                     Modifier
-                        .background(color = Color.Black.copy(alpha = 0.15f))
-                        .fillMaxSize()
-                )
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
-                                100F,
-                                600F
-                            )
-                        )
-                )
-                Column(
-                    Modifier
-                        .padding(15.dp)
-                        .fillMaxSize(), verticalArrangement = Arrangement.Bottom
-                ) {
-                    Text(
-                        featureds[it].title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold, shadow = Shadow(
-                                Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
-                            )
-                        ),
-                        color = Color.White,
-                        modifier = Modifier.fillMaxWidth(0.7f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 10f)
+                        .background(color = Black3)
+                        .clickable {
+                            onKomikClick(featureds[it].title, featureds[it].slug)
+                        }) {
+                    ImageView(
+                        url = featureds[it].img,
+                        modifier = Modifier.fillMaxSize(),
+                        contentDescription = "Thumbnail"
                     )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        featureds[it].description, style = MaterialTheme.typography.bodyMedium.copy(
-                            color = Color.White, fontWeight = FontWeight.SemiBold, shadow = Shadow(
-                                Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
-                            )
-                        ), maxLines = 2, overflow = TextOverflow.Ellipsis
+                    Box(
+                        Modifier
+                            .background(color = Color.Black.copy(alpha = 0.15f))
+                            .fillMaxSize()
                     )
-                    Spacer(Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (featureds[it].type.isNotEmpty()) {
-                            Text(
-                                featureds[it].type,
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    color = getComicTypeColor(featureds[it].type),
-                                    fontWeight = FontWeight.SemiBold,
-                                    shadow = Shadow(
-                                        Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
-                                    )
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
+                                    100F,
+                                    600F
                                 )
                             )
-                            Spacer(Modifier.width(6.dp))
-                        }
-
-                        if (featureds[it].score != null) {
-                            Icon(
-                                Icons.Filled.Star,
-                                contentDescription = "Star",
-                                modifier = Modifier.height(16.dp),
-                                tint = Yellow
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                featureds[it].score.toString(),
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    color = Color.White,
-                                    fontWeight = FontWeight.SemiBold,
-                                    shadow = Shadow(
-                                        Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
-                                    )
-                                )
-                            )
-                            Spacer(Modifier.width(10.dp))
-                        }
-
-                        if (featureds[it].type.isEmpty() && featureds[it].score == null) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.web),
-                                contentDescription = "Genre",
-                                modifier = Modifier.height(16.dp),
-                                tint = Yellow
-                            )
-                            Spacer(Modifier.width(6.dp))
-                        }
+                    )
+                    Column(
+                        Modifier
+                            .padding(15.dp)
+                            .fillMaxSize(), verticalArrangement = Arrangement.Bottom
+                    ) {
                         Text(
-                            featureds[it].genre.joinToString(", ") { it.title },
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = if (featureds[it].type.isEmpty() || featureds[it].score == null) Blue else Color.White,
+                            featureds[it].title,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.SemiBold, shadow = Shadow(
+                                    Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
+                                )
+                            ),
+                            color = Color.White,
+                            modifier = Modifier.fillMaxWidth(0.7f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            featureds[it].description,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = Color.White,
                                 fontWeight = FontWeight.SemiBold,
                                 shadow = Shadow(
                                     Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
                                 )
                             ),
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
+                        Spacer(Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (featureds[it].type.isNotEmpty()) {
+                                Text(
+                                    featureds[it].type,
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        color = getComicTypeColor(featureds[it].type),
+                                        fontWeight = FontWeight.SemiBold,
+                                        shadow = Shadow(
+                                            Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
+                                        )
+                                    )
+                                )
+                                Spacer(Modifier.width(6.dp))
+                            }
+
+                            if (featureds[it].score != null) {
+                                Icon(
+                                    Icons.Filled.Star,
+                                    contentDescription = "Star",
+                                    modifier = Modifier.height(16.dp),
+                                    tint = Yellow
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    featureds[it].score.toString(),
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        color = Color.White,
+                                        fontWeight = FontWeight.SemiBold,
+                                        shadow = Shadow(
+                                            Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
+                                        )
+                                    )
+                                )
+                                Spacer(Modifier.width(10.dp))
+                            }
+
+                            if (featureds[it].type.isEmpty() && featureds[it].score == null) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.web),
+                                    contentDescription = "Genre",
+                                    modifier = Modifier.height(16.dp),
+                                    tint = Yellow
+                                )
+                                Spacer(Modifier.width(6.dp))
+                            }
+                            Text(
+                                featureds[it].genre.joinToString(", ") { it.title },
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    color = if (featureds[it].type.isEmpty() || featureds[it].score == null) Blue else Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    shadow = Shadow(
+                                        Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
+                                    )
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
             }
-        }
     }
 }
 
@@ -386,7 +427,7 @@ fun LazyListScope.sectionView(
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    "Popular Today",
+                    if (section.title.isEmpty()) "Data not found!" else section.title,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
             }

@@ -1,6 +1,9 @@
 package com.crstlnz.komikchino.ui.screens.search
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.TweenSpec
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +20,7 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -29,6 +33,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -48,8 +53,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -63,7 +70,7 @@ import androidx.navigation.NavController
 import com.crstlnz.komikchino.LocalStatusBarPadding
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.data.model.DataState
-import com.crstlnz.komikchino.data.model.SearchItem
+import com.crstlnz.komikchino.data.model.SearchResult
 import com.crstlnz.komikchino.data.model.State
 import com.crstlnz.komikchino.data.util.getLastPathSegment
 import com.crstlnz.komikchino.ui.components.ErrorView
@@ -75,23 +82,40 @@ import com.crstlnz.komikchino.ui.theme.Red
 import com.crstlnz.komikchino.ui.theme.WhiteGray
 import com.crstlnz.komikchino.ui.theme.Yellow
 import com.crstlnz.komikchino.ui.util.OnBottomReached
+import com.crstlnz.komikchino.ui.util.noRippleClickable
 import kotlinx.coroutines.launch
 
 @Composable
 fun SearchScreen(navController: NavController) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
+    var isFocused by remember { mutableStateOf(false) }
+
     val v: SearchViewModel = hiltViewModel()
     var text by remember { mutableStateOf(v.getCurrentQuery()) }
     val dataState by v.state.collectAsState()
+
+    LaunchedEffect(Unit){
+        v.exactMatch.collect {
+            if (it != null) {
+                v.consumeExactMatch()
+                MainNavigation.toKomik(
+                    navController, it.title, getLastPathSegment(
+                        it.url
+                    ) ?: ""
+                )
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         if (dataState.state != State.DATA) {
             focusRequester.requestFocus()
         }
     }
 
-    Scaffold(contentWindowInsets = WindowInsets.ime, modifier = Modifier) {
-        Surface(Modifier.padding(it)) {
+    Scaffold(contentWindowInsets = WindowInsets.ime, modifier = Modifier.fillMaxSize()) {
+        Surface(Modifier.padding(it).fillMaxSize()) {
             Column {
                 Box(
                     modifier = Modifier
@@ -109,19 +133,18 @@ fun SearchScreen(navController: NavController) {
                     ) {
                         Icon(Icons.Filled.ArrowBack, "backIcon")
                     }
-                    TextField(
-                        singleLine = true,
+
+
+                    TextField(singleLine = true,
                         keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Search
+                            keyboardType = KeyboardType.Password, imeAction = ImeAction.Search
                         ),
-                        keyboardActions = KeyboardActions(
-                            onSearch = {
-                                if (text.isNotEmpty()) {
-                                    focusManager.clearFocus()
-                                    v.search(text, 1)
-                                }
-                            }),
+                        keyboardActions = KeyboardActions(onSearch = {
+                            if (text.isNotEmpty()) {
+                                focusManager.clearFocus()
+                                v.search(text, 1)
+                            }
+                        }),
                         textStyle = TextStyle(fontSize = 20.sp),
                         colors = run {
                             TextFieldDefaults.colors(
@@ -137,6 +160,9 @@ fun SearchScreen(navController: NavController) {
                             .fillMaxHeight()
                             .weight(1f)
                             .padding(end = 8.dp)
+                            .onFocusChanged { state ->
+                                isFocused = state.isFocused
+                            }
                             .focusRequester(focusRequester),
                         value = text,
                         placeholder = {
@@ -144,8 +170,8 @@ fun SearchScreen(navController: NavController) {
                         },
                         onValueChange = { newText ->
                             text = newText
-                        }
-                    )
+                        })
+
                     if (text.isNotEmpty()) {
                         IconButton(
                             onClick = { text = "" },
@@ -187,7 +213,63 @@ fun SearchScreen(navController: NavController) {
                             }
                         }
                     }
+
+                    if (isFocused) HistoryView(v, onQueryClick = { query ->
+                        text = query
+                        focusManager.clearFocus()
+                        v.search(query, 1)
+                    })
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun HistoryView(viewModel: SearchViewModel, onQueryClick: (String) -> Unit = {}) {
+    val searchHistory by viewModel.searchHistory.collectAsState()
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        LazyColumn(
+            Modifier.fillMaxSize()
+        ) {
+            items(items = searchHistory, key = {
+                it.query
+            }) { item ->
+                ListItem(
+                    modifier = Modifier
+                        .animateItemPlacement(
+                            animationSpec = TweenSpec(
+                                250,
+                                50,
+                                EaseOutCubic
+                            )
+                        )
+                        .noRippleClickable {
+                            onQueryClick(item.query)
+                        },
+                    leadingContent = {
+                        Icon(painter = painterResource(id = R.drawable.history), null)
+                    },
+                    headlineContent = {
+                        Text(text = item.query)
+                    },
+                    trailingContent = {
+                        Icon(
+                            modifier = Modifier
+                                .noRippleClickable {
+                                    viewModel.deleteSearchHistory(item.query)
+                                }
+                                .width(20.dp)
+                                .height(20.dp),
+                            painter = painterResource(id = R.drawable.close),
+                            contentDescription = null
+                        )
+                    }
+                )
             }
         }
     }
@@ -197,7 +279,7 @@ fun SearchScreen(navController: NavController) {
 @Composable
 fun SearchView(
     navController: NavController,
-    searchData: List<SearchItem>,
+    searchData: List<SearchResult.ExactMatch>,
     viewModel: SearchViewModel
 ) {
     val scrollState = rememberLazyListState()
@@ -206,17 +288,11 @@ fun SearchView(
     }
     val infiniteState by viewModel.infiniteState.collectAsState()
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize(),
-        state = scrollState,
-        userScrollEnabled = true
+        modifier = Modifier.fillMaxSize(), state = scrollState, userScrollEnabled = true
     ) {
-        items(
-            count = searchData.size,
-            key = {
-                searchData[it].url.ifEmpty { it }
-            }
-        ) {
+        items(count = searchData.size, key = {
+            searchData[it].url.ifEmpty { it }
+        }) {
             SearchItemView(navController, searchData[it])
             Divider(
                 modifier = Modifier.padding(horizontal = 10.dp), thickness = Dp.Hairline
@@ -228,12 +304,12 @@ fun SearchView(
                 modifier = Modifier
                     .padding(40.dp)
                     .fillMaxWidth()
-                    .animateContentSize(), contentAlignment = Alignment.Center
+                    .animateContentSize(),
+                contentAlignment = Alignment.Center
             ) {
                 if (infiniteState == InfiniteState.LOADING) {
                     CircularProgressIndicator(
-                        Modifier.padding(20.dp),
-                        color = WhiteGray.copy(alpha = 0.6f)
+                        Modifier.padding(20.dp), color = WhiteGray.copy(alpha = 0.6f)
                     )
                 } else if (infiniteState == InfiniteState.FINISH) {
                     if (searchData.isEmpty()) {
@@ -248,60 +324,59 @@ fun SearchView(
 }
 
 @Composable
-fun SearchItemView(navController: NavController, data: SearchItem) {
+fun SearchItemView(navController: NavController, data: SearchResult.ExactMatch) {
     val scope = rememberCoroutineScope()
     Box(Modifier.clickable {
         scope.launch {
             MainNavigation.toKomik(
-                navController, data.title,
-                getLastPathSegment(
+                navController, data.title, getLastPathSegment(
                     data.url
                 ) ?: ""
             )
         }
     }) {
         Row(
-            Modifier
-                .padding(10.dp)
+            Modifier.padding(10.dp)
         ) {
             ImageView(
-                url = data.img, modifier = Modifier
+                url = data.img,
+                modifier = Modifier
                     .width(110.dp)
                     .height(160.dp)
-                    .clip(RoundedCornerShape(5.dp)), contentDescription = "Thumbnail"
+                    .clip(RoundedCornerShape(5.dp)),
+                contentDescription = "Thumbnail"
             )
             Spacer(modifier = Modifier.width(10.dp))
             Column {
-                if (data.type.isNotEmpty())
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                if (data.type.isNotEmpty()) Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(
+                        Modifier
+                            .clip(
+                                RoundedCornerShape(4.dp)
+                            )
+                            .background(color = if (data.type == "Manga") Blue else (if (data.type == "Manhwa") Green else Red))
                     ) {
-                        Box(
-                            Modifier
-                                .clip(
-                                    RoundedCornerShape(4.dp)
-                                )
-                                .background(color = if (data.type == "Manga") Blue else (if (data.type == "Manhwa") Green else Red))
-                        ) {
-                            Text(
-                                data.type,
-                                style = MaterialTheme.typography.labelMedium,
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                            )
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Filled.Star,
-                                contentDescription = "Star",
-                                modifier = Modifier.height(16.dp),
-                                tint = Yellow
-                            )
-                            Spacer(Modifier.width(2.dp))
-                            Text(data.score.toString(), style = MaterialTheme.typography.bodyMedium)
-                        }
+                        Text(
+                            data.type,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                        )
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Filled.Star,
+                            contentDescription = "Star",
+                            modifier = Modifier.height(16.dp),
+                            tint = Yellow
+                        )
+                        Spacer(Modifier.width(2.dp))
+                        Text(data.score.toString(), style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
                 Spacer(Modifier.height(5.dp))
                 Text(
                     data.title,

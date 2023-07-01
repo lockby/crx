@@ -1,11 +1,16 @@
 package com.crstlnz.komikchino.hilt
 
 import android.content.Context
-import com.crstlnz.komikchino.data.datastore.KomikServer
-import com.crstlnz.komikchino.data.model.ChapterModel
+import com.crstlnz.komikchino.data.api.KomikServer
+import com.crstlnz.komikchino.data.model.ChapterApi
+import com.crstlnz.komikchino.data.model.ChapterData
+import com.crstlnz.komikchino.data.model.ChapterScrollPostition
+import com.crstlnz.komikchino.data.model.GithubModel
 import com.crstlnz.komikchino.data.model.HomeData
 import com.crstlnz.komikchino.data.model.KomikDetail
-import com.crstlnz.komikchino.data.model.SearchItem
+import com.crstlnz.komikchino.data.model.LatestUpdate
+import com.crstlnz.komikchino.data.model.SearchHistoryModel
+import com.crstlnz.komikchino.data.model.SearchResult
 import com.crstlnz.komikchino.data.util.StorageHelper
 import com.fasterxml.jackson.databind.type.TypeFactory
 import dagger.Module
@@ -27,7 +32,21 @@ class CacheModules {
         return StorageHelper(
             context,
             "$databaseKey-CACHE",
-            TypeFactory.defaultInstance().constructType(HomeData::class.java)
+            TypeFactory.defaultInstance().constructType(HomeData::class.java),
+            3600000
+        )
+    }
+
+    @Provides
+    @Named("latestUpdateCache")
+    fun provideLatestUpdate(
+        @ApplicationContext context: Context,
+        databaseKey: KomikServer
+    ): StorageHelper<List<LatestUpdate>> {
+        return StorageHelper(
+            context, "$databaseKey-CACHE", TypeFactory.defaultInstance()
+                .constructParametricType(List::class.java, LatestUpdate::class.java),
+            3600000L
         )
     }
 
@@ -41,7 +60,7 @@ class CacheModules {
             context,
             "$databaseKey-CACHE",
             TypeFactory.defaultInstance().constructType(KomikDetail::class.java),
-            expireTimeInMillis = 1800000L
+            expireTimeInMillis = 1800000L,
         )
     }
 
@@ -50,10 +69,10 @@ class CacheModules {
     fun provideChapterCache(
         @ApplicationContext context: Context,
         databaseKey: KomikServer
-    ): StorageHelper<ChapterModel> {
+    ): StorageHelper<ChapterData> {
         return StorageHelper(
             context, "$databaseKey-CACHE", TypeFactory.defaultInstance()
-                .constructType(ChapterModel::class.java),
+                .constructType(ChapterData::class.java),
             604800000L
         )
     }
@@ -63,10 +82,49 @@ class CacheModules {
     fun provideSearchCache(
         @ApplicationContext context: Context,
         databaseKey: KomikServer
-    ): StorageHelper<List<SearchItem>> {
+    ): StorageHelper<List<SearchResult.ExactMatch>> {
         return StorageHelper(
             context, "$databaseKey-CACHE", TypeFactory.defaultInstance()
-                .constructParametricType(List::class.java, SearchItem::class.java)
+                .constructParametricType(List::class.java, SearchResult.ExactMatch::class.java),
+            3600000
+        )
+    }
+
+    @Provides
+    @Named("chapterScrollPostitionCache")
+    fun provideChapterScrollPositionCache(
+        @ApplicationContext context: Context,
+        databaseKey: KomikServer
+    ): StorageHelper<ChapterScrollPostition> {
+        return StorageHelper(
+            context,
+            "$databaseKey-SCROLL-POSITION-CACHE",
+            TypeFactory.defaultInstance().constructType(ChapterScrollPostition::class.java),
+            0
+        )
+    }
+
+    @Provides
+    @Named("updateCache")
+    fun provideUpdateCache(
+        @ApplicationContext context: Context,
+    ): StorageHelper<GithubModel> {
+        return StorageHelper(
+            context, "CACHE", TypeFactory.defaultInstance().constructType(GithubModel::class.java),
+            1000
+        )
+    }
+
+    @Provides
+    @Named("searchHistoryCache")
+    fun provideSearchHistoryCache(
+        @ApplicationContext context: Context,
+    ): StorageHelper<SearchHistoryModel> {
+        return StorageHelper(
+            context,
+            "SEARCH-HISTORY",
+            TypeFactory.defaultInstance().constructType(SearchHistoryModel::class.java),
+            60000
         )
     }
 }

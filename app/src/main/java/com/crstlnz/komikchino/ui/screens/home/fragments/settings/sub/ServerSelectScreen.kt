@@ -32,7 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.crstlnz.komikchino.data.datastore.KomikServer
+import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.SettingViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch

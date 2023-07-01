@@ -45,7 +45,7 @@ open class ViewModelBase<T>(
             DataState.Loading
         }
         try {
-            val data = loadWithCache(key, fetch, storage, force)
+            val data = loadWithCacheUtil(key, fetch, storage, force)
             if (data != null) {
                 stateData.update {
                     DataState.Success(data)

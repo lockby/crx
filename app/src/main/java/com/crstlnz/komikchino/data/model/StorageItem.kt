@@ -18,7 +18,7 @@ class StorageItem(
     }
 
     fun isValid(): Boolean {
-        return System.currentTimeMillis() - date.time < expireTimeInMillis
+        return expireTimeInMillis == 0L || (System.currentTimeMillis() - date.time) < expireTimeInMillis
     }
 }
 

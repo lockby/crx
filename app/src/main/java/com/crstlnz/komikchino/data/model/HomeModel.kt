@@ -1,7 +1,10 @@
 package com.crstlnz.komikchino.data.model
 
+import java.util.Date
+
 data class HomeData(
     var featured: List<FeaturedComic> = listOf(),
+//    val mangaUpdates: List<LatestUpdate>,
     var sections: List<Section> = listOf()
 )
 

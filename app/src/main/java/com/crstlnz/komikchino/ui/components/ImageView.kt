@@ -7,24 +7,38 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import coil.ImageLoader
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
+import coil.imageLoader
 import coil.request.ImageRequest
 import coil.size.Size
+import com.crstlnz.komikchino.config.AppSettings
 
 @Composable
 fun ImageView(
     url: String,
     modifier: Modifier = Modifier,
     applyImageRequest: (ImageRequest.Builder) -> ImageRequest.Builder = { it },
-    contentDescription: String,
+    contentDescription: String?,
     contentScale: ContentScale = ContentScale.Crop,
 ) {
     val imageRequest = ImageRequest.Builder(LocalContext.current)
         .data(url)
         .crossfade(true)
         .size(Size.ORIGINAL) // Set the target size to load the image at.
+
+//    AsyncImage(
+//        model = applyImageRequest(imageRequest).build(),
+//        contentDescription = contentDescription,
+//        imageLoader = AppSettings.imageLoader!!,
+//        modifier.background(color = MaterialTheme.colorScheme.surfaceVariant),
+//        contentScale = contentScale
+//    )
     val painter = rememberAsyncImagePainter(
-        model = applyImageRequest(imageRequest).build()
+        imageLoader = AppSettings.imageLoader!!,
+        model = applyImageRequest(imageRequest)
+            .build()
     )
 
     Image(

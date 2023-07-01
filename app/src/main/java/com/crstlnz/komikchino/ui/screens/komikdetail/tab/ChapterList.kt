@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.komikdetail.tab
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement

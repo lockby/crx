@@ -29,12 +29,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.R
-import com.crstlnz.komikchino.data.datastore.KomikServer
+import com.crstlnz.komikchino.data.api.KomikServer
+import com.crstlnz.komikchino.ui.navigations.HomeSections
 import com.crstlnz.komikchino.ui.navigations.MainNavigation
 import java.util.Locale
 
@@ -43,7 +45,10 @@ import java.util.Locale
 fun SettingScreen(navController: NavController) {
     val v = hiltViewModel<SettingViewModel>()
     val context = LocalContext.current
+
     val komikServer by v.settings.komikServer.collectAsState(initial = KomikServer.KIRYUU)
+    val homePage by v.settings.homepage.collectAsState(initial = HomeSections.HOME)
+
     LazyColumn(
         Modifier
             .fillMaxSize()
@@ -114,6 +119,47 @@ fun SettingScreen(navController: NavController) {
                     Icon(
                         painter = painterResource(id = R.drawable.web),
                         contentDescription = "Server Icon"
+                    )
+                }
+            )
+        }
+
+        item {
+            ListItem(
+                modifier = Modifier.clickable {
+                    navController.navigate(MainNavigation.HOME_SELECTION)
+                },
+                headlineContent = {
+                    Text("Homepage")
+                },
+                trailingContent = {
+                    Text(stringResource(id = homePage.title))
+                },
+                leadingContent = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.home_wifi),
+                        contentDescription = "Home change icon"
+                    )
+                }
+            )
+        }
+
+        item {
+            Text("Applications", modifier = Modifier.padding(15.dp))
+        }
+
+        item {
+            ListItem(
+                modifier = Modifier.clickable {
+                    navController.navigate(MainNavigation.CHECK_UPDATE)
+                },
+                headlineContent = {
+                    Text("Check for updates")
+                },
+                leadingContent = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.sync),
+                        contentDescription = "Update icon"
                     )
                 }
             )

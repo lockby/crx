@@ -1,14 +1,17 @@
 package com.crstlnz.komikchino.data.api.source
 
 import com.crstlnz.komikchino.data.api.KomikClient
+import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.Chapter
-import com.crstlnz.komikchino.data.model.ChapterModel
+import com.crstlnz.komikchino.data.model.ChapterApi
+import com.crstlnz.komikchino.data.model.ChapterUpdate
 import com.crstlnz.komikchino.data.model.FeaturedComic
 import com.crstlnz.komikchino.data.model.Genre
 import com.crstlnz.komikchino.data.model.HomeData
 import com.crstlnz.komikchino.data.model.KomikDetail
-import com.crstlnz.komikchino.data.model.SearchItem
-import com.crstlnz.komikchino.data.model.SearchQuery
+import com.crstlnz.komikchino.data.model.LatestUpdate
+import com.crstlnz.komikchino.data.model.LatestUpdatePage
+import com.crstlnz.komikchino.data.model.SearchResult
 import com.crstlnz.komikchino.data.model.Section
 import com.crstlnz.komikchino.data.model.SectionComic
 import com.crstlnz.komikchino.data.model.SimilarTitle
@@ -16,6 +19,7 @@ import com.crstlnz.komikchino.data.util.getBackgroundImage
 import com.crstlnz.komikchino.data.util.getLastPathSegment
 import com.crstlnz.komikchino.data.util.getQuery
 import com.crstlnz.komikchino.data.util.parseDateString
+import com.crstlnz.komikchino.data.util.parseKiryuUpdateTime
 import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -25,8 +29,10 @@ import java.util.regex.Pattern
 class Kiryuu : ScraperBase {
     private val api = KomikClient.getKiryuuClient()
     override suspend fun getHome(): HomeData {
-        val body = api.getHome()
-        val document = Jsoup.parse(body.string())
+        val document = fetch {
+            api.getHome()
+        }
+
         val featureds = document.select(".slider-wrapper .swiper-slide")
         val featuredList = arrayListOf<FeaturedComic>()
         for (featured in featureds) {
@@ -80,8 +86,11 @@ class Kiryuu : ScraperBase {
                 )
             )
         }
+
+
         return HomeData(
-            featured = featuredList, sections = listOf(Section(
+            featured = featuredList,
+            sections = listOf(Section(
                 title = document.selectFirst("#content .hotslid .releases")?.text()?.trim()
                     ?.split(" ")?.joinToString(" ") { it.capitalize(Locale.ROOT) } ?: "",
                 list = sectionList
@@ -89,15 +98,58 @@ class Kiryuu : ScraperBase {
         )
     }
 
-    override suspend fun search(query: String, page: Int): SearchQuery {
+    override suspend fun getLatestUpdate(page: Int): LatestUpdatePage {
+        val body = api.getLatestUpdate(page)
+        val document = Jsoup.parse(body.string())
+        val bixboxs = document.select(".postbody .bixbox")
+        val latestUpdateElemets = bixboxs.getOrNull(1)?.select(".listupd .utao") ?: listOf()
+        val latestUpdate = arrayListOf<LatestUpdate>()
+
+        for (latest in latestUpdateElemets) {
+            val url = latest.selectFirst(".imgu a")?.attr("href") ?: ""
+            val chapterElements = latest.select("ul li")
+            val chapters = arrayListOf<ChapterUpdate>()
+
+            for (chapter in chapterElements) {
+                val cUrl = chapter.selectFirst("a")?.attr("href") ?: ""
+                chapters.add(
+                    ChapterUpdate(
+                        title = chapter.selectFirst("a")?.text()?.trim() ?: "",
+                        slug = getLastPathSegment(cUrl) ?: "",
+                        url = cUrl,
+                        date = parseKiryuUpdateTime(chapter.selectFirst("span")?.text() ?: "")
+                    )
+                )
+            }
+            latestUpdate.add(
+                LatestUpdate(
+                    title = latest.selectFirst(".luf a")?.text() ?: "",
+                    img = latest.selectFirst("img")?.attr("src") ?: "",
+                    description = "",
+                    slug = getLastPathSegment(url) ?: "",
+                    url = url,
+                    chapters = chapters
+                )
+            )
+        }
+
+        val hasNext = document.selectFirst(".hpage .r") != null
+        return LatestUpdatePage(
+            page = page,
+            result = latestUpdate,
+            hasNext = hasNext
+        )
+    }
+
+    override suspend fun search(query: String, page: Int): SearchResult {
         val body = api.search(page, query)
         val document = Jsoup.parse(body.string())
-        val searchItems = arrayListOf<SearchItem>()
+        val searchItems = arrayListOf<SearchResult.ExactMatch>()
         val searchList = document.select(".postbody .bs")
         for (search in searchList) {
             val url = search.selectFirst("a")?.attr("href") ?: ""
             searchItems.add(
-                SearchItem(
+                SearchResult.ExactMatch(
                     title = search.selectFirst(".bigor .tt")?.text()?.trim() ?: "",
                     img = search.selectFirst(".limit img.ts-post-image")?.attr("src") ?: "",
                     score = search.selectFirst(".rating .numscore")?.text()?.trim()?.toFloatOrNull()
@@ -113,7 +165,7 @@ class Kiryuu : ScraperBase {
             )
         }
 
-        return SearchQuery(
+        return SearchResult.SearchList(
             page = page,
             result = searchItems,
             hasNext = document.selectFirst(".pagination .next") != null
@@ -244,15 +296,14 @@ class Kiryuu : ScraperBase {
         return chapterList
     }
 
-    override suspend fun getChapter(id: String): ChapterModel {
-        val body = api.getChapter(id)
-        val document = Jsoup.parse(body.string())
+    private fun parseChapter(document: Document): ChapterApi {
         val imgs = document.select("#readerarea img")
         val imgList = arrayListOf<String>()
         for (img in imgs) {
             imgList.add(img.attr("src") ?: "")
         }
-
+        val id =
+            getQuery(document.selectFirst("link[rel='shortlink']")?.attr("href") ?: "", "p") ?: ""
         val breadCrumbs = document.select(".ts-breadcrumb li")
         val mangaTitle = breadCrumbs.getOrNull(1)?.selectFirst("span")?.text()?.trim()
         val chapterTitle =
@@ -270,13 +321,28 @@ class Kiryuu : ScraperBase {
         if (matcher.find()) {
             mangaId = matcher.group(1)?.toString() ?: ""
         }
-        return ChapterModel(
+
+        val mangaSlug =
+            getLastPathSegment(document.selectFirst(".allc a")?.attr("href") ?: "") ?: ""
+        return ChapterApi(
             id = id,
             imgs = imgList,
             title = chapterTitle,
             slug = slug,
             mangaId = mangaId,
+            mangaSlug = mangaSlug
         )
     }
 
+    override suspend fun getChapter(id: String): ChapterApi {
+        val body = api.getChapter(id)
+        val document = Jsoup.parse(body.string())
+        return parseChapter(document)
+    }
+
+    override suspend fun getChapterBySlug(slug: String): ChapterApi {
+        val body = api.getChapterBySlug(slug)
+        val document = Jsoup.parse(body.string())
+        return parseChapter(document)
+    }
 }
