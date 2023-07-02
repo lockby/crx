@@ -16,6 +16,7 @@ import com.crstlnz.komikchino.ui.screens.UnblockCloudflare
 import com.crstlnz.komikchino.ui.screens.CommentScreen
 import com.crstlnz.komikchino.ui.screens.chapter.ChapterScreen
 import com.crstlnz.komikchino.ui.screens.home.HomeScreen
+import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.AppInfoScreen
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.HomeSelection
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.ServerSelectScreen
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.checkupdate.CheckUpdateScreen
@@ -46,6 +47,7 @@ object MainNavigation {
 
     const val SERVER_SELECTION = "server_select"
     const val HOME_SELECTION = "home_select"
+    const val APP_INFO = "app_info"
 
     const val STORAGE_REQUEST = "storage_request"
     fun toChapter(
@@ -242,5 +244,9 @@ fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
 
     composable(MainNavigation.HOME_SELECTION) {
         HomeSelection(navController)
+    }
+
+    composable(MainNavigation.APP_INFO) {
+        AppInfoScreen(navController)
     }
 }

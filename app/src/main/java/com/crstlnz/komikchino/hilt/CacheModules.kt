@@ -86,7 +86,7 @@ class CacheModules {
         return StorageHelper(
             context, "$databaseKey-CACHE", TypeFactory.defaultInstance()
                 .constructParametricType(List::class.java, SearchResult.ExactMatch::class.java),
-            3600000
+            3600000L
         )
     }
 
@@ -100,7 +100,7 @@ class CacheModules {
             context,
             "$databaseKey-SCROLL-POSITION-CACHE",
             TypeFactory.defaultInstance().constructType(ChapterScrollPostition::class.java),
-            0
+            0L
         )
     }
 
@@ -111,7 +111,7 @@ class CacheModules {
     ): StorageHelper<GithubModel> {
         return StorageHelper(
             context, "CACHE", TypeFactory.defaultInstance().constructType(GithubModel::class.java),
-            1000
+            1000L
         )
     }
 
@@ -124,7 +124,7 @@ class CacheModules {
             context,
             "SEARCH-HISTORY",
             TypeFactory.defaultInstance().constructType(SearchHistoryModel::class.java),
-            60000
+            60000L
         )
     }
 }

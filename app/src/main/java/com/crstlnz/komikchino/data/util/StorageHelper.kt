@@ -15,7 +15,7 @@ class StorageHelper<T>(
     private val sharedPreferencesName: String,
     private val objectType: JavaType = TypeFactory.defaultInstance()
         .constructType(String::class.java),
-    private val expireTimeInMillis: Long = 3600000L
+    private val expireTimeInMillis: Long = 0L
 ) {
     private val sharedPreferences: SharedPreferences by lazy {
         context.getSharedPreferences(sharedPreferencesName, Context.MODE_PRIVATE)

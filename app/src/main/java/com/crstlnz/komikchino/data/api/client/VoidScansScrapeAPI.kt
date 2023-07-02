@@ -13,10 +13,13 @@ interface VoidScansScrapeAPI {
     suspend fun search(@Path("page") page: Int = 1, @Query("s") search: String): ResponseBody
 
     @GET("manga/{slug}")
-    suspend fun getKomikPage(@Path("slug") slug: String): ResponseBody
+    suspend fun getKomikBySlug(@Path("slug") slug: String): ResponseBody
 
     @GET("/")
     suspend fun getKomikById(@Query("p") id: String): ResponseBody
+
+    @GET("/")
+    suspend fun getChapter(@Query("p") id: String): ResponseBody
 
     @GET("/{slug}")
     suspend fun getChapterBySlug(@Path("slug") slug: String): ResponseBody

@@ -333,10 +333,7 @@ class Mangakatana : ScraperBase {
     }
 
     override suspend fun getChapter(id: String): ChapterApi {
-        val split = id.split("/")
-        val body = api.getChapter(split.getOrNull(0) ?: "", split.getOrNull(1) ?: "")
-        val document = Jsoup.parse(body.string())
-        return parseChapter(document)
+        return getChapterBySlug(id)
     }
 
     override suspend fun getChapterBySlug(slug: String): ChapterApi {

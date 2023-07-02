@@ -17,6 +17,9 @@ class HttpErrorInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val response = chain.proceed(chain.request())
         // check cloudflare block
+        if(!response.isSuccessful){
+            Log.d("FETCH ERROR HOST", response.request.url.toString() )
+        }
         if (!response.isSuccessful && isBlocked(response)) {
             AppSettings.cloudflareTry += 1
             if (AppSettings.cloudflareTry <= 5) {

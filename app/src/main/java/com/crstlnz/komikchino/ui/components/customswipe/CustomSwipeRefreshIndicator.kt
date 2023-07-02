@@ -138,7 +138,7 @@ fun CustomSwipeRefreshIndicator(
     ) {
         Box(
             contentAlignment = Alignment.Center, modifier = Modifier
-                .absoluteOffset(y = 50.dp)
+                .absoluteOffset(y = 35.dp)
                 .alpha(
                     (state.indicatorOffset.absoluteValue / (indicatorRefreshTrigger / 2)).coerceIn(
                         0f,

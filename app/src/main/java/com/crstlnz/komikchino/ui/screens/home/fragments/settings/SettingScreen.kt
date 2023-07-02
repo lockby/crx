@@ -164,5 +164,22 @@ fun SettingScreen(navController: NavController) {
                 }
             )
         }
+
+//        item {
+//            ListItem(
+//                modifier = Modifier.clickable {
+//                    navController.navigate(MainNavigation.APP_INFO)
+//                },
+//                headlineContent = {
+//                    Text("App info")
+//                },
+//                leadingContent = {
+//                    Icon(
+//                        painter = painterResource(id = R.drawable.info),
+//                        contentDescription = "Update icon"
+//                    )
+//                }
+//            )
+//        }
     }
 }

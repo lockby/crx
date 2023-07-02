@@ -7,7 +7,7 @@ import java.util.Date
 class StorageItem(
     private val value: String,
     private val date: Date = Date(),
-    private val expireTimeInMillis: Long = 3600000L
+    private val expireTimeInMillis: Long = 0L
 ) {
     fun getValue(): String {
         return value
@@ -18,7 +18,7 @@ class StorageItem(
     }
 
     fun isValid(): Boolean {
-        return expireTimeInMillis == 0L || (System.currentTimeMillis() - date.time) < expireTimeInMillis
+        return expireTimeInMillis == 0L || ((System.currentTimeMillis() - date.time) < expireTimeInMillis)
     }
 }
 

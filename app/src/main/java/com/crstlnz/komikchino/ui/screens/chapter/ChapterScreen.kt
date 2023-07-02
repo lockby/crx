@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -218,12 +220,9 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                 when (dataState) {
                     is DataState.Success -> {
                         if ((dataState as DataState.Success<ChapterData>).data.imgs.isNotEmpty()) {
-                            Log.d("CHAPTER SCREEN", dataState.state.toString())
-//                        if (!preloadImages.isLoading) {
                             ChapterImageList(
                                 Modifier.nestedScroll(nestedScroll),
                                 images = (dataState as DataState.Success<ChapterData>).data.imgs,
-//                                images = preloadImages.images ?: listOf(),
                                 onNavChange = { it ->
                                     if (it == null) {
                                         navShow = !navShow
@@ -312,14 +311,27 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                 title,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-//                                style = MaterialTheme.typography.titleMedium.copy(
-//                                    fontWeight = FontWeight.Bold,
-//                                    color = WhiteGray.copy(alpha = 0.8f)
-//                                )
                             )
                         }, navigationIcon = {
                             IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(Icons.Filled.ArrowBack, "backIcon")
+                            }
+                        },
+                        actions = {
+                            IconButton(
+                                modifier = Modifier.padding(end = 5.dp),
+                                onClick = {
+                                    val data = dataState.getDataOrNull()
+                                    if (data != null) {
+                                        MainNavigation.toKomik(
+                                            navController = navController,
+                                            data.komik.title,
+                                            data.komik.slug
+                                        )
+
+                                    }
+                                }) {
+                                Icon(Icons.Outlined.Info, "backIcon")
                             }
                         }
                     )

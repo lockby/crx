@@ -213,7 +213,6 @@ class ChapterViewModel @Inject constructor(
     }
 
     fun loadChapter(id: String) {
-        Log.d("CHAPTER","LOADING CHAPTER ID $id")
         this.id = id
         cacheKey = "chapter-${id}"
         load(false)
@@ -221,7 +220,6 @@ class ChapterViewModel @Inject constructor(
 
     fun loadChapterList(force: Boolean = true) {
         viewModelScope.launch {
-            Log.d("IS CACHE", "load Chapter list...")
             loadWithCache<List<Chapter>>(
                 key = "chapterlist-${komikData?.id}",
                 fetch = {
@@ -235,7 +233,6 @@ class ChapterViewModel @Inject constructor(
     }
 
     override suspend fun fetchData(): ChapterData {
-        Log.d("CHAPTER", "LOADING CHAPTER $id dan slug : $slug")
         val chapterApi = if (id.isNotEmpty()) {
             api.getChapter(id)
         } else if (slug.isNotEmpty()) {

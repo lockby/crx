@@ -115,7 +115,7 @@ fun ChapterImageList(
 
     LaunchedEffect(dataState) {
         if (dataState.state != State.DATA) {
-            lazyColumnState.scrollToItem(0)
+            lazyColumnState.scrollToItem(0, 0)
         }
     }
 
@@ -154,7 +154,7 @@ fun ChapterImageList(
         LocalOverscrollConfiguration provides null
     ) {
         CustomSwipeRefresh(state = refreshState,
-            refreshTriggerDistance = 160.dp,
+            refreshTriggerDistance = 140.dp,
             onRefresh = {
                 onNextClick()
             },

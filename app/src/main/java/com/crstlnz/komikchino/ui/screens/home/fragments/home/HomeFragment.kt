@@ -360,7 +360,6 @@ fun LazyListScope.featuredView(
                                     featureds[it].score.toString(),
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         color = Color.White,
-                                        fontWeight = FontWeight.SemiBold,
                                         shadow = Shadow(
                                             Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
                                         )
@@ -484,9 +483,7 @@ fun LazyListScope.sectionView(
                                     Spacer(Modifier.width(2.dp))
                                     Text(
                                         komikList[it].score.toString(),
-                                        style = MaterialTheme.typography.labelLarge.copy(
-                                            fontWeight = FontWeight.SemiBold
-                                        )
+                                        style = MaterialTheme.typography.labelLarge
                                     )
                                 }
                                 Spacer(Modifier.width(6.dp))

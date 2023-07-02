@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.data.api.source
 
+import android.util.Log
 import com.crstlnz.komikchino.data.api.KomikClient
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.Chapter
@@ -139,18 +140,20 @@ class VoidScans : ScraperBase {
         val body = api.search(page, query)
         val document = Jsoup.parse(body.string())
         val searchItems = arrayListOf<SearchResult.ExactMatch>()
-        val searchList = document.select("#book_list .item")
+        val searchList = document.select(".postbody .bs")
         for (search in searchList) {
-            val url = search.selectFirst(".text .title a")?.attr("href") ?: ""
+            val url = search.selectFirst("a")?.attr("href") ?: ""
             searchItems.add(
                 SearchResult.ExactMatch(
-                    title = search.selectFirst(".text .title a")?.text()?.trim() ?: "",
-                    img = search.selectFirst(".media .wrap_img img")?.attr("src") ?: "",
-                    score = null,
-                    type = "",
-                    isColored = false,
+                    title = search.selectFirst(".bigor .tt")?.text()?.trim() ?: "",
+                    img = search.selectFirst(".limit img.ts-post-image")?.attr("src") ?: "",
+                    score = search.selectFirst(".rating .numscore")?.text()?.trim()?.toFloatOrNull()
+                        ?: 0f,
+                    type = search.selectFirst(".limit .type")?.classNames()?.toList()?.getOrNull(1)
+                        ?: if (search.selectFirst(".novelabel") != null) "Novel" else "",
+                    isColored = search.selectFirst(".colored") != null,
                     isComplete = search.selectFirst(".status.Completed") != null,
-                    isHot = false,
+                    isHot = search.selectFirst(".hotx") != null,
                     url = url,
                     slug = getLastPathSegment(url) ?: ""
                 )
@@ -160,7 +163,7 @@ class VoidScans : ScraperBase {
         return SearchResult.SearchList(
             page = page,
             result = searchItems,
-            hasNext = document.selectFirst(".uk-pagination .next") != null
+            hasNext = document.selectFirst(".pagination .next") != null
         )
     }
 
@@ -251,23 +254,22 @@ class VoidScans : ScraperBase {
         val body: ResponseBody = if (intId != null) {
             api.getKomikById(id)
         } else {
-            api.getKomikPage(id)
+            api.getKomikBySlug(id)
         }
         val document = Jsoup.parse(body.string())
         return parseKomik(document)
     }
 
     override suspend fun getChapterList(id: String): List<Chapter> {
-        val body = api.getKomikPage(id)
+        val body = api.getKomikById(id)
         val document = Jsoup.parse(body.string())
         val title = document.selectFirst("#single_book .heading")?.text()
-        val mangaId = document.selectFirst(".bookmark")?.attr("data-id") ?: "0"
+        val mangaId = document.selectFirst(".bookmark")?.attr("data-id")
         val chapterList = arrayListOf<Chapter>()
         val chapters = document.select("#chapterlist ul li")
 
         for (chapter in chapters) {
             val url = chapter.selectFirst(".eph-num a")?.attr("href") ?: ""
-            val dlUrl = chapter.selectFirst(".dt a")?.attr("href") ?: ""
             chapterList.add(
                 Chapter(
                     title = chapter.selectFirst(".chbox .chapternum")?.text()
@@ -280,12 +282,11 @@ class VoidScans : ScraperBase {
                     ),
                     slug = getLastPathSegment(url) ?: "",
                     id = getLastPathSegment(url) ?: "",
-                    mangaId = id.toString(),
+                    mangaId = mangaId ?: id,
                     url = url,
                 )
             )
         }
-
         return chapterList
     }
 
@@ -296,14 +297,13 @@ class VoidScans : ScraperBase {
         for (img in imgs) {
             imgList.add(img.attr("src") ?: "")
         }
-        val id =
-            getQuery(document.selectFirst("link[rel='shortlink']")?.attr("href") ?: "", "p") ?: ""
+
         val breadCrumbs = document.select(".ts-breadcrumb li")
         val mangaTitle = breadCrumbs.getOrNull(1)?.selectFirst("span")?.text()?.trim()
         val chapterTitle =
-            breadCrumbs.getOrNull(2)?.selectFirst("span")?.text()?.replace(mangaTitle ?: "", "")
-                ?.replace("–", "")
+            document.selectFirst(".headpost .entry-title")?.text()?.split("–")?.getOrNull(1)
                 ?.trim() ?: ""
+
 
         val slug =
             getLastPathSegment(breadCrumbs.getOrNull(2)?.selectFirst("a")?.attr("href") ?: "") ?: ""
@@ -320,7 +320,7 @@ class VoidScans : ScraperBase {
         val mangaSlug =
             getLastPathSegment(document.selectFirst(".allc a")?.attr("href") ?: "") ?: ""
         return ChapterApi(
-            id = id,
+            id = slug,
             imgs = imgList,
             title = chapterTitle,
             slug = slug,
