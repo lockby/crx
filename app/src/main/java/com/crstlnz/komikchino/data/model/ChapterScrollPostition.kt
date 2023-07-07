@@ -1,7 +1,5 @@
 package com.crstlnz.komikchino.data.model
 
-import androidx.compose.ui.geometry.Offset
-
 
 data class ImageSize(
     val calculated: Boolean,

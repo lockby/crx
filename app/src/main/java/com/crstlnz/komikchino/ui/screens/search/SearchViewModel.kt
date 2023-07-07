@@ -1,6 +1,5 @@
 package com.crstlnz.komikchino.ui.screens.search
 
-import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
@@ -11,7 +10,6 @@ import com.crstlnz.komikchino.data.model.SearchHistoryModel
 import com.crstlnz.komikchino.data.model.SearchResult
 import com.crstlnz.komikchino.data.util.StorageHelper
 import com.crstlnz.komikchino.ui.util.ScraperViewModel
-import com.crstlnz.komikchino.ui.util.ViewModelBase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
