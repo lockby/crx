@@ -42,7 +42,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
@@ -58,7 +57,7 @@ import com.crstlnz.komikchino.ui.util.checkWriteExternalPermission
 fun CheckUpdateScreen(navController: NavController) {
     val context = LocalContext.current
     var receiver: BroadcastReceiver? = remember { null }
-    ComposableLifecycle() { _, event ->
+    ComposableLifecycle { _, event ->
         if (event == Lifecycle.Event.ON_DESTROY) {
             if (receiver != null) {
                 context.unregisterReceiver(receiver)
@@ -73,11 +72,13 @@ fun CheckUpdateScreen(navController: NavController) {
         dataState.getDataOrNull()?.tagName ?: "",
         getAppVersion(context)
     )
+//    val isUpdateAvailable = versionCheck(dataState.getDataOrNull()?.tagName ?: "", "")
     val updatesVersion = dataState.getDataOrNull()?.tagName ?: ""
     val downloadUrl = dataState.getDataOrNull()?.assets?.getOrNull(0)?.browserDownloadUrl ?: ""
     val name = dataState.getDataOrNull()?.name ?: ""
 
     val isGranted = checkWriteExternalPermission()
+
     fun downloadUpdates() {
         if (isGranted) {
             isUpdating = true

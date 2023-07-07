@@ -10,13 +10,15 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
-import com.crstlnz.komikchino.data.database.komik.KomikHistoryItem
+import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
 import com.crstlnz.komikchino.data.util.convertToStringURL
-import com.crstlnz.komikchino.ui.screens.UnblockCloudflare
 import com.crstlnz.komikchino.ui.screens.CommentScreen
+import com.crstlnz.komikchino.ui.screens.LoginScreen
+import com.crstlnz.komikchino.ui.screens.UnblockCloudflare
 import com.crstlnz.komikchino.ui.screens.chapter.ChapterScreen
 import com.crstlnz.komikchino.ui.screens.home.HomeScreen
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.AppInfoScreen
+import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.CacheScreen
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.HomeSelection
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.ServerSelectScreen
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.checkupdate.CheckUpdateScreen
@@ -37,6 +39,7 @@ enum class ContentType(private val value: String) {
 
 object MainNavigation {
     const val HOME = "home"
+    const val LOGIN = "login"
     const val KOMIKDETAIL = "komik"
     const val SEARCH = "search"
     const val CHAPTER = "chapter"
@@ -47,6 +50,7 @@ object MainNavigation {
 
     const val SERVER_SELECTION = "server_select"
     const val HOME_SELECTION = "home_select"
+    const val CACHE_SCREEN = "cache_screen"
     const val APP_INFO = "app_info"
 
     const val STORAGE_REQUEST = "storage_request"
@@ -65,6 +69,22 @@ object MainNavigation {
         )
     }
 
+    fun toHome(navController: NavController) {
+        navController.navigate(HOME) {
+            popUpTo(HOME) {
+                inclusive = true
+            }
+        }
+    }
+
+    fun toLogin(navController: NavController) {
+        navController.navigate(LOGIN) {
+            popUpTo(LOGIN) {
+                inclusive = true
+            }
+        }
+    }
+
     fun toChapter(
         navController: NavController,
         chapterSlug: String,
@@ -79,7 +99,7 @@ object MainNavigation {
         navController.navigate("${CLOUDFLARE_UNBLOCK}/${URLEncoder.encode(url, "utf-8")}")
     }
 
-    private fun toWebView(navController: NavController, url: String, title: String? = null) {
+    fun toWebView(navController: NavController, url: String, title: String? = null) {
         val route = if (title.isNullOrEmpty()) {
             "${WEBVIEW}/${URLEncoder.encode(url, "utf-8")}"
         } else {
@@ -152,6 +172,12 @@ fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
         MainNavigation.HOME,
     ) {
         HomeScreen(navController)
+    }
+
+    composable(
+        MainNavigation.LOGIN,
+    ) {
+        LoginScreen(navController)
     }
 
     composable(
@@ -244,6 +270,10 @@ fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
 
     composable(MainNavigation.HOME_SELECTION) {
         HomeSelection(navController)
+    }
+
+    composable(MainNavigation.CACHE_SCREEN) {
+        CacheScreen(navController)
     }
 
     composable(MainNavigation.APP_INFO) {

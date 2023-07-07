@@ -26,4 +26,11 @@ interface KiryuuScrapeAPI {
 
     @GET("/{slug}")
     suspend fun getChapterBySlug(@Path("slug") slug: String): ResponseBody
+
+    @GET("/manga/")
+    suspend fun searchByGenre(
+        @Query("genre[]") genreList: List<String>,
+        @Query("page") page: Int,
+        @Query("order") order: String = "popular"
+    ): ResponseBody
 }

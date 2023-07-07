@@ -1,20 +1,16 @@
 package com.crstlnz.komikchino.ui.screens.chapter
 
-import android.util.Log
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.crstlnz.komikchino.data.api.ScraperBase
-import com.crstlnz.komikchino.data.database.chapterhistory.ChapterHistoryItem
-import com.crstlnz.komikchino.data.database.chapterhistory.ChapterHistoryRepository
-import com.crstlnz.komikchino.data.database.favorite.FavoriteKomikItem
-import com.crstlnz.komikchino.data.database.favorite.FavoriteKomikRepository
-import com.crstlnz.komikchino.data.database.komik.KomikHistoryItem
-import com.crstlnz.komikchino.data.database.komik.KomikHistoryRepository
+import com.crstlnz.komikchino.data.database.model.ChapterHistoryItem
+import com.crstlnz.komikchino.data.database.model.FavoriteKomikItem
+import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
+import com.crstlnz.komikchino.data.database.repository.ChapterHistoryRepository
+import com.crstlnz.komikchino.data.database.repository.FavoriteKomikRepository
+import com.crstlnz.komikchino.data.database.repository.KomikHistoryRepository
 import com.crstlnz.komikchino.data.model.Chapter
-import com.crstlnz.komikchino.data.model.ChapterHistoryData
-import com.crstlnz.komikchino.data.model.ChapterApi
 import com.crstlnz.komikchino.data.model.ChapterData
 import com.crstlnz.komikchino.data.model.ChapterScrollPostition
 import com.crstlnz.komikchino.data.model.DataState
@@ -27,15 +23,11 @@ import com.crstlnz.komikchino.data.util.decodeStringURL
 import com.crstlnz.komikchino.ui.util.ScraperViewModel
 import com.fasterxml.jackson.databind.type.TypeFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -71,11 +63,7 @@ class ChapterViewModel @Inject constructor(
         )
     )
 
-    //    private var preloadJob: Job? = Job()
-//    private var asyncResults: List<Deferred<ImageBitmap?>> = listOf()
-    private var chapterHistoryData = ChapterHistoryData()
     var komikData: KomikHistoryItem? = null
-
     private var isChapterListFetched = false
 
     init {
@@ -101,16 +89,7 @@ class ChapterViewModel @Inject constructor(
             ) ?: ""
 
         cacheKey = "chapter-${id.ifEmpty { slug }}"
-        load(false)
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                chapterHistoryData = ChapterHistoryData(
-                    id,
-                    chapterRepository.get(id)
-                )
-            }
-
-        }
+        load(force = false, isManual = false)
         viewModelScope.launch {
             _state.collect {
                 if (it.state == State.DATA && !isChapterListFetched) {
@@ -141,7 +120,7 @@ class ChapterViewModel @Inject constructor(
         if (komik != null) {
             viewModelScope.launch {
                 if (!isFavorite) {
-                    favoriteRepository.deleteById(komik.id)
+                    favoriteRepository.delete(komik.id)
                 } else {
                     favoriteRepository.add(
                         FavoriteKomikItem(
@@ -215,7 +194,7 @@ class ChapterViewModel @Inject constructor(
     fun loadChapter(id: String) {
         this.id = id
         cacheKey = "chapter-${id}"
-        load(false)
+        load(force = false, isManual = false)
     }
 
     fun loadChapterList(force: Boolean = true) {
@@ -272,5 +251,13 @@ class ChapterViewModel @Inject constructor(
                 disqusConfig = chapterApi.disqusConfig
             )
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // Stop the listening when the ViewModel is cleared
+        chapterRepository.close()
+        favoriteRepository.close()
+        komikRepository.close()
     }
 }

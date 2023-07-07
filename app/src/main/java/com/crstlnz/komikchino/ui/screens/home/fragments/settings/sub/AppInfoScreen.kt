@@ -21,7 +21,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.R
-import com.crstlnz.komikchino.ui.components.ImageView
 
 @Composable
 fun AppInfoScreen(navController: NavController) {
@@ -32,7 +31,7 @@ fun AppInfoScreen(navController: NavController) {
     val pkgInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_META_DATA)
     val appName = packageManager.getApplicationLabel(appInfo).toString()
     val versionName = pkgInfo.versionName
-    Scaffold() {
+    Scaffold {
         Surface(Modifier.padding(it)) {
             LazyColumn(Modifier.fillMaxSize()) {
                 item {

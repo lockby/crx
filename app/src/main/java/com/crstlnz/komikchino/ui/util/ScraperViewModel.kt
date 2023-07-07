@@ -23,7 +23,7 @@ open class ScraperViewModel<T>(
     private val alwaysRefresh: Boolean = false,
 ) : ViewModel() {
     protected val _state = MutableStateFlow<DataState<T>>(DataState.Idle)
-    protected open var cacheKey: String = "";
+    protected open var cacheKey: String = ""
 
     private val _onError = MutableSharedFlow<String>()
     val onError = _onError.asSharedFlow()
@@ -59,7 +59,7 @@ open class ScraperViewModel<T>(
             }
         } catch (e: Exception) {
             Log.e("ERROR", e.stackTraceToString())
-            val errorString = "Fetch Fail";
+            val errorString = "Fetch Fail"
             _onError.emit(errorString)
             stateData.update {
                 DataState.Error(errorString)
@@ -76,11 +76,7 @@ open class ScraperViewModel<T>(
         type: JavaType
     ) {
         this.loadWithCacheMain(
-            key,
-            fetch,
-            stateData,
-            StorageHelper<T>(this.storage.getContext(), "CACHE", type),
-            force
+            key, fetch, stateData, StorageHelper<T>(this.storage.getContext(), "CACHE", type), force
         )
     }
 
@@ -92,11 +88,7 @@ open class ScraperViewModel<T>(
         force: Boolean = true,
     ) {
         this.loadWithCacheMain(
-            key,
-            fetch,
-            stateData,
-            storage,
-            force
+            key, fetch, stateData, storage, force
         )
     }
 
@@ -107,19 +99,29 @@ open class ScraperViewModel<T>(
             AppSettings.cloudflareState.collect {
                 if (!it.isBlocked && !isFirstLaunch) {
                     withContext(Dispatchers.IO) {
-                        Thread.sleep(1_000)
-                        load()
+                        Thread.sleep(500)
+                        if (!it.autoReloadConsumed) {
+                            AppSettings.cloudflareState.update { state ->
+                                state.copy(autoReloadConsumed = true)
+                            }
+                            load(force = true, isManual = false)
+                        }
                     }
                 }
             }
         }
     }
 
-    fun load(force: Boolean = true) {
+    fun load(force: Boolean = true, isManual: Boolean = true) {
+        if (isManual && AppSettings.cloudflareState.value.mustManualTrigger) {
+            AppSettings.cloudflareState.update {
+                it.copy(mustManualTrigger = false)
+            }
+        }
+
         viewModelScope.launch {
             loadWithCache(
-                cacheKey,
-                fetch = {
+                cacheKey, fetch = {
                     fetchData()
                 }, _state, storage, alwaysRefresh || force
             )

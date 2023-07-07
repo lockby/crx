@@ -2,7 +2,8 @@
 <resources>
     <style name="Theme.KomikChino" parent="android:Theme.Material.Light.NoActionBar" >
         <item name="android:windowBackground">@color/black_gray</item>
-        <item name="android:background">@color/black_gray</item>
         <item name="android:colorBackground">@color/black_gray</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/black_gray</item>
     </style>
 </resources>

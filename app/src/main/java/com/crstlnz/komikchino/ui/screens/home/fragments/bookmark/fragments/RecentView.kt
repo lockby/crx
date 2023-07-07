@@ -1,7 +1,10 @@
 package com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.fragments
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,8 +27,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,23 +45,24 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.crstlnz.komikchino.R
-import com.crstlnz.komikchino.data.database.chapterhistory.ChapterHistoryItem
-import com.crstlnz.komikchino.data.database.komik.KomikHistoryItem
-import com.crstlnz.komikchino.data.database.komik.KomikReadHistory
+import com.crstlnz.komikchino.data.database.model.ChapterHistoryItem
+import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
+import com.crstlnz.komikchino.data.database.model.KomikReadHistory
 import com.crstlnz.komikchino.ui.components.ErrorView
 import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.BookmarkViewModel
 import com.crstlnz.komikchino.ui.util.getComicTypeColor
-import com.crstlnz.komikchino.ui.util.noRippleClickable
 
 
 @Composable
 fun RecentView(
     viewModel: BookmarkViewModel,
     onKomikClick: (komik: KomikHistoryItem) -> Unit = {},
-    onChapterClick: (komik: KomikHistoryItem, chapter: ChapterHistoryItem) -> Unit = { _, _ -> }
+    onChapterClick: (komik: KomikHistoryItem, chapter: ChapterHistoryItem) -> Unit = { _, _ -> },
+    pageId: String
 ) {
-    val data by viewModel.histories.observeAsState()
+    val data by viewModel.histories.collectAsState()
+
     if (data == null) {
         LoadingView()
     } else if (data!!.isEmpty()) {
@@ -64,34 +70,73 @@ fun RecentView(
             EmptyView()
         }
     } else {
-        val sortedData = data!!.sortedByDescending { it.chapter?.data_id }
-        RecentListView(viewModel, sortedData, onKomikClick = {
-            onKomikClick(it)
-        }, onChapterClick = { komik, chapter ->
-            onChapterClick(komik, chapter)
-        })
+        val sortedData = data!!.sortedByDescending { it.chapter?.updatedAt }
+        RecentListView(
+            viewModel,
+            sortedData,
+            onKomikClick = {
+                onKomikClick(it)
+            },
+            pageId = pageId,
+            onChapterClick = { komik, chapter ->
+                onChapterClick(komik, chapter)
+            })
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RecentListView(
     viewModel: BookmarkViewModel,
     histories: List<KomikReadHistory>,
     onKomikClick: (komik: KomikHistoryItem) -> Unit,
-    onChapterClick: (komik: KomikHistoryItem, chapter: ChapterHistoryItem) -> Unit
+    onChapterClick: (komik: KomikHistoryItem, chapter: ChapterHistoryItem) -> Unit,
+    pageId: String
 ) {
-    LazyColumn(contentPadding = PaddingValues(vertical = 10.dp)) {
+    val isEditMode = viewModel.editState.contains(pageId)
+    LaunchedEffect(isEditMode) {
+        if (isEditMode) {
+            viewModel.setData(pageId, histories.map { it.komik.id })
+        } else {
+            viewModel.deselectAll(pageId)
+        }
+    }
+
+
+    LazyColumn(
+        contentPadding = PaddingValues(vertical = 10.dp),
+        modifier = Modifier.absoluteOffset(0.dp, 0.dp)
+    ) {
         items(histories.size) {
             val komik = histories[it].komik
             val chapter = histories[it].chapter
-            Box(Modifier.noRippleClickable {
-                if (chapter != null) {
-                    onChapterClick(komik, chapter)
-                } else {
-                    onKomikClick(komik)
-                }
-
-            }) {
+            Box(
+                Modifier
+                    .background(
+                        color = if (viewModel
+                                .getSelected(pageId)
+                                .contains(komik.id)
+                        ) Color.White.copy(
+                            alpha = 0.1f
+                        ) else Color.Transparent
+                    )
+                    .combinedClickable(
+                        onClick = {
+                            if (isEditMode) {
+                                viewModel.select(pageId, komik.id)
+                            } else {
+                                if (chapter != null) {
+                                    onChapterClick(komik, chapter)
+                                } else {
+                                    onKomikClick(komik)
+                                }
+                            }
+                        },
+                        onLongClick = {
+                            viewModel.edit(pageId)
+                            viewModel.select(pageId, komik.id)
+                        }
+                    )) {
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -100,10 +145,14 @@ fun RecentListView(
                     Box(
                         modifier = Modifier
                             .width(90.dp)
-                            .aspectRatio(5f / 7f)
-                            .noRippleClickable {
-                                onKomikClick(komik)
+                            .clickable {
+                                if (isEditMode) {
+                                    viewModel.select(pageId, komik.id)
+                                } else {
+                                    onKomikClick(komik)
+                                }
                             }
+                            .aspectRatio(5f / 7f)
                             .clip(RoundedCornerShape(8.dp))
                     ) {
                         ImageView(
@@ -219,7 +268,7 @@ fun RecentGridView(
                             })
                     }
                     .aspectRatio(5f / 7f), shape = RoundedCornerShape(8.dp)) {
-                Box() {
+                Box {
                     ImageView(
                         url = histories[it].komik.img,
                         contentDescription = "Thumbnail",

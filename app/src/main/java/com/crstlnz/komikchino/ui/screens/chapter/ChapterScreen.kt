@@ -1,6 +1,5 @@
 package com.crstlnz.komikchino.ui.screens.chapter
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -18,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -59,7 +57,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.data.model.Chapter
-import com.crstlnz.komikchino.data.model.ChapterApi
 import com.crstlnz.komikchino.data.model.ChapterData
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
@@ -79,12 +76,12 @@ import kotlinx.coroutines.launch
 fun ChapterScreen(navController: NavController, chapterTitle: String) {
     val v: ChapterViewModel = hiltViewModel()
     val systemUiController = rememberSystemUiController()
+    val scope = rememberCoroutineScope()
     DisposableEffect(Unit) {
         onDispose {
             systemUiController.isSystemBarsVisible = true
         }
     }
-    val scope = rememberCoroutineScope()
 
     Scaffold(
         Modifier.fillMaxSize(), contentWindowInsets = WindowInsets.ime
@@ -231,6 +228,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                     }
                                 },
                                 onNextClick = {
+                                    if (!navShow) navShow = true
                                     val chapter =
                                         chapterList.getDataOrNull()?.getOrNull(chapterPosition + 1)
                                     if (chapter != null) {

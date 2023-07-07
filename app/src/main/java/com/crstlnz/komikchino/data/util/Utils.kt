@@ -3,12 +3,12 @@ package com.crstlnz.komikchino.data.util
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Resources.getSystem
-import android.util.Log
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.model.DisqusConfig
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import java.io.File
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -17,6 +17,8 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.regex.Pattern
+import kotlin.math.log10
+import kotlin.math.pow
 
 //val Int.dp: Int get() = (this / getSystem().displayMetrics.density).toInt()
 val Int.px: Int get() = (this * getSystem().displayMetrics.density).toInt()
@@ -294,5 +296,44 @@ fun getVoidScansDisqus(string: String): DisqusConfig? {
         )
     } else {
         null
+    }
+}
+
+
+fun getCacheFolderSize(context: Context, folderPath: String): Long {
+    val cacheDir = context.cacheDir.resolve("image_cache")
+    return getFolderSize(cacheDir)
+}
+
+fun getFolderSize(directory: File): Long {
+    var size: Long = 0
+
+    directory.listFiles()?.forEach { file ->
+        size += if (file.isDirectory) {
+            getFolderSize(file)
+        } else {
+            file.length()
+        }
+    }
+
+    return size
+}
+
+fun formatSize(size: Long): String {
+    if (size <= 0) return "0 B"
+    val units = arrayOf("B", "KB", "MB", "GB", "TB")
+    val digitGroups = (log10(size.toDouble()) / log10(1024.0)).toInt()
+    return String.format("%.2f %s", size / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
+}
+
+fun clearCache(context: Context, cachePath: String) {
+    val cacheDir = context.cacheDir.resolve(cachePath)
+    if (cacheDir.exists() && cacheDir.isDirectory) {
+        val cacheFiles = cacheDir.listFiles()
+        if (cacheFiles != null) {
+            for (file in cacheFiles) {
+                file.delete()
+            }
+        }
     }
 }

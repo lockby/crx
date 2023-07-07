@@ -69,6 +69,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.LocalStatusBarPadding
 import com.crstlnz.komikchino.R
+import com.crstlnz.komikchino.config.AppSettings
+import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.SearchResult
 import com.crstlnz.komikchino.data.model.State
@@ -76,12 +78,10 @@ import com.crstlnz.komikchino.data.util.getLastPathSegment
 import com.crstlnz.komikchino.ui.components.ErrorView
 import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.navigations.MainNavigation
-import com.crstlnz.komikchino.ui.theme.Blue
-import com.crstlnz.komikchino.ui.theme.Green
-import com.crstlnz.komikchino.ui.theme.Red
 import com.crstlnz.komikchino.ui.theme.WhiteGray
 import com.crstlnz.komikchino.ui.theme.Yellow
 import com.crstlnz.komikchino.ui.util.OnBottomReached
+import com.crstlnz.komikchino.ui.util.getComicTypeColor
 import com.crstlnz.komikchino.ui.util.noRippleClickable
 import kotlinx.coroutines.launch
 
@@ -95,7 +95,7 @@ fun SearchScreen(navController: NavController) {
     var text by remember { mutableStateOf(v.getCurrentQuery()) }
     val dataState by v.state.collectAsState()
 
-    LaunchedEffect(Unit){
+    LaunchedEffect(Unit) {
         v.exactMatch.collect {
             if (it != null) {
                 v.consumeExactMatch()
@@ -115,7 +115,11 @@ fun SearchScreen(navController: NavController) {
     }
 
     Scaffold(contentWindowInsets = WindowInsets.ime, modifier = Modifier.fillMaxSize()) {
-        Surface(Modifier.padding(it).fillMaxSize()) {
+        Surface(
+            Modifier
+                .padding(it)
+                .fillMaxSize()
+        ) {
             Column {
                 Box(
                     modifier = Modifier
@@ -192,12 +196,21 @@ fun SearchScreen(navController: NavController) {
                         }
 
                         State.ERROR -> {
-                            ErrorView(resId = R.drawable.error,
-                                message = stringResource(R.string.unknown_error),
-                                buttonName = stringResource(R.string.retry),
-                                onClick = {
-                                    v.load()
-                                })
+                            if (AppSettings.komikServer == KomikServer.MANGAKATANA && text.length < 3) {
+                                ErrorView(
+                                    resId = R.drawable.space,
+                                    message = "Please enter at least 3 characters...",
+                                    showButton = false
+                                )
+                            } else {
+                                ErrorView(resId = R.drawable.error,
+                                    message = stringResource(R.string.unknown_error),
+                                    buttonName = stringResource(R.string.retry),
+                                    onClick = {
+                                        v.load()
+                                    })
+                            }
+
                         }
 
                         State.IDLE -> {}
@@ -358,11 +371,11 @@ fun SearchItemView(navController: NavController, data: SearchResult.ExactMatch) 
                             .clip(
                                 RoundedCornerShape(4.dp)
                             )
-                            .background(color = if (data.type == "Manga") Blue else (if (data.type == "Manhwa") Green else Red))
+                            .background(color = getComicTypeColor(data.type))
                     ) {
                         Text(
                             data.type,
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                         )
                     }

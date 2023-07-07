@@ -1,6 +1,5 @@
 package com.crstlnz.komikchino.data.api.source
 
-import android.util.Log
 import com.crstlnz.komikchino.data.api.KomikClient
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.Chapter
@@ -8,8 +7,11 @@ import com.crstlnz.komikchino.data.model.ChapterApi
 import com.crstlnz.komikchino.data.model.ChapterUpdate
 import com.crstlnz.komikchino.data.model.FeaturedComic
 import com.crstlnz.komikchino.data.model.Genre
+import com.crstlnz.komikchino.data.model.GenreLink
+import com.crstlnz.komikchino.data.model.GenreSearch
 import com.crstlnz.komikchino.data.model.HomeData
 import com.crstlnz.komikchino.data.model.KomikDetail
+import com.crstlnz.komikchino.data.model.KomikSearchResult
 import com.crstlnz.komikchino.data.model.LatestUpdate
 import com.crstlnz.komikchino.data.model.LatestUpdatePage
 import com.crstlnz.komikchino.data.model.SearchResult
@@ -17,7 +19,6 @@ import com.crstlnz.komikchino.data.model.Section
 import com.crstlnz.komikchino.data.model.SectionComic
 import com.crstlnz.komikchino.data.model.SimilarTitle
 import com.crstlnz.komikchino.data.util.getLastPathSegment
-import com.crstlnz.komikchino.data.util.getQuery
 import com.crstlnz.komikchino.data.util.getVoidScansDisqus
 import com.crstlnz.komikchino.data.util.parseDateString
 import com.crstlnz.komikchino.data.util.parseRelativeTime
@@ -38,11 +39,11 @@ class VoidScans : ScraperBase {
         for (featured in featureds) {
             val url = featured.selectFirst(".poster a")?.attr("href") ?: ""
             // mangakatana tak ade genre di home
-            val genreList = arrayListOf<Genre>()
+            val genreLinkList = arrayListOf<GenreLink>()
             val genres = featured.select(".extras .extra-category a")
             for (genre in genres) {
-                genreList.add(
-                    Genre(
+                genreLinkList.add(
+                    GenreLink(
                         title = genre.text() ?: "",
                         url = genre.attr("href") ?: "",
                         slug = getLastPathSegment(genres.attr("href") ?: "") ?: ""
@@ -55,7 +56,7 @@ class VoidScans : ScraperBase {
                     url = url,
                     description = featured.selectFirst(".excerpt > p:nth-child(3)")?.text()?.trim()
                         ?: "No description.",
-                    genre = genreList,
+                    genreLink = genreLinkList,
                     type = featured.selectFirst(".title .release-year")?.text()?.trim() ?: "",
                     img = featured.selectFirst(".poster img")?.attr("src") ?: "",
                     slug = getLastPathSegment(url) ?: "",
@@ -86,7 +87,11 @@ class VoidScans : ScraperBase {
 
         val section = Section(
             title = document.selectFirst(".hothome .releases h2")?.text()?.trim()
-                ?.split(" ")?.joinToString(" ") { it.capitalize(Locale.ROOT) } ?: "",
+                ?.split(" ")?.joinToString(" ") { it.replaceFirstChar {
+                    if (it.isLowerCase()) it.titlecase(
+                        Locale.ROOT
+                    ) else it.toString()
+                } } ?: "",
             list = sectionList
         )
 
@@ -172,13 +177,13 @@ class VoidScans : ScraperBase {
         val table = document.select(".infotable tbody tr")
         val id = document.selectFirst(".bookmark")?.attr("data-id")?.toIntOrNull() ?: 0
         val title = document.selectFirst(".infox .entry-title")?.text()
-        val genreList = arrayListOf<Genre>()
+        val genreLinkList = arrayListOf<GenreLink>()
         val genres = document.select(".seriestugenre a")
 
         for (genre in genres) {
             val url = genre.attr("url") ?: ""
-            genreList.add(
-                Genre(
+            genreLinkList.add(
+                GenreLink(
                     title = genre.text(),
                     slug = getLastPathSegment(url) ?: "",
                     url = url,
@@ -242,7 +247,7 @@ class VoidScans : ScraperBase {
             type = document.selectFirst(".tsinfo .imptdt:nth-child(2) a")?.text()?.trim() ?: "",
             description = document.selectFirst(".entry-content p")?.text()?.trim() ?: "",
             score = document.selectFirst(".rating .num")?.text()?.trim()?.toFloatOrNull() ?: 0f,
-            genre = genreList,
+            genreLinks = genreLinkList,
             similar = similarList,
             chapters = chapterList,
             disqusConfig = getVoidScansDisqus(document.html())
@@ -339,4 +344,51 @@ class VoidScans : ScraperBase {
         val document = Jsoup.parse(body.string())
         return parseChapter(document)
     }
+
+    override suspend fun searchByGenre(genreList: List<Genre>, page: Int): GenreSearch {
+        val document = fetch {
+            api.searchByGenre(genreList.map { it.id }, page)
+        }
+
+        val genreListElements = document.select(".quickfilter .genrez li")
+        val genreListResult = arrayListOf<Genre>()
+        for (genre in genreListElements) {
+            genreListResult.add(
+                Genre(
+                    id = genre.selectFirst("input")?.attr("value")?.trim() ?: "",
+                    title = genre.selectFirst("label")?.text()?.trim() ?: ""
+                )
+            )
+        }
+
+        val searchItems = arrayListOf<KomikSearchResult>()
+        val searchList = document.select(".postbody .bs")
+        for (search in searchList) {
+            val url = search.selectFirst("a")?.attr("href") ?: ""
+            searchItems.add(
+                KomikSearchResult(
+                    title = search.selectFirst(".bigor .tt")?.text()?.trim() ?: "",
+                    img = search.selectFirst(".limit img.ts-post-image")?.attr("src") ?: "",
+                    score = search.selectFirst(".rating .numscore")?.text()?.trim()?.toFloatOrNull()
+                        ?: 0f,
+                    type = search.selectFirst(".limit .type")?.classNames()?.toList()?.getOrNull(1)
+                        ?: if (search.selectFirst(".novelabel") != null) "Novel" else "",
+                    isColored = search.selectFirst(".colored") != null,
+                    isComplete = search.selectFirst(".status.Completed") != null,
+                    isHot = search.selectFirst(".hotx") != null,
+                    url = url,
+                    slug = getLastPathSegment(url) ?: ""
+                )
+            )
+        }
+
+        val hasNext = document.selectFirst(".hpage .r") != null
+        return GenreSearch(
+            genreList = genreListResult,
+            page = page,
+            hasNext = hasNext,
+            result = searchItems
+        )
+    }
+
 }

@@ -1,14 +1,15 @@
 package com.crstlnz.komikchino.ui.screens.latestupdate
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
-import com.crstlnz.komikchino.data.model.DataState
+import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
+import com.crstlnz.komikchino.data.database.repository.KomikHistoryRepository
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
+import com.crstlnz.komikchino.data.model.FilteredUpdate
 import com.crstlnz.komikchino.data.model.LatestUpdate
-import com.crstlnz.komikchino.data.model.SearchResult
+import com.crstlnz.komikchino.data.model.State
 import com.crstlnz.komikchino.data.util.StorageHelper
 import com.crstlnz.komikchino.ui.screens.search.InfiniteState
 import com.crstlnz.komikchino.ui.util.ScraperViewModel
@@ -17,25 +18,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.lang.Exception
 import javax.inject.Inject
 import javax.inject.Named
 
 
 @HiltViewModel
 class LatestUpdateViewModel @Inject constructor(
+    private val historyRepository: KomikHistoryRepository,
     @Named("latestUpdateCache") private val storage: StorageHelper<List<LatestUpdate>>,
     private val api: ScraperBase
 ) : ScraperViewModel<List<LatestUpdate>>(storage, true) {
     override var cacheKey = "latestUpdate"
     private var page = 1
 
-    init {
-        load(false)
-    }
 
     private var lastFetch = 0L
     private val mustDelay = 2800L
@@ -60,10 +59,12 @@ class LatestUpdateViewModel @Inject constructor(
             try {
                 val data = fetchSearch(page)
                 if (data.isNotEmpty()) {
-                    _state.update {
-                        val oldData = it.getDataOrNull() ?: arrayListOf()
-                        DataState.Success(oldData.plus(data))
+                    _filteredUpdate.update {
+                        it.copy(
+                            result = it.result + data
+                        )
                     }
+
                     _infiniteState.update { InfiniteState.IDLE }
                 } else {
                     _infiniteState.update { InfiniteState.FINISH }
@@ -74,8 +75,6 @@ class LatestUpdateViewModel @Inject constructor(
 
         }
     }
-
-    private val _exactMatch = MutableStateFlow<SearchResult.ExactMatch?>(null)
 
     private suspend fun fetchSearch(page: Int = 1): List<LatestUpdate> {
         val result = api.getLatestUpdate(page)
@@ -88,5 +87,34 @@ class LatestUpdateViewModel @Inject constructor(
 
     override suspend fun fetchData(): List<LatestUpdate> {
         return fetchSearch(1)
+    }
+
+    private val _filteredUpdate = MutableStateFlow(FilteredUpdate())
+    val filteredUpdate = _filteredUpdate.asStateFlow()
+    private var komikHistory = mutableListOf<KomikHistoryItem>()
+
+    init {
+        viewModelScope.launch {
+            komikHistory = historyRepository.getKomikHistories().toMutableList()
+            _state.collectLatest { state ->
+                if (state.state == State.DATA) {
+                    _filteredUpdate.update { _ ->
+                        val data = state.getDataOrNull()!!
+                        val highlight = data.filter { item ->
+                            komikHistory.find {
+                                it.slug == item.slug
+                            } != null
+                        }
+
+                        FilteredUpdate(
+                            highlight = highlight,
+                            result = data - highlight.toSet()
+                        )
+
+                    }
+                }
+            }
+        }
+        load(force = false, isManual = false)
     }
 }

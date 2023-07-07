@@ -1,7 +1,5 @@
 package com.crstlnz.komikchino.data.model
 
-import java.util.Date
-
 data class HomeData(
     var featured: List<FeaturedComic> = listOf(),
 //    val mangaUpdates: List<LatestUpdate>,
@@ -17,7 +15,7 @@ data class FeaturedComic(
     var title: String = "",
     var url: String = "",
     val description: String = "",
-    val genre: List<Genre> = listOf(),
+    val genreLink: List<GenreLink> = listOf(),
     val type: String = "",
     val img: String = "",
     val slug: String = "",

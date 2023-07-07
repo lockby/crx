@@ -1,9 +1,8 @@
 package com.crstlnz.komikchino.data.model
 
 import androidx.compose.ui.graphics.ImageBitmap
-import com.crstlnz.komikchino.data.database.chapterhistory.ChapterHistoryItem
-import com.crstlnz.komikchino.data.database.komik.KomikHistoryItem
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.crstlnz.komikchino.data.database.model.ChapterHistoryItem
+import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
 
 
 data class ChapterData(

@@ -10,7 +10,7 @@ sealed class DataState<out T>(
 
     inline fun <reified T> DataState<T>.getDataOrNull(): T? {
         return if (this is Success<*> && data is T) {
-            data as T
+            data
         } else {
             null
         }

@@ -8,8 +8,11 @@ import com.crstlnz.komikchino.data.model.ChapterApi
 import com.crstlnz.komikchino.data.model.ChapterUpdate
 import com.crstlnz.komikchino.data.model.FeaturedComic
 import com.crstlnz.komikchino.data.model.Genre
+import com.crstlnz.komikchino.data.model.GenreLink
+import com.crstlnz.komikchino.data.model.GenreSearch
 import com.crstlnz.komikchino.data.model.HomeData
 import com.crstlnz.komikchino.data.model.KomikDetail
+import com.crstlnz.komikchino.data.model.KomikSearchResult
 import com.crstlnz.komikchino.data.model.LatestUpdate
 import com.crstlnz.komikchino.data.model.LatestUpdatePage
 import com.crstlnz.komikchino.data.model.SearchResult
@@ -36,11 +39,11 @@ class Mangakatana : ScraperBase {
         for (featured in featureds) {
             val url = featured.selectFirst(".media .wrap_img a")?.attr("href") ?: ""
             // mangakatana tak ade genre di home
-            val genreList = arrayListOf<Genre>()
+            val genreLinkList = arrayListOf<GenreLink>()
             val genres = featured.select(".genres a")
             for (genre in genres) {
-                genreList.add(
-                    Genre(
+                genreLinkList.add(
+                    GenreLink(
                         title = genre.text() ?: "",
                         url = genre.attr("href") ?: "",
                         slug = getLastPathSegment(genres.attr("href") ?: "") ?: ""
@@ -52,7 +55,7 @@ class Mangakatana : ScraperBase {
                     title = featured.selectFirst(".text .title a")?.text()?.trim() ?: "",
                     url = url,
                     description = featured.selectFirst(".text .summary")?.text()?.trim() ?: "",
-                    genre = genreList,
+                    genreLink = genreLinkList,
                     type = "",
                     img = featured.selectFirst(".media .wrap_img img")?.attr("src") ?: "",
                     slug = getLastPathSegment(url) ?: "",
@@ -79,15 +82,16 @@ class Mangakatana : ScraperBase {
             )
         }
 
-        val section = Section(
-            title = document.selectFirst("#hot_update .heading")?.text()?.trim()
-                ?.split(" ")?.joinToString(" ") { it.capitalize(Locale.ROOT) } ?: "",
-            list = sectionList
-        )
+        val section =
+            Section(title = document.selectFirst("#hot_update .heading")?.text()?.trim()?.split(" ")
+                ?.joinToString(" ") { it.replaceFirstChar {
+                    if (it.isLowerCase()) it.titlecase(
+                        Locale.ROOT
+                    ) else it.toString()
+                } } ?: "", list = sectionList)
 
         return HomeData(
-            featured = featuredList,
-            sections = listOf(section)
+            featured = featuredList, sections = listOf(section)
         )
     }
 
@@ -108,9 +112,7 @@ class Mangakatana : ScraperBase {
             for (date in dates) {
                 updateTime.add(
                     parseDateString(
-                        date.text()?.trim() ?: "",
-                        "MMM-dd-yyyy",
-                        Locale.ENGLISH
+                        date.text().trim() ?: "", "MMM-dd-yyyy", Locale.ENGLISH
                     )
                 )
             }
@@ -140,9 +142,7 @@ class Mangakatana : ScraperBase {
 
         val hasNext = document.selectFirst(".uk-pagination .next") != null
         return LatestUpdatePage(
-            page = page,
-            result = latestUpdate,
-            hasNext = hasNext
+            page = page, result = latestUpdate, hasNext = hasNext
         )
     }
 
@@ -173,7 +173,7 @@ class Mangakatana : ScraperBase {
                         title = search.selectFirst(".text .title a")?.text()?.trim() ?: "",
                         img = search.selectFirst(".media .wrap_img img")?.attr("src") ?: "",
                         score = null,
-                        type = "",
+                        type = search.selectFirst(".media .status")?.text()?.trim() ?: "",
                         isColored = false,
                         isComplete = search.selectFirst(".status.Completed") != null,
                         isHot = false,
@@ -199,13 +199,13 @@ class Mangakatana : ScraperBase {
 //        val table = document.select(".infotable tbody tr")
         val mangaId = document.selectFirst(".bookmark")?.attr("data-id") ?: "0"
         val title = document.selectFirst("#single_book .heading")?.text()
-        val genreList = arrayListOf<Genre>()
+        val genreLinkList = arrayListOf<GenreLink>()
         val genres = document.select("#single_book .info .genres a")
 
         for (genre in genres) {
             val url = genre.attr("url") ?: ""
-            genreList.add(
-                Genre(
+            genreLinkList.add(
+                GenreLink(
                     title = genre.text(),
                     slug = getLastPathSegment(url) ?: "",
                     url = url,
@@ -237,9 +237,8 @@ class Mangakatana : ScraperBase {
             val url = chapter.selectFirst(".chapter a")?.attr("href") ?: ""
             chapterList.add(
                 Chapter(
-                    title = chapter.selectFirst(".chapter a")?.text()
-                        ?.replace(title ?: "", "")?.trim()
-                        ?: "",
+                    title = chapter.selectFirst(".chapter a")?.text()?.replace(title ?: "", "")
+                        ?.trim() ?: "",
                     date = parseDateString(
                         chapter.selectFirst(".update_time")?.text()?.trim() ?: "",
                         "MMM-dd-yyyy",
@@ -266,7 +265,7 @@ class Mangakatana : ScraperBase {
             type = document.selectFirst(".info .meta .status")?.text()?.trim() ?: "",
             description = document.selectFirst(".summary p")?.text()?.trim() ?: "",
             score = null,
-            genre = genreList,
+            genreLinks = genreLinkList,
             similar = similarList,
             chapters = chapterList
         )
@@ -284,9 +283,8 @@ class Mangakatana : ScraperBase {
             val url = chapter.selectFirst(".chapter a")?.attr("href") ?: ""
             chapterList.add(
                 Chapter(
-                    title = chapter.selectFirst(".chapter a")?.text()
-                        ?.replace(title ?: "", "")?.trim()
-                        ?: "",
+                    title = chapter.selectFirst(".chapter a")?.text()?.replace(title ?: "", "")
+                        ?.trim() ?: "",
                     date = parseDateString(
                         chapter.selectFirst(".update_time")?.text()?.trim() ?: "",
                         "MMM-dd-yyyy",
@@ -341,5 +339,43 @@ class Mangakatana : ScraperBase {
         val body = api.getChapter(split.getOrNull(0) ?: "", split.getOrNull(1) ?: "")
         val document = Jsoup.parse(body.string())
         return parseChapter(document)
+    }
+
+    override suspend fun searchByGenre(genreList: List<Genre>, page: Int): GenreSearch {
+        val document = fetch {
+            api.searchByGenre(page, genreList.joinToString("_") { it.id })
+        }
+
+        val genreListElements = document.select(".filter_option .genres .uk-grid > div")
+        val genreListResult = arrayListOf<Genre>()
+        for (genre in genreListElements) {
+            genreListResult.add(
+                Genre(
+                    id = genre.selectFirst("input")?.attr("value")?.trim() ?: "",
+                    title = genre.selectFirst(".name")?.text()?.trim() ?: ""
+                )
+            )
+        }
+
+        val searchElements = document.select("#book_list .item")
+        val searchItems = arrayListOf<KomikSearchResult>()
+
+        for (item in searchElements) {
+            val url = item.selectFirst(".title a")?.attr("href") ?: ""
+            searchItems.add(
+                KomikSearchResult(
+                    title = item.selectFirst(".title a")?.text() ?: "",
+                    img = item.selectFirst(".wrap_img img")?.attr("src") ?: "",
+                    slug = getLastPathSegment(url) ?: "",
+                    url = url,
+                    type = item.selectFirst(".media .status")?.text()?.trim() ?: "",
+                )
+            )
+        }
+
+        val hasNext = document.selectFirst(".uk-pagination .next") != null
+        return GenreSearch(
+            genreList = genreListResult, page = page, hasNext = hasNext, result = searchItems
+        )
     }
 }

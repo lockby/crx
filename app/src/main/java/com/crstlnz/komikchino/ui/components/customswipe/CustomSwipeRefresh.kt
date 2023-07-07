@@ -1,18 +1,13 @@
 package com.crstlnz.komikchino.ui.components.customswipe
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -20,15 +15,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.crstlnz.komikchino.R
 
 /**
  * A layout which implements the swipe-to-refresh pattern, allowing the user to refresh content via
@@ -72,8 +63,8 @@ fun CustomSwipeRefresh(
     state: SwipeRefreshState,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
-    lazyColumnState : LazyListState,
-    lazyColumnModifier : Modifier = Modifier,
+    lazyColumnState: LazyListState,
+    lazyColumnModifier: Modifier = Modifier,
     swipeEnabled: Boolean = true,
     refreshTriggerDistance: Dp = 80.dp,
     indicatorAlignment: Alignment = Alignment.TopCenter,
@@ -105,7 +96,13 @@ fun CustomSwipeRefresh(
         this.refreshTrigger = refreshTriggerPx
     }
 
-    Column(modifier.nestedScroll(connection = nestedScrollConnection)) {
+    Column(
+        modifier
+            .nestedScroll(connection = nestedScrollConnection)
+            .fillMaxSize()
+            .background(White)
+
+    ) {
         LazyColumn(
             lazyColumnModifier
                 .fillMaxWidth()

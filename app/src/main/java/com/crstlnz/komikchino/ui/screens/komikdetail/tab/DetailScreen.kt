@@ -67,7 +67,8 @@ fun DetailScreen(
     komikDetail: KomikDetail,
     modifier: Modifier = Modifier,
     state: LazyListState = rememberLazyListState(),
-    onKomikClick: (title: String, slug: String) -> Unit = { _, _ -> }
+    onKomikClick: (title: String, slug: String) -> Unit = { _, _ -> },
+    onChapterClick: (title: String, id: String) -> Unit = { _, _ -> }
 ) {
     LazyColumn(
         contentPadding = PaddingValues(15.dp),
@@ -75,90 +76,194 @@ fun DetailScreen(
         verticalArrangement = Arrangement.Bottom
     ) {
         item {
-            Column() {
-                Row(verticalAlignment = Alignment.Top) {
-                    ImageView(
-                        url = komikDetail.img, contentDescription = "Thumbnail",
-                        modifier = Modifier
-                            .width(100.dp)
-                            .aspectRatio(12f / 16f)
-                            .clip(RoundedCornerShape(8.dp))
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(
-                            komikDetail.title,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                komikDetail.type,
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    color = getComicTypeColor(komikDetail.type),
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            )
-                            if (komikDetail.score != null) {
-                                Spacer(Modifier.width(6.dp))
-                                Icon(
-                                    Icons.Filled.Star,
-                                    contentDescription = "Star",
-                                    modifier = Modifier.height(16.dp),
-                                    tint = Yellow
-                                )
-
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    komikDetail.score.toString(),
-                                    style = MaterialTheme.typography.labelMedium
-                                )
-                            }
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(15.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = R.mipmap.synopsis),
-                        modifier = Modifier.height(22.dp),
-                        contentDescription = "Synopsis Icon"
-                    )
-                    Spacer(Modifier.width(5.dp))
-                    Text(
-                        stringResource(R.string.synopsis),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-                Spacer(modifier = Modifier.height(7.dp))
-                Text(
-                    convertHTML(komikDetail.description).trim(),
-                    style = MaterialTheme.typography.bodyMedium
+            Row(verticalAlignment = Alignment.Top) {
+                ImageView(
+                    url = komikDetail.img,
+                    contentDescription = "Thumbnail",
+                    modifier = Modifier
+                        .width(100.dp)
+                        .aspectRatio(12f / 16f)
+                        .clip(RoundedCornerShape(8.dp))
                 )
-                Spacer(modifier = Modifier.height(20.dp))
-                FlowRow(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.wrapContentWidth()
-                ) {
-                    komikDetail.genre.forEach {
-                        Box(
-                            Modifier.border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.outline,
-                                shape = RoundedCornerShape(15.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        komikDetail.title,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            komikDetail.type, style = MaterialTheme.typography.labelMedium.copy(
+                                color = getComicTypeColor(komikDetail.type),
+                                fontWeight = FontWeight.SemiBold
                             )
-                        ) {
+                        )
+                        if (komikDetail.score != null) {
+                            Spacer(Modifier.width(6.dp))
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = "Star",
+                                modifier = Modifier.height(16.dp),
+                                tint = Yellow
+                            )
+
+                            Spacer(Modifier.width(4.dp))
                             Text(
-                                it.title,
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                                style = MaterialTheme.typography.labelMedium.copy(color = Blue)
+                                komikDetail.score.toString(),
+                                style = MaterialTheme.typography.labelMedium
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(20.dp))
-                if (komikDetail.similar.isNotEmpty()) {
-                    val pagerState = rememberPagerState() {
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(15.dp))
+        }
+
+        if (komikDetail.chapters.size > 1) item {
+            Row {
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                        .clickable {
+                            onChapterClick(
+                                komikDetail.chapters.last().title,
+                                komikDetail.chapters.last().id ?: "0"
+                            )
+                        }, contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(8.dp)
+                    ) {
+                        Text(
+                            "First Chapter", style = MaterialTheme.typography.labelMedium.copy(
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            komikDetail.chapters.last().title,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                        .clickable {
+                            onChapterClick(
+                                komikDetail.chapters.first().title,
+                                komikDetail.chapters.first().id ?: "0"
+                            )
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(8.dp)
+                    ) {
+                        Text(
+                            "Last Chapter", style = MaterialTheme.typography.labelMedium.copy(
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            komikDetail.chapters.first().title,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(15.dp))
+        }
+
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    painter = painterResource(id = R.mipmap.synopsis),
+                    modifier = Modifier.height(22.dp),
+                    contentDescription = "Synopsis Icon"
+                )
+                Spacer(Modifier.width(5.dp))
+                Text(
+                    stringResource(R.string.synopsis), style = MaterialTheme.typography.titleMedium
+                )
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(7.dp))
+        }
+
+        item {
+            Text(
+                convertHTML(komikDetail.description).trim(),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+
+        item {
+            FlowRow(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.wrapContentWidth()
+            ) {
+                komikDetail.genreLinks.forEach {
+                    Box(
+                        Modifier.border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.outline,
+                            shape = RoundedCornerShape(15.dp)
+                        )
+                    ) {
+                        Text(
+                            it.title,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelMedium.copy(color = Blue)
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+
+        if (komikDetail.similar.isNotEmpty()) {
+            item {
+                Column {
+                    val pagerState = rememberPagerState {
                         komikDetail.similar.size
                     }
 
@@ -179,9 +284,7 @@ fun DetailScreen(
                         modifier = Modifier.nestedScroll(remember {
                             object : NestedScrollConnection {
                                 override fun onPostScroll(
-                                    consumed: Offset,
-                                    available: Offset,
-                                    source: NestedScrollSource
+                                    consumed: Offset, available: Offset, source: NestedScrollSource
                                 ): Offset {
                                     return available
                                 }
@@ -189,17 +292,16 @@ fun DetailScreen(
                         })
                     ) {
                         val similar = komikDetail.similar[it]
-                        Box(
-                            modifier = modifier
-                                .fillMaxWidth()
-                                .aspectRatio(12f / 16f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable() {
-                                    Log.d("SLUG", similar.slug)
-                                    onKomikClick(
-                                        similar.title, similar.slug
-                                    )
-                                }) {
+                        Box(modifier = modifier
+                            .fillMaxWidth()
+                            .aspectRatio(12f / 16f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable {
+                                Log.d("SLUG", similar.slug)
+                                onKomikClick(
+                                    similar.title, similar.slug
+                                )
+                            }) {
                             ImageView(
                                 url = similar.img,
                                 modifier.fillMaxSize(),
@@ -221,19 +323,16 @@ fun DetailScreen(
                                 verticalArrangement = Arrangement.SpaceBetween,
                             ) {
                                 Box(
-                                    modifier = Modifier
-                                        .background(
-                                            color = if (similar.isColored) LightYellow else Color.Transparent,
-                                            shape = RoundedCornerShape(15.dp)
-                                        )
+                                    modifier = Modifier.background(
+                                        color = if (similar.isColored) LightYellow else Color.Transparent,
+                                        shape = RoundedCornerShape(15.dp)
+                                    )
                                 ) {
                                     if (similar.isColored) {
                                         Row(
                                             Modifier.padding(
-                                                horizontal = 8.dp,
-                                                vertical = 6.dp
-                                            ),
-                                            verticalAlignment = Alignment.CenterVertically
+                                                horizontal = 8.dp, vertical = 6.dp
+                                            ), verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Icon(
                                                 painter = painterResource(id = R.drawable.baseline_palette_24),
@@ -245,16 +344,15 @@ fun DetailScreen(
                                             Text(
                                                 "WARNA",
                                                 style = MaterialTheme.typography.labelSmall.copy(
-                                                    color = Black1,
-                                                    fontWeight = FontWeight.SemiBold
+                                                    color = Black1, fontWeight = FontWeight.SemiBold
                                                 )
                                             )
                                         }
                                     }
                                 }
 
-                                Column() {
-                                    Row() {
+                                Column {
+                                    Row {
                                         Text(
                                             similar.type,
                                             style = MaterialTheme.typography.labelMedium.copy(
@@ -283,8 +381,7 @@ fun DetailScreen(
                                             color = WhiteGray,
                                             fontWeight = FontWeight.SemiBold,
                                             shadow = Shadow(
-                                                color = Color.Black,
-                                                blurRadius = 10f
+                                                color = Color.Black, blurRadius = 10f
                                             )
                                         ),
                                         maxLines = 2,
@@ -296,7 +393,7 @@ fun DetailScreen(
                     }
                 }
             }
-
         }
+
     }
 }

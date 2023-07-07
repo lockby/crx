@@ -12,7 +12,7 @@ data class KomikDetail(
     val type: String = "",
     val description: String = "",
     val score: Float? = 0f,
-    val genre: List<Genre> = listOf<Genre>(),
+    val genreLinks: List<GenreLink> = listOf<GenreLink>(),
     val similar: List<SimilarTitle> = listOf<SimilarTitle>(),
     val chapters: List<Chapter> = listOf<Chapter>(),
     val disqusConfig: DisqusConfig? = null

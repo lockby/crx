@@ -70,7 +70,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.LocalStatusBarPadding
 import com.crstlnz.komikchino.R
-import com.crstlnz.komikchino.data.database.komik.KomikHistoryItem
+import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
 import com.crstlnz.komikchino.data.model.State
@@ -111,13 +111,13 @@ fun KomikScreen(
     val scrollState = rememberScrollState()
     LaunchedEffect(scrollState) {
         snapshotFlow { scrollState.value }.collect {
-                progress = (it / imageHeight).takeIf { it <= 1 } ?: 1f
-            }
+            progress = (it / imageHeight).takeIf { it <= 1 } ?: 1f
+        }
     }
     val dataState by v.state.collectAsState()
     val pullRefreshState =
         rememberPullRefreshState(dataState.state == State.LOADING && !v.isFirstLaunch, { v.load() })
-    val isFavorite by v.isFavorite(dataState.getDataOrNull()?.id ?: "").observeAsState()
+    val isFavorite by v.isFavorite(dataState.getDataOrNull()?.id ?: "0").observeAsState()
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets.ime,
@@ -130,6 +130,19 @@ fun KomikScreen(
                 DetailScreen(komikDetail = (dataState as DataState.Success).data,
                     onKomikClick = { title, slug ->
                         MainNavigation.toKomik(navController, title, slug)
+                    },
+                    onChapterClick = { title, id ->
+                        val data = (dataState as DataState.Success).data
+                        MainNavigation.toChapter(
+                            navController, chapterId = id, title, KomikHistoryItem(
+                                title = data.title,
+                                id = data.id,
+                                slug = data.slug,
+                                description = data.description,
+                                type = data.type,
+                                img = data.img,
+                            )
+                        )
                     })
 
             }), TabRowItem(title = "Chapters", screen = {
@@ -180,7 +193,7 @@ fun KomikScreen(
                                 IconButton(onClick = {
                                     val komik = dataState.getDataOrNull()
                                     if (komik != null) {
-                                        Log.d("DISQUS CONFIG",komik.disqusConfig.toString())
+                                        Log.d("DISQUS CONFIG", komik.disqusConfig.toString())
                                         MainNavigation.toCommentView(
                                             navController,
                                             slug = komik.disqusConfig?.identifier ?: komik.slug,
@@ -244,7 +257,7 @@ fun KomikScreen(
                                             Brush.verticalGradient(
                                                 listOf(
                                                     Color.Transparent,
-                                                    Color.Black.copy(alpha = 0.7f)
+                                                    Black.copy(alpha = 0.7f)
                                                 ), 120F, 420F
                                             )
                                         )
@@ -313,12 +326,13 @@ fun KomikScreen(
                                                     )
                                                 }
                                             }
-                                        })
+                                        }
+                                        ),
                                 ) { page ->
                                     when (dataState.state) {
                                         State.DATA -> {
                                             if (dataState.getDataOrNull() != null) {
-                                                tabItems[page].screen()
+                                                tabItems[page].screen(page.toString())
                                             } else {
                                                 Column(modifier = Modifier.aspectRatio(4f / 5f)) {
                                                     ErrorView(
@@ -356,6 +370,8 @@ fun KomikScreen(
                                         }
                                     }
                                 }
+
+
                             }
 
                         }

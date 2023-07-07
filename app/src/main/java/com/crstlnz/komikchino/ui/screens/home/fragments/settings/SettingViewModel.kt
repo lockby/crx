@@ -8,6 +8,4 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingViewModel @Inject constructor(
     val settings: Settings
-) : ViewModel() {
-
-}
+) : ViewModel()

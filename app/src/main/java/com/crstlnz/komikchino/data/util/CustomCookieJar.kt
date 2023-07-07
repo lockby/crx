@@ -2,20 +2,16 @@ package com.crstlnz.komikchino.data.util
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import com.crstlnz.komikchino.config.AppSettings
-import dagger.hilt.android.qualifiers.ApplicationContext
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.Response
-import java.net.URLDecoder
 import java.net.URLEncoder
-import javax.inject.Inject
 
 
-class EmptyCookieJar() : CookieJar {
+class EmptyCookieJar : CookieJar {
     override fun loadForRequest(url: HttpUrl): List<Cookie> {
         return emptyList()
     }

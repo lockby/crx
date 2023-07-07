@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.home.fragments.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,10 +10,12 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,9 +28,12 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -47,12 +53,14 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.crstlnz.komikchino.LocalStatusBarPadding
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.FeaturedComic
@@ -60,9 +68,8 @@ import com.crstlnz.komikchino.data.model.Section
 import com.crstlnz.komikchino.data.model.State
 import com.crstlnz.komikchino.ui.components.ErrorView
 import com.crstlnz.komikchino.ui.components.ImageView
+import com.crstlnz.komikchino.ui.navigations.HomeSections
 import com.crstlnz.komikchino.ui.navigations.MainNavigation
-import com.crstlnz.komikchino.ui.theme.Black1
-import com.crstlnz.komikchino.ui.theme.Black3
 import com.crstlnz.komikchino.ui.theme.Blue
 import com.crstlnz.komikchino.ui.theme.Red
 import com.crstlnz.komikchino.ui.theme.Yellow
@@ -73,64 +80,101 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun HomeFragment(navController: NavController) {
     val v: HomeFragmenViewModel = hiltViewModel()
     val dataState by v.state.collectAsState()
 
     val pullRefreshState =
-        rememberPullRefreshState(dataState.state == State.LOADING, { v.load() })
-    Box(Modifier.pullRefresh(pullRefreshState)) {
-        LazyColumn(Modifier.fillMaxSize()) {
-            when (dataState.state) {
-                State.DATA -> {
-                    val data = (dataState as DataState.Success).data
-                    featuredView(
-                        data.featured, onKomikClick = { title, slug ->
-                            MainNavigation.toKomik(navController, title, slug)
-                        }, 4
+        rememberPullRefreshState(dataState.state == State.LOADING && !v.isFirstLaunch, { v.load() })
+    Column {
+        TopAppBar(
+            modifier = Modifier.padding(top = LocalStatusBarPadding.current),
+            windowInsets = WindowInsets.ime,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = painterResource(id = R.mipmap.app_icon),
+                        contentDescription = "App Icon",
+                        modifier = Modifier.height(38.dp)
                     )
-                    sectionView(data.sections) { title, slug ->
-                        MainNavigation.toKomik(navController, title, slug)
-                    }
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        stringResource(HomeSections.HOME.title),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
-
-                State.ERROR -> {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(5f / 8f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ErrorView(
-                                resId = R.drawable.error,
-                                message = "Gagal mendapatkan data!",
-                                onClick = {
-                                    v.load()
-                                })
+            },
+            actions = {
+                IconButton(
+                    onClick = {
+                        navController.navigate(MainNavigation.SEARCH)
+                    },
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_search_24),
+                        contentDescription = "Search",
+                    )
+                }
+                Spacer(modifier = Modifier.width(5.dp))
+            },
+        )
+        Box(
+            Modifier
+                .weight(1f)
+                .pullRefresh(pullRefreshState)
+        ) {
+            LazyColumn(Modifier.fillMaxSize()) {
+                when (dataState.state) {
+                    State.DATA -> {
+                        val data = (dataState as DataState.Success).data
+                        featuredView(
+                            data.featured, onKomikClick = { title, slug ->
+                                MainNavigation.toKomik(navController, title, slug)
+                            }, 4
+                        )
+                        sectionView(data.sections) { title, slug ->
+                            MainNavigation.toKomik(navController, title, slug)
                         }
                     }
-                }
 
-                else -> {
-                    komikLoading()
+                    State.ERROR -> {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(5f / 6f),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                ErrorView(resId = R.drawable.error,
+                                    message = "Gagal mendapatkan data!",
+                                    onClick = {
+                                        v.load()
+                                    })
+                            }
+                        }
+                    }
+
+                    else -> {
+                        komikLoading()
+                    }
                 }
             }
+            PullRefreshIndicator(
+                dataState.state == State.LOADING && !v.isFirstLaunch,
+                pullRefreshState,
+                Modifier.align(Alignment.TopCenter)
+            )
         }
-        PullRefreshIndicator(
-            dataState.state == State.LOADING && !v.isFirstLaunch,
-            pullRefreshState,
-            Modifier.align(Alignment.TopCenter)
-        )
     }
 }
 
 @Preview
 @Composable
 fun LoadingPreview() {
-    LazyColumn() {
+    LazyColumn {
         komikLoading()
     }
 }
@@ -143,8 +187,8 @@ fun LazyListScope.komikLoading() {
                 .fillMaxWidth()
                 .aspectRatio(16f / 10f)
                 .defaultPlaceholder(
-                    color = lightenColor(Black1, 25),
-                    highlightColor = lightenColor(Black1, 60),
+                    color = lightenColor(MaterialTheme.colorScheme.surfaceVariant, 25),
+                    highlightColor = lightenColor(MaterialTheme.colorScheme.surfaceVariant, 60),
                     shape = RectangleShape
                 )
         )
@@ -168,9 +212,14 @@ fun LazyListScope.komikLoading() {
                 )
             }
             Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                "Popular Today",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            Box(
+                Modifier
+                    .height(23.dp)
+                    .fillMaxWidth(0.4f)
+                    .defaultPlaceholder(
+                        color = lightenColor(MaterialTheme.colorScheme.surfaceVariant, 25),
+                        highlightColor = lightenColor(MaterialTheme.colorScheme.surfaceVariant, 60)
+                    )
             )
         }
     }
@@ -183,18 +232,21 @@ fun LazyListScope.komikLoading() {
                     .aspectRatio(11f / 16f)
                     .clip(RoundedCornerShape(8.dp))
                     .defaultPlaceholder(
-                        color = lightenColor(Black1, 25), highlightColor = lightenColor(Black1, 60)
+                        color = lightenColor(MaterialTheme.colorScheme.surfaceVariant, 25),
+                        highlightColor = lightenColor(MaterialTheme.colorScheme.surfaceVariant, 60)
                     )
             )
             Spacer(Modifier.width(10.dp))
-            Column() {
+            Column {
                 Box(
                     modifier = Modifier
                         .height(16.dp)
                         .fillMaxWidth(0.8f)
                         .defaultPlaceholder(
-                            color = lightenColor(Black1, 25),
-                            highlightColor = lightenColor(Black1, 60)
+                            color = lightenColor(MaterialTheme.colorScheme.surfaceVariant, 25),
+                            highlightColor = lightenColor(
+                                MaterialTheme.colorScheme.surfaceVariant, 60
+                            )
                         )
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -204,8 +256,10 @@ fun LazyListScope.komikLoading() {
                             .height(12.dp)
                             .fillMaxWidth(0.18f)
                             .defaultPlaceholder(
-                                color = lightenColor(Black1, 25),
-                                highlightColor = lightenColor(Black1, 60)
+                                color = lightenColor(MaterialTheme.colorScheme.surfaceVariant, 25),
+                                highlightColor = lightenColor(
+                                    MaterialTheme.colorScheme.surfaceVariant, 60
+                                )
                             )
                     )
                     Spacer(Modifier.width(6.dp))
@@ -214,8 +268,10 @@ fun LazyListScope.komikLoading() {
                             .height(12.dp)
                             .fillMaxWidth(0.1f)
                             .defaultPlaceholder(
-                                color = lightenColor(Black1, 25),
-                                highlightColor = lightenColor(Black1, 60)
+                                color = lightenColor(MaterialTheme.colorScheme.surfaceVariant, 25),
+                                highlightColor = lightenColor(
+                                    MaterialTheme.colorScheme.surfaceVariant, 60
+                                )
                             )
                     )
                     Spacer(Modifier.width(6.dp))
@@ -224,8 +280,10 @@ fun LazyListScope.komikLoading() {
                             .height(12.dp)
                             .fillMaxWidth(0.28f)
                             .defaultPlaceholder(
-                                color = lightenColor(Black1, 25),
-                                highlightColor = lightenColor(Black1, 60)
+                                color = lightenColor(MaterialTheme.colorScheme.surfaceVariant, 25),
+                                highlightColor = lightenColor(
+                                    MaterialTheme.colorScheme.surfaceVariant, 60
+                                )
                             )
                     )
                 }
@@ -257,7 +315,17 @@ fun LazyListScope.featuredView(
                 }
             }
         }
-        if (featureds.isNotEmpty())
+        if (featureds.isNotEmpty()) {
+            Modifier.nestedScroll(remember {
+                object : NestedScrollConnection {
+                    override fun onPostScroll(
+                        consumed: Offset, available: Offset, source: NestedScrollSource
+                    ): Offset {
+                        elapsedTime = 0
+                        return Offset.Zero
+                    }
+                }
+            })
             HorizontalPager(
                 count = Int.MAX_VALUE,
                 state = pagerState,
@@ -277,7 +345,7 @@ fun LazyListScope.featuredView(
                     Modifier
                         .fillMaxWidth()
                         .aspectRatio(16f / 10f)
-                        .background(color = Black3)
+                        .background(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
                         .clickable {
                             onKomikClick(featureds[it].title, featureds[it].slug)
                         }) {
@@ -359,8 +427,7 @@ fun LazyListScope.featuredView(
                                 Text(
                                     featureds[it].score.toString(),
                                     style = MaterialTheme.typography.labelMedium.copy(
-                                        color = Color.White,
-                                        shadow = Shadow(
+                                        color = Color.White, shadow = Shadow(
                                             Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
                                         )
                                     )
@@ -378,7 +445,7 @@ fun LazyListScope.featuredView(
                                 Spacer(Modifier.width(6.dp))
                             }
                             Text(
-                                featureds[it].genre.joinToString(", ") { it.title },
+                                featureds[it].genreLink.joinToString(", ") { it.title },
                                 modifier = Modifier.weight(1f),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     color = if (featureds[it].type.isEmpty() || featureds[it].score == null) Blue else Color.White,
@@ -394,6 +461,7 @@ fun LazyListScope.featuredView(
                     }
                 }
             }
+        }
     }
 }
 
@@ -453,7 +521,7 @@ fun LazyListScope.sectionView(
                         contentDescription = "Thumbnail"
                     )
                     Spacer(Modifier.width(10.dp))
-                    Column() {
+                    Column {
                         Text(
                             komikList[it].title, style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.SemiBold

@@ -92,7 +92,11 @@ fun ServerSelectScreen(navController: NavController) {
                     ListItem(
                         modifier = Modifier.clickable { selected = serverList[it] },
                         headlineContent = {
-                            Text(serverList[it].value.capitalize(Locale.ROOT))
+                            Text(serverList[it].value.replaceFirstChar {
+                                if (it.isLowerCase()) it.titlecase(
+                                    Locale.ROOT
+                                ) else it.toString()
+                            })
                         },
                         trailingContent = {
                             if (selected == serverList[it]) {

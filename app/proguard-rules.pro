@@ -3,6 +3,9 @@
 -dontwarn okio.**
 -dontwarn retrofit2.**
 
+#google sign in
+-keep class com.google.android.gms.internal.** { *; }
+
 # Keep Jackson ObjectMapper and ObjectWriter
 -keep class com.fasterxml.jackson.module.kotlin.** { *; }
 -keep class com.fasterxml.jackson.databind.** { *; }
@@ -34,7 +37,7 @@
 -keep class androidx.annotation.** { *; }
 -keep class javax.inject.** { *; }
 -keep class com.crstlnz.komikchino.data.model.** { *; }
--keep class com.crstlnz.komikchino.data.database.** { *; }
+-keep class com.crstlnz.komikchino.data.database.model.** { *; }
 # End Retrofit2 with Jackson
 
 #by android studio

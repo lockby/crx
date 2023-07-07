@@ -1,5 +1,5 @@
 package com.crstlnz.komikchino.data.model
 
-data class Genre(
+data class GenreLink(
     val title: String = "", val slug: String = "", val url: String = ""
 )

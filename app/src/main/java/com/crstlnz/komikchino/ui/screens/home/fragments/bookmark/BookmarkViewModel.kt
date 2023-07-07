@@ -1,28 +1,138 @@
 package com.crstlnz.komikchino.ui.screens.home.fragments.bookmark
 
 
-import android.util.Log
+import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
-import com.crstlnz.komikchino.data.database.favorite.FavoriteKomikRepository
-import com.crstlnz.komikchino.data.database.komik.KomikHistoryRepository
+import androidx.lifecycle.viewModelScope
+import com.crstlnz.komikchino.data.database.model.KomikReadHistory
+import com.crstlnz.komikchino.data.database.repository.FavoriteKomikRepository
+import com.crstlnz.komikchino.data.database.repository.KomikHistoryRepository
 import com.crstlnz.komikchino.data.model.ChapterScrollPostition
-import com.crstlnz.komikchino.data.model.SearchHistoryModel
 import com.crstlnz.komikchino.data.util.StorageHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Named
 
+
 @HiltViewModel
 class BookmarkViewModel @Inject constructor(
-    historyRepository: KomikHistoryRepository,
-    favoriteRepository: FavoriteKomikRepository,
+    private val historyRepository: KomikHistoryRepository,
+    private val favoriteRepository: FavoriteKomikRepository,
     @Named("chapterScrollPostitionCache") private val chapterScrollPostition: StorageHelper<ChapterScrollPostition>,
 ) : ViewModel() {
-    val histories = historyRepository.histories
-    val favorites = favoriteRepository.favorites
+    private val _histories = MutableStateFlow<List<KomikReadHistory>?>(null)
+    val histories = _histories.asStateFlow()
+    val favorites = favoriteRepository.getAll()
+
+    init {
+        updateHistories()
+    }
+
+    fun updateHistories() {
+        viewModelScope.launch {
+            val history = historyRepository.getHistories()
+            _histories.update {
+                history
+            }
+        }
+    }
 
     fun getChapterScrollPosition(mangaId: String, chapterId: String): ChapterScrollPostition? {
         val pos = chapterScrollPostition.get<ChapterScrollPostition>(mangaId)
         return if (pos != null && pos.chapterId == chapterId) pos else null
+    }
+
+
+    private val _editState = mutableStateListOf<String>()
+    val editState = _editState
+    private val selectableMap = mutableMapOf<String, MutableList<String>>()
+    private val selectDataMap = mutableMapOf<String, MutableList<String>>()
+
+    fun getSelected(id: String): MutableList<String> {
+        return if (selectableMap.contains(id)) {
+            selectableMap[id]!!
+        } else {
+            val list = mutableStateListOf<String>()
+            selectableMap[id] = list
+            list
+        }
+    }
+
+    private fun getSelectData(id: String): MutableList<String> {
+        return if (selectDataMap.contains(id)) {
+            selectDataMap[id]!!
+        } else {
+            val list = mutableStateListOf<String>()
+            selectDataMap[id] = list
+            list
+        }
+    }
+
+    fun setData(pageId: String, data: List<String>) {
+        getSelectData(pageId).clear()
+        getSelectData(pageId).addAll(data)
+    }
+
+    fun select(pageId: String, id: String) {
+        if (getSelected(pageId).contains(id)) {
+            getSelected(pageId).remove(id)
+            if (getSelected(pageId).isEmpty()) {
+                cancelEdit(pageId)
+            }
+        } else {
+            getSelected(pageId).add(id)
+        }
+    }
+
+    fun edit(pageId: String) {
+        _editState.add(pageId)
+    }
+
+    fun isAllSelected(pageId: String): Boolean {
+        if (getSelectData(pageId).size == 0) return false
+        return getSelectData(pageId).all { getSelected(pageId).contains(it) }
+    }
+
+    fun selectAll(pageId: String) {
+        getSelected(pageId).clear()
+        getSelected(pageId).addAll(getSelectData(pageId))
+    }
+
+    fun deselectAll(pageId: String) {
+        getSelected(pageId).clear()
+    }
+
+    fun deleteItem(pageId: String) {
+        val items = getSelected(pageId)
+
+        for (item in items) {
+            if (pageId == "0") { // recent view
+                viewModelScope.launch {
+                    historyRepository.delete(item)
+                }
+                updateHistories()
+            } else if (pageId == "1") { // favorites view
+                viewModelScope.launch {
+                    favoriteRepository.delete(item)
+                }
+            }
+        }
+
+        cancelEdit(pageId)
+    }
+
+    fun cancelEdit(pageId: String) {
+        deselectAll(pageId)
+        _editState.removeAll(listOf(pageId))
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        historyRepository.close()
+        favoriteRepository.close()
     }
 }

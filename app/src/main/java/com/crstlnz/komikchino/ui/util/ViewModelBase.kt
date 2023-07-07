@@ -22,7 +22,7 @@ open class ViewModelBase<T>(
     private val alwaysRefresh: Boolean = false,
 ) : ViewModel() {
     protected val _state = MutableStateFlow<DataState<T>>(DataState.Idle)
-    protected open var cacheKey: String = "";
+    protected open var cacheKey: String = ""
 
     private val _onError = MutableSharedFlow<String>()
     val onError = _onError.asSharedFlow()
@@ -57,7 +57,7 @@ open class ViewModelBase<T>(
             }
         } catch (e: Exception) {
             Log.e("ERROR", e.stackTraceToString())
-            val errorString = "Fetch Fail";
+            val errorString = "Fetch Fail"
             _onError.emit(errorString)
             stateData.update {
                 DataState.Error(errorString)

@@ -1,29 +1,17 @@
 package com.crstlnz.komikchino.ui.screens.chapter.components
 
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.rememberScrollableState
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -33,38 +21,26 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
-import com.crstlnz.komikchino.LocalStatusBarPadding
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.config.nunito
-import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
 import com.crstlnz.komikchino.data.model.ImageSize
 import com.crstlnz.komikchino.data.model.State
 import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.components.customswipe.CustomSwipeRefresh
-import com.crstlnz.komikchino.ui.components.customswipe.CustomSwipeRefreshIndicator
-import com.crstlnz.komikchino.ui.components.customswipe.CustomSwipeRefreshNestedScrollConnection
-import com.crstlnz.komikchino.ui.components.customswipe.OriginalSwipeRefreshIndicator
 import com.crstlnz.komikchino.ui.components.customswipe.rememberCustomSwipeRefresh
 import com.crstlnz.komikchino.ui.screens.chapter.ChapterViewModel
 import com.crstlnz.komikchino.ui.theme.Black1
-import com.crstlnz.komikchino.ui.theme.Blue
 import com.crstlnz.komikchino.ui.util.ComposableLifecycle
-import com.crstlnz.komikchino.ui.util.noRippleClickable
 
 data class ChapterImage(
     val url: String, var useHardware: Boolean
@@ -154,11 +130,10 @@ fun ChapterImageList(
         LocalOverscrollConfiguration provides null
     ) {
         CustomSwipeRefresh(state = refreshState,
-            refreshTriggerDistance = 140.dp,
+            refreshTriggerDistance = 110.dp,
             onRefresh = {
                 onNextClick()
             },
-            modifier = Modifier.background(White),
             lazyColumnState = lazyColumnState,
             lazyColumnModifier = modifier.pointerInput(Unit) {
                 detectTapGestures(onDoubleTap = {}, onTap = {
@@ -169,7 +144,7 @@ fun ChapterImageList(
                 Box(
                     Modifier
                         .aspectRatio(4f / 3f)
-                        .background(Color.White),
+                        .background(White),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -221,51 +196,6 @@ fun ChapterImageList(
                 )
             }
         }
-
-//        Box() {
-//            Column(
-//                modifier = Modifier
-//                    .fillMaxSize()
-//                    .nestedScroll(nestedScrollConnection)
-//                    .background(color = Color.White)
-//            ) {
-//                LazyColumn(
-//                    modifier
-//                        .fillMaxWidth()
-//                        .weight(1f)
-//                        .pointerInput(Unit) {
-//                            detectTapGestures(onDoubleTap = {}, onTap = {
-//                                onNavChange(null)
-//                            })
-//                        }, state = scrollState
-//                ) {
-//                }
-//
-//                CustomSwipeRefreshIndicator(
-//                    refreshState,
-//                    100.dp,
-//                    backgroundColor = White,
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                ) {
-//                    Image(
-//                        modifier = Modifier
-//                            .width(50.dp)
-//                            .height(50.dp),
-//                        painter = painterResource(id = R.drawable.next_button),
-//                        contentDescription = "Next Button"
-//                    )
-//                }
-//            }
-////            Box(
-////                Modifier
-////                    .matchParentSize()
-////            ) {
-////                Box(Modifier.align(Alignment.BottomCenter)) {
-////                    OriginalSwipeRefreshIndicator(refreshState, 80.dp)
-////                }
-////            }
-//        }
     }
 
 }

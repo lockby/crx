@@ -2,13 +2,10 @@ package com.crstlnz.komikchino.data.util
 
 import android.util.Log
 import com.crstlnz.komikchino.config.AppSettings
-import com.crstlnz.komikchino.config.CloudflareState
 import kotlinx.coroutines.flow.update
 import okhttp3.Interceptor
 import okhttp3.Response
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
-import retrofit2.HttpException
 import java.io.IOException
 
 
@@ -17,21 +14,21 @@ class HttpErrorInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val response = chain.proceed(chain.request())
         // check cloudflare block
-        if(!response.isSuccessful){
-            Log.d("FETCH ERROR HOST", response.request.url.toString() )
+        if (!response.isSuccessful) {
+            Log.d("FETCH ERROR HOST", response.request.url.toString())
         }
         if (!response.isSuccessful && isBlocked(response)) {
-            AppSettings.cloudflareTry += 1
-            if (AppSettings.cloudflareTry <= 5) {
-                AppSettings.cloudflareState.update {
-                    CloudflareState(
-                        isBlocked = true,
-                        key = it.key + 1
-                    )
-                }
+            AppSettings.cloudflareState.update {
+                it.copy(
+                    isBlocked = true, key = it.key + 1
+                )
             }
-        } else {
-            AppSettings.cloudflareTry = 0
+        } else if (AppSettings.cloudflareState.value.tryCount > 0) {
+            AppSettings.cloudflareState.update {
+                it.copy(
+                    mustManualTrigger = false, isBlocked = false, key = 0, tryCount = 0
+                )
+            }
         }
         return response
     }

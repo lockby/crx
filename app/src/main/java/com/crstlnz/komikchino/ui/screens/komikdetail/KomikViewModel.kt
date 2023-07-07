@@ -4,16 +4,15 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.crstlnz.komikchino.data.api.ScraperBase
-import com.crstlnz.komikchino.data.database.chapterhistory.ChapterHistoryItem
-import com.crstlnz.komikchino.data.database.chapterhistory.ChapterHistoryRepository
-import com.crstlnz.komikchino.data.database.favorite.FavoriteKomikItem
-import com.crstlnz.komikchino.data.database.favorite.FavoriteKomikRepository
+import com.crstlnz.komikchino.data.database.model.ChapterHistoryItem
+import com.crstlnz.komikchino.data.database.model.FavoriteKomikItem
+import com.crstlnz.komikchino.data.database.repository.ChapterHistoryRepository
+import com.crstlnz.komikchino.data.database.repository.FavoriteKomikRepository
 import com.crstlnz.komikchino.data.datastore.Settings
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
 import com.crstlnz.komikchino.data.model.KomikDetail
 import com.crstlnz.komikchino.data.util.StorageHelper
 import com.crstlnz.komikchino.ui.util.ScraperViewModel
-import com.crstlnz.komikchino.ui.util.ViewModelBase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,12 +27,12 @@ class KomikViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val chapterRepository: ChapterHistoryRepository,
     private val favoriteKomikRepository: FavoriteKomikRepository,
-val settings: Settings,
-    private val api : ScraperBase,
+    val settings: Settings,
+    private val api: ScraperBase,
 ) : ScraperViewModel<KomikDetail>(
     storage, false
 ) {
-    private val _slug = MutableStateFlow("")
+    private val _slug = MutableStateFlow("0")
     val slug = _slug.asStateFlow()
     override var cacheKey = "komik-${slug}"
 
@@ -41,7 +40,7 @@ val settings: Settings,
         _slug.update {
             savedStateHandle.get<String>("slug").orEmpty()
         }
-        load(false)
+        load(force = false, isManual = false)
     }
 
     fun isFavorite(id: String): LiveData<Int> {
@@ -57,7 +56,7 @@ val settings: Settings,
         if (komik != null) {
             viewModelScope.launch {
                 if (!isFavorite) {
-                    favoriteKomikRepository.deleteById(komik.id)
+                    favoriteKomikRepository.delete(komik.id)
                 } else {
                     favoriteKomikRepository.add(
                         FavoriteKomikItem(
@@ -76,6 +75,12 @@ val settings: Settings,
 
     override suspend fun fetchData(): KomikDetail {
         return api.getDetailKomik(slug.value)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        chapterRepository.close()
+        favoriteKomikRepository.close()
     }
 
 }

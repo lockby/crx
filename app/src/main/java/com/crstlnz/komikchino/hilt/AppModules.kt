@@ -1,30 +1,21 @@
 package com.crstlnz.komikchino.hilt
 
-import android.content.Context
-import coil.ImageLoader
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
+import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.api.source.Kiryuu
 import com.crstlnz.komikchino.data.api.source.Mangakatana
-import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.api.source.VoidScans
-import com.crstlnz.komikchino.data.database.KomikDatabase
-import com.crstlnz.komikchino.data.database.chapterhistory.ChapterHistoryRepository
-import com.crstlnz.komikchino.data.database.favorite.FavoriteKomikRepository
-import com.crstlnz.komikchino.data.database.komik.KomikHistoryRepository
+import com.crstlnz.komikchino.data.database.repository.ChapterHistoryRepository
+import com.crstlnz.komikchino.data.database.repository.FavoriteKomikRepository
+import com.crstlnz.komikchino.data.database.repository.KomikHistoryRepository
 import com.crstlnz.komikchino.data.datastore.Settings
-import com.crstlnz.komikchino.data.util.CustomCookieJar
-import com.crstlnz.komikchino.data.util.HttpErrorInterceptor
-import com.crstlnz.komikchino.data.util.RequestHeaderInterceptor
 import com.crstlnz.komikchino.ui.navigations.HomeSections
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.runBlocking
-import okhttp3.CookieJar
-import okhttp3.OkHttpClient
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -64,25 +55,22 @@ class AppModules {
 
     @Provides
     fun provideChapterHistoryRepository(
-        @ApplicationContext context: Context, databaseKey: KomikServer
+        databaseKey: KomikServer
     ): ChapterHistoryRepository {
-        val database = KomikDatabase.getInstance(context, databaseKey)
-        return ChapterHistoryRepository(database.getChapterHistoryDao())
+        return ChapterHistoryRepository(databaseKey)
     }
 
     @Provides
     fun provideKomikHistoryRepository(
-        @ApplicationContext context: Context, databaseKey: KomikServer
+        databaseKey: KomikServer
     ): KomikHistoryRepository {
-        val database = KomikDatabase.getInstance(context, databaseKey)
-        return KomikHistoryRepository(database.getKomikHistoryDao())
+        return KomikHistoryRepository(databaseKey)
     }
 
     @Provides
     fun provideFavoriteKomikRepository(
-        @ApplicationContext context: Context, databaseKey: KomikServer
+        databaseKey: KomikServer
     ): FavoriteKomikRepository {
-        val database = KomikDatabase.getInstance(context, databaseKey)
-        return FavoriteKomikRepository(database.getFavoriteKomikDao())
+        return FavoriteKomikRepository(databaseKey)
     }
 }

@@ -2,9 +2,9 @@ package com.crstlnz.komikchino.hilt
 
 import android.content.Context
 import com.crstlnz.komikchino.data.api.KomikServer
-import com.crstlnz.komikchino.data.model.ChapterApi
 import com.crstlnz.komikchino.data.model.ChapterData
 import com.crstlnz.komikchino.data.model.ChapterScrollPostition
+import com.crstlnz.komikchino.data.model.GenreSearch
 import com.crstlnz.komikchino.data.model.GithubModel
 import com.crstlnz.komikchino.data.model.HomeData
 import com.crstlnz.komikchino.data.model.KomikDetail
@@ -87,6 +87,19 @@ class CacheModules {
             context, "$databaseKey-CACHE", TypeFactory.defaultInstance()
                 .constructParametricType(List::class.java, SearchResult.ExactMatch::class.java),
             3600000L
+        )
+    }
+
+    @Provides
+    @Named("genreSearchCache")
+    fun provideGenreSearchCache(
+        @ApplicationContext context: Context,
+        databaseKey: KomikServer
+    ): StorageHelper<GenreSearch> {
+        return StorageHelper(
+            context, "$databaseKey-CACHE", TypeFactory.defaultInstance()
+                .constructType(GenreSearch::class.java),
+            7200000L
         )
     }
 

@@ -7,8 +7,11 @@ import com.crstlnz.komikchino.data.model.ChapterApi
 import com.crstlnz.komikchino.data.model.ChapterUpdate
 import com.crstlnz.komikchino.data.model.FeaturedComic
 import com.crstlnz.komikchino.data.model.Genre
+import com.crstlnz.komikchino.data.model.GenreLink
+import com.crstlnz.komikchino.data.model.GenreSearch
 import com.crstlnz.komikchino.data.model.HomeData
 import com.crstlnz.komikchino.data.model.KomikDetail
+import com.crstlnz.komikchino.data.model.KomikSearchResult
 import com.crstlnz.komikchino.data.model.LatestUpdate
 import com.crstlnz.komikchino.data.model.LatestUpdatePage
 import com.crstlnz.komikchino.data.model.SearchResult
@@ -37,11 +40,11 @@ class Kiryuu : ScraperBase {
         val featuredList = arrayListOf<FeaturedComic>()
         for (featured in featureds) {
             val url = featured.selectFirst(".sliderinfo .sliderinfolimit a")?.attr("href") ?: ""
-            val genreList = arrayListOf<Genre>()
+            val genreLinkList = arrayListOf<GenreLink>()
             val genres = featured.select(".metas-slider-genres .metas-genres-values a")
             for (genre in genres) {
-                genreList.add(
-                    Genre(
+                genreLinkList.add(
+                    GenreLink(
                         title = genre.text() ?: "",
                         url = genre.attr("href") ?: "",
                         slug = getLastPathSegment(genres.attr("href") ?: "") ?: ""
@@ -53,7 +56,7 @@ class Kiryuu : ScraperBase {
                     title = featured.selectFirst(".sliderinfo .name")?.text()?.trim() ?: "",
                     url = url,
                     description = featured.selectFirst(".sliderinfo .desc")?.text()?.trim() ?: "",
-                    genre = genreList,
+                    genreLink = genreLinkList,
                     type = featured.selectFirst(".metas-slider-type .meta-type-values")?.text()
                         ?.trim() ?: "",
                     img = getBackgroundImage(
@@ -92,7 +95,11 @@ class Kiryuu : ScraperBase {
             featured = featuredList,
             sections = listOf(Section(
                 title = document.selectFirst("#content .hotslid .releases")?.text()?.trim()
-                    ?.split(" ")?.joinToString(" ") { it.capitalize(Locale.ROOT) } ?: "",
+                    ?.split(" ")?.joinToString(" ") { it.replaceFirstChar {
+                        if (it.isLowerCase()) it.titlecase(
+                            Locale.ROOT
+                        ) else it.toString()
+                    } } ?: "",
                 list = sectionList
             ))
         )
@@ -176,13 +183,13 @@ class Kiryuu : ScraperBase {
         val table = document.select(".infotable tbody tr")
         val id = document.selectFirst(".bookmark")?.attr("data-id")?.toIntOrNull() ?: 0
         val title = document.selectFirst(".seriestuheader .entry-title")?.text()
-        val genreList = arrayListOf<Genre>()
+        val genreLinkList = arrayListOf<GenreLink>()
         val genres = document.select(".seriestugenre a")
 
         for (genre in genres) {
             val url = genre.attr("url") ?: ""
-            genreList.add(
-                Genre(
+            genreLinkList.add(
+                GenreLink(
                     title = genre.text(),
                     slug = getLastPathSegment(url) ?: "",
                     url = url,
@@ -246,7 +253,7 @@ class Kiryuu : ScraperBase {
             type = table.getOrNull(1)?.select("td")?.getOrNull(1)?.text()?.trim() ?: "",
             description = document.selectFirst(".entry-content p")?.text()?.trim() ?: "",
             score = document.selectFirst(".rating .num")?.text()?.trim()?.toFloatOrNull() ?: 0f,
-            genre = genreList,
+            genreLinks = genreLinkList,
             similar = similarList,
             chapters = chapterList
         )
@@ -344,5 +351,51 @@ class Kiryuu : ScraperBase {
         val body = api.getChapterBySlug(slug)
         val document = Jsoup.parse(body.string())
         return parseChapter(document)
+    }
+
+    override suspend fun searchByGenre(genreList: List<Genre>, page: Int): GenreSearch {
+        val document = fetch {
+            api.searchByGenre(genreList.map { it.id }, page)
+        }
+
+        val genreListElements = document.select(".quickfilter .genrez li")
+        val genreListResult = arrayListOf<Genre>()
+        for (genre in genreListElements) {
+            genreListResult.add(
+                Genre(
+                    id = genre.selectFirst("input")?.attr("value")?.trim() ?: "",
+                    title = genre.selectFirst("label")?.text()?.trim() ?: ""
+                )
+            )
+        }
+
+        val searchItems = arrayListOf<KomikSearchResult>()
+        val searchList = document.select(".postbody .bs")
+        for (search in searchList) {
+            val url = search.selectFirst("a")?.attr("href") ?: ""
+            searchItems.add(
+                KomikSearchResult(
+                    title = search.selectFirst(".bigor .tt")?.text()?.trim() ?: "",
+                    img = search.selectFirst(".limit img.ts-post-image")?.attr("src") ?: "",
+                    score = search.selectFirst(".rating .numscore")?.text()?.trim()?.toFloatOrNull()
+                        ?: 0f,
+                    type = search.selectFirst(".limit .type")?.classNames()?.toList()?.getOrNull(1)
+                        ?: if (search.selectFirst(".novelabel") != null) "Novel" else "",
+                    isColored = search.selectFirst(".colored") != null,
+                    isComplete = search.selectFirst(".status.Completed") != null,
+                    isHot = search.selectFirst(".hotx") != null,
+                    url = url,
+                    slug = getLastPathSegment(url) ?: ""
+                )
+            )
+        }
+
+        val hasNext = document.selectFirst(".hpage .r") != null
+        return GenreSearch(
+            genreList = genreListResult,
+            page = page,
+            hasNext = hasNext,
+            result = searchItems
+        )
     }
 }

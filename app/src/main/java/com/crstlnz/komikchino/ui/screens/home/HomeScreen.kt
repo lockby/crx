@@ -5,27 +5,19 @@ import androidx.compose.animation.core.EaseOutQuart
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -34,27 +26,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.crstlnz.komikchino.LocalStatusBarPadding
-import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.ui.navigations.HomeSections
-import com.crstlnz.komikchino.ui.navigations.MainNavigation
 import com.crstlnz.komikchino.ui.navigations.addBottomNav
 import com.google.accompanist.navigation.animation.AnimatedNavHost
+import kotlinx.coroutines.flow.MutableStateFlow
+import javax.inject.Singleton
 
 val LocalSnackbarHostState = compositionLocalOf {
     SnackbarHostState()
+}
+
+@Singleton
+object HomeState {
+    var isEditMode = MutableStateFlow(false)
 }
 
 @OptIn(
@@ -72,11 +65,6 @@ fun HomeScreen(
     var selectedRoute by remember { mutableStateOf(HomeSections.HOME) }
     val snackBarHost = LocalSnackbarHostState.current
 
-//    val systemUiController = rememberSystemUiController()
-//    LaunchedEffect(Unit) {
-//        systemUiController.isSystemBarsVisible = false
-//    }
-
     LaunchedEffect(navBackStackEntry) {
         selectedRoute = HomeSections.values().find { section ->
             navBackStackEntry?.destination?.hierarchy?.any { it.route == section.route } == true
@@ -86,84 +74,6 @@ fun HomeScreen(
         Scaffold(
             contentWindowInsets = WindowInsets.ime,
             snackbarHost = { SnackbarHost(snackBarHost) },
-            topBar = {
-                TopAppBar(
-                    modifier = Modifier.padding(top = LocalStatusBarPadding.current),
-                    windowInsets = WindowInsets.ime,
-                    title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Image(
-                                painter = painterResource(id = R.mipmap.app_icon),
-                                contentDescription = "App Icon",
-                                modifier = Modifier.height(38.dp)
-                            )
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                stringResource(selectedRoute.title),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    },
-//                backgroundColor = MaterialTheme.colors.primary,
-                    actions = {
-                        IconButton(
-                            onClick = {
-                                navController.navigate(MainNavigation.SEARCH)
-                            },
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_search_24),
-                                contentDescription = "Search",
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(5.dp))
-                    },
-//                elevation = 0.dp
-                )
-
-//                 }
-//            Column() {
-//                Box(
-//                    Modifier
-//                        .background(MaterialTheme.colors.primary)
-//                        .height(LocalStatusBarPadding.current)
-//                        .fillMaxWidth()
-//                )
-//                TopAppBar(
-//                    title = {
-//                        Row(verticalAlignment = Alignment.CenterVertically) {
-//                            Image(
-//                                painter = painterResource(id = R.mipmap.app_icon),
-//                                contentDescription = "App Icon",
-//                                modifier = Modifier.height(36.dp)
-//                            )
-//                            Spacer(Modifier.width(8.dp))
-//                            Text(
-//                                stringResource(selectedRoute.title),
-//                                maxLines = 1,
-//                                overflow = TextOverflow.Ellipsis
-//                            )
-//                        }
-//                    },
-//                    backgroundColor = MaterialTheme.colors.primary,
-//                    actions = {
-//                        IconButton(
-//                            onClick = {
-//                                navController.navigate(MainNavigation.SEARCH)
-//                            },
-//                        ) {
-//                            Icon(
-//                                painter = painterResource(id = R.drawable.baseline_search_24),
-//                                contentDescription = "Search",
-//                            )
-//                        }
-//                        Spacer(modifier = Modifier.width(5.dp))
-//                    },
-//                    elevation = 0.dp
-//                )
-//            }
-            },
             bottomBar = {
                 BottomNavigation(
                     backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -171,8 +81,7 @@ fun HomeScreen(
                     elevation = 14.dp
                 ) {
                     for (section in HomeSections.values()) {
-                        val isSelected =
-                            navBackStackEntry?.destination?.hierarchy?.any { it.route == section.route } == true
+                        val isSelected = selectedRoute.route == section.route
                         BottomNavigationItem(
                             selected = isSelected,
                             onClick = {

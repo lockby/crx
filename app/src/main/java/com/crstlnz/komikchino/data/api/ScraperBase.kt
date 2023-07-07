@@ -2,6 +2,8 @@ package com.crstlnz.komikchino.data.api
 
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterApi
+import com.crstlnz.komikchino.data.model.Genre
+import com.crstlnz.komikchino.data.model.GenreSearch
 import com.crstlnz.komikchino.data.model.HomeData
 import com.crstlnz.komikchino.data.model.KomikDetail
 import com.crstlnz.komikchino.data.model.LatestUpdatePage
@@ -24,28 +26,5 @@ interface ScraperBase {
         return Jsoup.parse(onFetch().string())
     }
 
-//    suspend fun fetch(onFetch: suspend () -> ResponseBody): Document {
-//        return try {
-//            val result = Jsoup.parse(onFetch().string())
-//            AppSettings.cloudflareTry = 0
-//            result
-//        } catch (e: Exception) {
-//            if (e is HttpException && e.code() == 403) {
-//                val body = e.response()?.errorBody()?.string()
-//                val isBlocked =
-//                    isBlocked(Jsoup.parse(body ?: ""), (e as HttpException))
-//                if (isBlocked) {
-//                    AppSettings.cloudflareTry += 1
-//                    if (AppSettings.cloudflareTry >= 3) throw e
-//                    AppSettings.cloudflareBlock.update {
-//                        CloudflareState(
-//                            isBlocked = true,
-//                            key = it.key + 1
-//                        )
-//                    }
-//                }
-//            }
-//            throw e
-//        }
-//    }
+    suspend fun searchByGenre(genreList: List<Genre>, page: Int = 1): GenreSearch
 }

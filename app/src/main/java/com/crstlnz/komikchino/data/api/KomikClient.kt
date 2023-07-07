@@ -8,6 +8,7 @@ import com.crstlnz.komikchino.data.api.client.VoidScansScrapeAPI
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 
+
 object ApiClient {
     private val GITHUB_API = "https://api.github.com/"
     private val githubClient = Retrofit.Builder()

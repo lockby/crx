@@ -2,7 +2,6 @@ package com.crstlnz.komikchino.ui.navigations
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Home
@@ -25,7 +24,8 @@ enum class HomeSections(
     @StringRes val title: Int,
     private val icon: Any,
     private val selectedIcon: Any? = null,
-    val route: String
+    val route: String,
+    val actions: @Composable () -> Unit = {}
 ) {
     HOME(R.string.home, Icons.Outlined.Home, Icons.Filled.Home, "home"),
     LATEST_UPDATE(
@@ -76,7 +76,7 @@ fun NavGraphBuilder.addBottomNav(
 
 
     composable(HomeSections.GENRE.route) {
-        GenreScreen()
+        GenreScreen(navController)
     }
 
     composable(HomeSections.LATEST_UPDATE.route) {

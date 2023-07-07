@@ -3,6 +3,11 @@ package com.crstlnz.komikchino.data.model
 import java.util.Date
 
 
+data class FilteredUpdate(
+    val highlight: List<LatestUpdate> = emptyList(),
+    val result: List<LatestUpdate> = emptyList()
+)
+
 data class LatestUpdatePage(
     var page: Int = 1,
     var result: List<LatestUpdate> = listOf(),

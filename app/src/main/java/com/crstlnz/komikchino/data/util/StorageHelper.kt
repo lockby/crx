@@ -21,6 +21,10 @@ class StorageHelper<T>(
         context.getSharedPreferences(sharedPreferencesName, Context.MODE_PRIVATE)
     }
 
+    private val objectMapper: ObjectMapper by lazy {
+        jacksonObjectMapper()
+    }
+
     fun getAll(): List<T> {
         val listData = arrayListOf<T>()
         for (data in sharedPreferences.all.values) {
@@ -45,9 +49,6 @@ class StorageHelper<T>(
         return context
     }
 
-    private val objectMapper: ObjectMapper by lazy {
-        jacksonObjectMapper()
-    }
 
     fun delete(key: String) {
         sharedPreferences.edit().remove(key).apply()
