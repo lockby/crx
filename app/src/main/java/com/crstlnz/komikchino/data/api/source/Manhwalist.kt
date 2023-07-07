@@ -28,9 +28,8 @@ import org.jsoup.nodes.Document
 import java.util.Locale
 import java.util.regex.Pattern
 
-
-class VoidScans : ScraperBase {
-    private val api = KomikClient.getVoidScansClient()
+class Manhwalist : ScraperBase {
+    private val api = KomikClient.getManhwalistClient()
     override suspend fun getHome(): HomeData {
         val body = api.getHome()
         val document = Jsoup.parse(body.string())
@@ -103,14 +102,16 @@ class VoidScans : ScraperBase {
     }
 
     override suspend fun getLatestUpdate(page: Int): LatestUpdatePage {
-        val body = api.getHome()
+        val body = api.getLatestUpdate(page)
         val document = Jsoup.parse(body.string())
-        val latestUpdateElemets = document.select(".listupd .utao")
+        val latestUpdateBox = document.select(".postbody .listupd")
+        val latestUpdateElemets = latestUpdateBox.getOrNull(1)?.select(".bs")
+            ?: listOf()
         val latestUpdate = arrayListOf<LatestUpdate>()
 
         for (latest in latestUpdateElemets) {
-            val url = latest.selectFirst(".imgu a")?.attr("href") ?: ""
-            val chapterElements = latest.select("ul li")
+            val url = latest.selectFirst(".bsx a")?.attr("href") ?: ""
+            val chapterElements = latest.select(".bigor ul li")
             val chapters = arrayListOf<ChapterUpdate>()
 
             for (chapter in chapterElements) {
@@ -126,7 +127,7 @@ class VoidScans : ScraperBase {
             }
             latestUpdate.add(
                 LatestUpdate(
-                    title = latest.selectFirst(".luf a")?.text() ?: "",
+                    title = latest.selectFirst(".bigor .tt")?.text() ?: "",
                     img = latest.selectFirst("img")?.attr("src") ?: "",
                     description = "",
                     slug = getLastPathSegment(url) ?: "",
@@ -139,7 +140,7 @@ class VoidScans : ScraperBase {
         return LatestUpdatePage(
             page = page,
             result = latestUpdate,
-            hasNext = false
+            hasNext = document.selectFirst(".hpage .r") != null
         )
     }
 
@@ -178,9 +179,9 @@ class VoidScans : ScraperBase {
     private fun parseKomik(document: Document): KomikDetail {
         val table = document.select(".infotable tbody tr")
         val id = document.selectFirst(".bookmark")?.attr("data-id")?.toIntOrNull() ?: 0
-        val title = document.selectFirst(".infox .entry-title")?.text()
+        val title = document.selectFirst("#titlemove .entry-title")?.text()
         val genreLinkList = arrayListOf<GenreLink>()
-        val genres = document.select(".seriestugenre a")
+        val genres = document.select(".wd-full .mgen a")
 
         for (genre in genres) {
             val url = genre.attr("url") ?: ""
@@ -215,7 +216,7 @@ class VoidScans : ScraperBase {
         val chapterList = arrayListOf<Chapter>()
         val chapters = document.select("#chapterlist ul li")
 
-        for (chapter in chapters) {
+        for (chapter in chapters.reversed()) {
             val url = chapter.selectFirst(".eph-num a")?.attr("href") ?: ""
             chapterList.add(
                 Chapter(
@@ -251,7 +252,7 @@ class VoidScans : ScraperBase {
             score = document.selectFirst(".rating .num")?.text()?.trim()?.toFloatOrNull() ?: 0f,
             genreLinks = genreLinkList,
             similar = similarList,
-            chapters = chapterList,
+            chapters = chapterList.sortedByDescending { it.title },
             disqusConfig = getVoidScansDisqus(document.html())
         )
     }
@@ -275,7 +276,7 @@ class VoidScans : ScraperBase {
         val chapterList = arrayListOf<Chapter>()
         val chapters = document.select("#chapterlist ul li")
 
-        for (chapter in chapters) {
+        for (chapter in chapters.reversed()) {
             val url = chapter.selectFirst(".eph-num a")?.attr("href") ?: ""
             chapterList.add(
                 Chapter(
@@ -294,7 +295,7 @@ class VoidScans : ScraperBase {
                 )
             )
         }
-        return chapterList
+        return chapterList.sortedByDescending { it.title }
     }
 
 
@@ -308,8 +309,7 @@ class VoidScans : ScraperBase {
         val breadCrumbs = document.select(".ts-breadcrumb li")
         val mangaTitle = breadCrumbs.getOrNull(1)?.selectFirst("span")?.text()?.trim()
         val chapterTitle =
-            document.selectFirst(".headpost .entry-title")?.text()?.split("–")?.getOrNull(1)
-                ?.trim() ?: ""
+            document.selectFirst(".readingnavtop .chpnw")?.text()?.trim() ?: ""
 
 
         val slug =
@@ -336,6 +336,7 @@ class VoidScans : ScraperBase {
             disqusConfig = getVoidScansDisqus(document.html())
         )
     }
+
 
     override suspend fun getChapter(id: String): ChapterApi {
         return getChapterBySlug(id)

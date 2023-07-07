@@ -31,6 +31,7 @@ import java.util.Locale
 
 class Mangakatana : ScraperBase {
     private val api = KomikClient.getMangaKatanaClient()
+    private val DIVIDER = "@"
     override suspend fun getHome(): HomeData {
         val body = api.getHome()
         val document = Jsoup.parse(body.string())
@@ -84,11 +85,13 @@ class Mangakatana : ScraperBase {
 
         val section =
             Section(title = document.selectFirst("#hot_update .heading")?.text()?.trim()?.split(" ")
-                ?.joinToString(" ") { it.replaceFirstChar {
-                    if (it.isLowerCase()) it.titlecase(
-                        Locale.ROOT
-                    ) else it.toString()
-                } } ?: "", list = sectionList)
+                ?.joinToString(" ") {
+                    it.replaceFirstChar {
+                        if (it.isLowerCase()) it.titlecase(
+                            Locale.ROOT
+                        ) else it.toString()
+                    }
+                } ?: "", list = sectionList)
 
         return HomeData(
             featured = featuredList, sections = listOf(section)
@@ -117,12 +120,15 @@ class Mangakatana : ScraperBase {
                 )
             }
 
+
+
             for ((index, chapter) in chapterElements.withIndex()) {
                 val cUrl = chapter.selectFirst("a")?.attr("href") ?: ""
+                val cSlug = getLastTwoSegments(cUrl)
                 chapters.add(
                     ChapterUpdate(
                         title = chapter.selectFirst("a")?.text()?.trim() ?: "",
-                        slug = getLastPathSegment(cUrl) ?: "",
+                        slug = cSlug.ifEmpty { "0" },
                         url = cUrl,
                         date = updateTime.getOrNull(index)
                     )
@@ -234,7 +240,10 @@ class Mangakatana : ScraperBase {
         val chapters = document.select(".chapters tbody tr")
 
         for (chapter in chapters) {
-            val url = chapter.selectFirst(".chapter a")?.attr("href") ?: ""
+            val cUrl = chapter.selectFirst(".chapter a")?.attr("href") ?: ""
+            val cSlug = getLastTwoSegments(cUrl)
+            val cId = cSlug.replace("/", DIVIDER)
+
             chapterList.add(
                 Chapter(
                     title = chapter.selectFirst(".chapter a")?.text()?.replace(title ?: "", "")
@@ -244,10 +253,10 @@ class Mangakatana : ScraperBase {
                         "MMM-dd-yyyy",
                         Locale.ENGLISH
                     ),
-                    slug = getLastTwoSegments(url),
-                    id = getLastTwoSegments(url),
+                    slug = cSlug.ifEmpty { "0" },
+                    id = cId.ifEmpty { "0" },
                     mangaId = mangaId,
-                    url = url,
+                    url = cUrl,
                 )
             )
         }
@@ -281,6 +290,8 @@ class Mangakatana : ScraperBase {
 
         for (chapter in chapters) {
             val url = chapter.selectFirst(".chapter a")?.attr("href") ?: ""
+            val cSlug = getLastTwoSegments(url)
+            val cId = cSlug.replace("/", DIVIDER)
             chapterList.add(
                 Chapter(
                     title = chapter.selectFirst(".chapter a")?.text()?.replace(title ?: "", "")
@@ -290,8 +301,8 @@ class Mangakatana : ScraperBase {
                         "MMM-dd-yyyy",
                         Locale.ENGLISH
                     ),
-                    slug = getLastTwoSegments(url),
-                    id = getLastTwoSegments(url),
+                    slug = cSlug.ifEmpty { "0" },
+                    id = cId.ifEmpty { "0" },
                     mangaId = mangaId,
                     url = url,
                 )
@@ -301,7 +312,7 @@ class Mangakatana : ScraperBase {
         return chapterList
     }
 
-    private fun parseChapter(document: Document): ChapterApi {
+    private suspend fun parseChapter(document: Document): ChapterApi {
         var imgList = listOf<String>()
         try {
             imgList = parseMangaKatanaChapterImages(document.html())
@@ -318,10 +329,11 @@ class Mangakatana : ScraperBase {
         val slug =
             getLastTwoSegments(document.selectFirst("link[rel='canonical']")?.attr("href") ?: "")
 
-        val mangaId: String = slug.split(".").getOrNull(1) ?: ""
-        val mangaSlug = slug.split("/").getOrNull(0) ?: ""
+        val mangaSlug = slug.split("/").getOrNull(0) ?: "0"
+        val mangaId: String = mangaSlug.split(".").getOrNull(1) ?: "0"
+
         return ChapterApi(
-            id = slug,
+            id = slug.replace("/", DIVIDER),
             imgs = imgList,
             title = chapterTitle,
             slug = slug,
@@ -331,11 +343,12 @@ class Mangakatana : ScraperBase {
     }
 
     override suspend fun getChapter(id: String): ChapterApi {
-        return getChapterBySlug(id)
+        // this app only use slug for mangakatana because chapter dont have id
+        return getChapterBySlug(id.replace(DIVIDER, "/"))
     }
 
     override suspend fun getChapterBySlug(slug: String): ChapterApi {
-        val split = slug.split("/")
+        val split = slug.replace(DIVIDER, "/").split("/")
         val body = api.getChapter(split.getOrNull(0) ?: "", split.getOrNull(1) ?: "")
         val document = Jsoup.parse(body.string())
         return parseChapter(document)

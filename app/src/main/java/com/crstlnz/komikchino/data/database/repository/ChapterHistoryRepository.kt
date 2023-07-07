@@ -7,6 +7,7 @@ import com.crstlnz.komikchino.config.CHAPTER
 import com.crstlnz.komikchino.config.SERVER
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.database.model.ChapterHistoryItem
+import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
 import com.crstlnz.komikchino.data.util.BaseRepository
 import kotlinx.coroutines.tasks.await
 
@@ -56,6 +57,19 @@ class ChapterHistoryRepository(private val databaseKey: KomikServer) : BaseRepos
 
     suspend fun add(history: ChapterHistoryItem) {
         try {
+            val snapshot = chapterCollection.document(history.id).get()
+            if (snapshot.isSuccessful && snapshot.result.exists()) {
+                try {
+                    val komik = snapshot.result.toObject(KomikHistoryItem::class.java)
+                    if (komik != null) {
+                        chapterCollection.document(history.id)
+                            .set(history.copy(createdAt = komik.createdAt)).await()
+                        return
+                    }
+                } catch (e: Exception) {
+                    Log.d("FIREBASE ERROR", e.stackTraceToString())
+                }
+            }
             chapterCollection.document(history.id).set(history).await()
         } catch (e: Exception) {
             Log.d("FIREBASE ERROR", e.stackTraceToString())

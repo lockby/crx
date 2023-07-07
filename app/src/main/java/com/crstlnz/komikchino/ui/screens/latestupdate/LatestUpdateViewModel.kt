@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.latestupdate
 
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
@@ -31,7 +32,7 @@ class LatestUpdateViewModel @Inject constructor(
     private val historyRepository: KomikHistoryRepository,
     @Named("latestUpdateCache") private val storage: StorageHelper<List<LatestUpdate>>,
     private val api: ScraperBase
-) : ScraperViewModel<List<LatestUpdate>>(storage, true) {
+) : ScraperViewModel<List<LatestUpdate>>(storage) {
     override var cacheKey = "latestUpdate"
     private var page = 1
 
@@ -43,10 +44,12 @@ class LatestUpdateViewModel @Inject constructor(
     val infiniteState: StateFlow<InfiniteState> = _infiniteState.asStateFlow()
 
     fun next() {
+        Log.d("LATEST NEXT", page.toString())
         if (_infiniteState.value == InfiniteState.LOADING || _infiniteState.value == InfiniteState.FINISH) return
-        page++
         viewModelScope.launch {
             _infiniteState.update { InfiniteState.LOADING }
+            page++
+            Log.d("LATEST NEXT AFTER", page.toString())
             if (AppSettings.komikServer == KomikServer.MANGAKATANA) {
                 val timeElapsed = System.currentTimeMillis() - lastFetch
                 if (timeElapsed < mustDelay) {
@@ -77,6 +80,7 @@ class LatestUpdateViewModel @Inject constructor(
     }
 
     private suspend fun fetchSearch(page: Int = 1): List<LatestUpdate> {
+        this.page = page
         val result = api.getLatestUpdate(page)
         if (!result.hasNext) {
             _infiniteState.update { InfiniteState.FINISH }
@@ -86,6 +90,7 @@ class LatestUpdateViewModel @Inject constructor(
     }
 
     override suspend fun fetchData(): List<LatestUpdate> {
+
         return fetchSearch(1)
     }
 
@@ -93,10 +98,14 @@ class LatestUpdateViewModel @Inject constructor(
     val filteredUpdate = _filteredUpdate.asStateFlow()
     private var komikHistory = mutableListOf<KomikHistoryItem>()
 
+    private suspend fun updateKomikHistories() {
+        komikHistory = historyRepository.getKomikHistories().toMutableList()
+    }
+
     init {
         viewModelScope.launch {
-            komikHistory = historyRepository.getKomikHistories().toMutableList()
             _state.collectLatest { state ->
+                updateKomikHistories()
                 if (state.state == State.DATA) {
                     _filteredUpdate.update { _ ->
                         val data = state.getDataOrNull()!!

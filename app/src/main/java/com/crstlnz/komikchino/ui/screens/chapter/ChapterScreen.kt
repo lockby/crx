@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.chapter
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -49,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -155,28 +157,6 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                             )
                                         )
                                     })
-//                                    ListItem(
-//                                        Modifier
-//                                            .clickable {
-//                                                scope.launch {
-//                                                    drawerState.close()
-////                                            scaffoldState.drawerState.close()
-//                                                }
-//                                                goToChapter(
-//                                                    chapters[it].id ?: 0, chapters[it].title
-//                                                )
-//                                            }
-//                                            .background(
-//                                                color = if (chapterPosition == it) WhiteGray.copy(
-//                                                    alpha = 0.1f
-//                                                ) else Color.Transparent
-//                                            )) {
-//                                        Text(
-//                                            chapters[it].title, modifier = Modifier.padding(
-//                                                horizontal = 10.dp, vertical = 20.dp
-//                                            )
-//                                        )
-//                                    }
                                 }
                             }
                         }
@@ -217,6 +197,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                 when (dataState) {
                     is DataState.Success -> {
                         if ((dataState as DataState.Success<ChapterData>).data.imgs.isNotEmpty()) {
+                            val context = LocalContext.current
                             ChapterImageList(
                                 Modifier.nestedScroll(nestedScroll),
                                 images = (dataState as DataState.Success<ChapterData>).data.imgs,
@@ -235,6 +216,12 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                         goToChapter(
                                             chapter.id ?: "", chapter.title
                                         )
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "Tidak ada chapter selanjutnya",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
                                 },
                                 viewModel = v

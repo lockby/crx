@@ -61,10 +61,10 @@ object MainNavigation {
         komikData: KomikHistoryItem,
     ) {
         navController.navigate(
-            "${CHAPTER}/id/${convertToStringURL(chapterId)}/${chapterTitle}/${
+            "${CHAPTER}/id/${convertToStringURL(chapterId).ifEmpty { "0" }}/${chapterTitle.ifEmpty { "0" }}/${
                 convertToStringURL(
                     komikData
-                )
+                ).ifEmpty { "0" }
             }",
         )
     }
@@ -91,7 +91,7 @@ object MainNavigation {
         chapterTitle: String,
     ) {
         navController.navigate(
-            "${CHAPTER}/slug/${convertToStringURL(chapterSlug)}/${chapterTitle}",
+            "${CHAPTER}/slug/${convertToStringURL(chapterSlug).ifEmpty { "0" }}/${chapterTitle.ifEmpty { "0" }}",
         )
     }
 
@@ -147,6 +147,20 @@ object MainNavigation {
                             "UTF-8"
                         )
                     }&title=${title}&type=${type}url=${URLEncoder.encode(url, "UTF-8")}",
+                    title
+                )
+            }
+
+            KomikServer.MANHWALIST -> {
+                Log.d("DISQUS URL", url)
+                toWebView(
+                    navController,
+                    "file:///android_asset/manhwalistdisqus.html?id=${
+                        URLEncoder.encode(
+                            slug,
+                            "UTF-8"
+                        )
+                    }&title=${title}&type=${type}&url=${URLEncoder.encode(url, "UTF-8")}",
                     title
                 )
             }

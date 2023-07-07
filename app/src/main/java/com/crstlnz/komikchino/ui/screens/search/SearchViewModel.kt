@@ -123,6 +123,7 @@ class SearchViewModel @Inject constructor(
     }
 
     private suspend fun fetchSearch(query: String, page: Int = 1): List<SearchResult.ExactMatch> {
+        this.page = page
         val result = api.search(query, page)
         return if (result is SearchResult.SearchList) {
             if (!result.hasNext) {

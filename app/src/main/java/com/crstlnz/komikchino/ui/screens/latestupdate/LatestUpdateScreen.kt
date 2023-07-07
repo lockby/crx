@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.latestupdate
 
+import android.util.Log
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -72,6 +73,7 @@ fun LatestUpdateScreen(navController: NavController) {
     val v = hiltViewModel<LatestUpdateViewModel>()
     val scrollState = rememberLazyListState()
     scrollState.OnBottomReached(2) {
+        Log.d("LATEST NEXT", "AWWW")
         v.next()
     }
     val dataState by v.state.collectAsState()

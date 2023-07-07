@@ -90,6 +90,19 @@ class KomikHistoryRepository(private val databaseKey: KomikServer) : BaseReposit
 
     suspend fun add(komikHistory: KomikHistoryItem) {
         try {
+            val snapshot = komikCollection.document(komikHistory.id).get()
+            if (snapshot.isSuccessful && snapshot.result.exists()) {
+                try {
+                    val komik = snapshot.result.toObject(KomikHistoryItem::class.java)
+                    if (komik != null) {
+                        komikCollection.document(komikHistory.id)
+                            .set(komikHistory.copy(createdAt = komik.createdAt)).await()
+                        return
+                    }
+                } catch (e: Exception) {
+                    Log.d("FIREBASE ERROR", e.stackTraceToString())
+                }
+            }
             komikCollection.document(komikHistory.id).set(komikHistory).await()
         } catch (e: Exception) {
             Log.d("FIREBASE ERROR", e.stackTraceToString())

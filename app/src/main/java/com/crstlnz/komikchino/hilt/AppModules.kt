@@ -5,6 +5,7 @@ import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.api.source.Kiryuu
 import com.crstlnz.komikchino.data.api.source.Mangakatana
+import com.crstlnz.komikchino.data.api.source.Manhwalist
 import com.crstlnz.komikchino.data.api.source.VoidScans
 import com.crstlnz.komikchino.data.database.repository.ChapterHistoryRepository
 import com.crstlnz.komikchino.data.database.repository.FavoriteKomikRepository
@@ -49,6 +50,10 @@ class AppModules {
 
             KomikServer.VOIDSCANS -> {
                 VoidScans()
+            }
+
+            KomikServer.MANHWALIST -> {
+                Manhwalist()
             }
         }
     }

@@ -11,13 +11,6 @@ enum class KomikServer(
 ) {
     KIRYUU("kiryuu", "https://kiryuu.id/", true),
     MANGAKATANA("mangakatana", "https://mangakatana.com/", true),
-    VOIDSCANS("voidscans", "https://void-scans.com/", true)
-}
-
-fun getServerUrl(server: KomikServer): String {
-    return when (server) {
-        KomikServer.KIRYUU -> "https://kiryuu.id/"
-        KomikServer.MANGAKATANA -> "https://mangakatana.com/"
-        KomikServer.VOIDSCANS -> "https://void-scans.com/"
-    }
+    VOIDSCANS("voidscans", "https://void-scans.com/", true),
+    MANHWALIST("manhwalist", "https://manhwalist.xyz/", true)
 }

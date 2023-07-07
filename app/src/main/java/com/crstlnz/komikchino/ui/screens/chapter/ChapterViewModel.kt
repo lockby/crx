@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.chapter
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -158,6 +159,8 @@ class ChapterViewModel @Inject constructor(
             title = state.value.getDataOrNull()?.title ?: "",
             slug = state.value.getDataOrNull()?.slug ?: "",
         )
+
+        Log.d("CHAPTER SAVE", chapter.toString())
 
         if (komikData?.id != null) {
             chapterScrollPostition.set<ChapterScrollPostition>(

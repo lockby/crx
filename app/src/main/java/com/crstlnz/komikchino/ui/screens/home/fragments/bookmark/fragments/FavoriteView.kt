@@ -141,7 +141,7 @@ fun FavoriteGridView(
                                     modifier = Modifier
                                         .fillMaxWidth(),
                                     color = Color.White,
-                                    style = MaterialTheme.typography.labelMedium.copy(
+                                    style = MaterialTheme.typography.labelLarge.copy(
                                         fontWeight = FontWeight.Bold,
                                         shadow = Shadow(color = Color.Black, blurRadius = 8f)
                                     ),

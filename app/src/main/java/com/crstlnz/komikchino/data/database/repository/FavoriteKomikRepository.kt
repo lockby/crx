@@ -7,6 +7,7 @@ import com.crstlnz.komikchino.config.FAVORITES
 import com.crstlnz.komikchino.config.SERVER
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.database.model.FavoriteKomikItem
+import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
 import com.crstlnz.komikchino.data.util.BaseRepository
 import kotlinx.coroutines.tasks.await
 
@@ -28,6 +29,19 @@ class FavoriteKomikRepository(
 
     suspend fun add(favorite: FavoriteKomikItem) {
         try {
+            val snapshot = favoriteCollection.document(favorite.id).get()
+            if (snapshot.isSuccessful && snapshot.result.exists()) {
+                try {
+                    val komik = snapshot.result.toObject(KomikHistoryItem::class.java)
+                    if (komik != null) {
+                        favoriteCollection.document(favorite.id)
+                            .set(favorite.copy(createdAt = komik.createdAt)).await()
+                        return
+                    }
+                } catch (e: Exception) {
+                    Log.d("FIREBASE ERROR", e.stackTraceToString())
+                }
+            }
             favoriteCollection.document(favorite.id).set(favorite).await()
         } catch (e: Exception) {
             Log.d("FIREBASE ERROR", e.stackTraceToString())

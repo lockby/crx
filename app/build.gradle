@@ -19,8 +19,8 @@ android {
         applicationId "com.crstlnz.komikchino"
         minSdk 24
         targetSdk 34
-        versionCode 5
-        versionName "0.3.0 - Beta"
+        versionCode 6
+        versionName "0.3.1 - Beta"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -83,6 +83,7 @@ android {
 }
 
 dependencies {
+
     // FIREBASE
     implementation platform('com.google.firebase:firebase-bom:32.1.1')
     implementation "com.google.firebase:firebase-crashlytics-ktx"

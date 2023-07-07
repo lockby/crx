@@ -191,6 +191,7 @@ fun ChapterImageList(
                     url = AppSettings.banner,
                     contentDescription = "Banner",
                     modifier = Modifier
+                        .background(color = White)
                         .fillMaxWidth()
                         .aspectRatio(16f / 25f)
                 )

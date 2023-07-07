@@ -80,6 +80,7 @@ class GenreViewModel @Inject constructor(
     private suspend fun fetchSearch(
         genreList: List<Genre> = listOf(), page: Int = 1
     ): GenreSearch {
+        this.page = page
         val result = api.searchByGenre(genreList, page)
         if (!result.hasNext) {
             _infiniteState.update { InfiniteState.FINISH }

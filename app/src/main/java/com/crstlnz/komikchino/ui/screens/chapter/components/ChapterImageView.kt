@@ -56,7 +56,7 @@ fun ChapterImageView(
         Box(
             Modifier
                 .fillMaxWidth()
-                .aspectRatio(5f / 8f),
+                .aspectRatio(defaultAspectRatio),
             contentAlignment = Alignment.Center
         ) {
             Image(
