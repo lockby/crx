@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Resources.getSystem
 import com.crstlnz.komikchino.config.AppSettings
+import com.crstlnz.komikchino.data.api.Bahasa
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.model.DisqusConfig
 import com.fasterxml.jackson.databind.JavaType
@@ -42,7 +43,7 @@ fun isPlural(num: Long, isEnglish: Boolean = true): String {
 }
 
 fun formatRelativeDate(date: Date): String {
-    val isEnglish = AppSettings.komikServer != KomikServer.KIRYUU
+    val isEnglish = AppSettings.komikServer!!.bahasa == Bahasa.ENGLISH
     val now = Calendar.getInstance().time
     val difference = now.time - date.time
 

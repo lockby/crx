@@ -8,6 +8,7 @@ import com.crstlnz.komikchino.config.KOMIK
 import com.crstlnz.komikchino.config.SERVER
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.database.model.ChapterHistoryItem
+import com.crstlnz.komikchino.data.database.model.FavoriteKomikItem
 import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
 import com.crstlnz.komikchino.data.database.model.KomikReadHistory
 import com.crstlnz.komikchino.data.util.BaseRepository
@@ -31,6 +32,28 @@ class KomikHistoryRepository(private val databaseKey: KomikServer) : BaseReposit
                 null
             }
         }
+    }
+
+    fun readHistories(): LiveData<List<KomikHistoryItem>> {
+        val komikLiveData = MutableLiveData<List<KomikHistoryItem>>()
+        val listenerRegistration = komikCollection.addSnapshotListener { snapshot, exception ->
+            if (exception != null) {
+                // Handle error
+                // You might want to set an appropriate error state in LiveData here
+                return@addSnapshotListener
+            }
+            val komikItems = snapshot?.documents?.mapNotNull { doc ->
+                try {
+                    doc.toObject(KomikHistoryItem::class.java)
+                } catch (e: Exception) {
+                    Log.d("FIREBASE PARSE ERROR", e.stackTraceToString())
+                    null
+                }
+            } ?: emptyList()
+            komikLiveData.value = komikItems
+        }
+        listeners.add(listenerRegistration)
+        return komikLiveData
     }
 
     suspend fun getHistories(): List<KomikReadHistory> {
@@ -63,29 +86,6 @@ class KomikHistoryRepository(private val databaseKey: KomikServer) : BaseReposit
             )
         }
         return result
-    }
-
-    fun readHistories(): LiveData<List<KomikReadHistory>> {
-        val komikItemsLiveData = MutableLiveData<List<KomikReadHistory>>()
-        val listenerRegistration = komikCollection.addSnapshotListener { snapshot, exception ->
-            if (exception != null) {
-                // Handle error
-                // You might want to set an appropriate error state in LiveData here
-                return@addSnapshotListener
-            }
-            val komikItems = snapshot?.documents?.mapNotNull { doc ->
-                try {
-                    doc.toObject(KomikHistoryItem::class.java)
-                } catch (e: Exception) {
-                    Log.d("FIREBASE PARSE ERROR", e.stackTraceToString())
-                    null
-                }
-            } ?: emptyList()
-            komikItemsLiveData.value =
-                komikItems.map { KomikReadHistory(komik = it, chapter = null) }
-        }
-        listeners.add(listenerRegistration)
-        return komikItemsLiveData
     }
 
     suspend fun add(komikHistory: KomikHistoryItem) {

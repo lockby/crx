@@ -24,22 +24,22 @@ class BookmarkViewModel @Inject constructor(
     private val favoriteRepository: FavoriteKomikRepository,
     @Named("chapterScrollPostitionCache") private val chapterScrollPostition: StorageHelper<ChapterScrollPostition>,
 ) : ViewModel() {
-    private val _histories = MutableStateFlow<List<KomikReadHistory>?>(null)
-    val histories = _histories.asStateFlow()
+    //    private val _histories = MutableStateFlow<List<KomikReadHistory>?>(null)
+    val histories = historyRepository.readHistories()
     val favorites = favoriteRepository.getAll()
 
     init {
-        updateHistories()
+//        updateHistories()
     }
 
-    fun updateHistories() {
-        viewModelScope.launch {
-            val history = historyRepository.getHistories()
-            _histories.update {
-                history
-            }
-        }
-    }
+//    fun updateHistories() {
+//        viewModelScope.launch {
+//            val history = historyRepository.getHistories()
+//            _histories.update {
+//                history
+//            }
+//        }
+//    }
 
     fun getChapterScrollPosition(mangaId: String, chapterId: String): ChapterScrollPostition? {
         val pos = chapterScrollPostition.get<ChapterScrollPostition>(mangaId)
@@ -114,7 +114,6 @@ class BookmarkViewModel @Inject constructor(
                 viewModelScope.launch {
                     historyRepository.delete(item)
                 }
-                updateHistories()
             } else if (pageId == "1") { // favorites view
                 viewModelScope.launch {
                     favoriteRepository.delete(item)

@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.crstlnz.komikchino.data.api.ScraperBase
+import com.crstlnz.komikchino.data.database.model.ChapterEmbed
 import com.crstlnz.komikchino.data.database.model.ChapterHistoryItem
 import com.crstlnz.komikchino.data.database.model.FavoriteKomikItem
 import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
@@ -160,7 +161,6 @@ class ChapterViewModel @Inject constructor(
             slug = state.value.getDataOrNull()?.slug ?: "",
         )
 
-        Log.d("CHAPTER SAVE", chapter.toString())
 
         if (komikData?.id != null) {
             chapterScrollPostition.set<ChapterScrollPostition>(
@@ -177,7 +177,15 @@ class ChapterViewModel @Inject constructor(
 
         viewModelScope.launch {
             komikData?.let {
-                komikRepository.add(it)
+                komikRepository.add(
+                    it.copy(
+                        chapter = ChapterEmbed(
+                            id = chapter.id,
+                            title = chapter.title,
+                            slug = chapter.slug
+                        )
+                    )
+                )
             }
         }
 

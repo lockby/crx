@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.crstlnz.komikchino.R
+import com.crstlnz.komikchino.data.database.model.ChapterEmbed
 import com.crstlnz.komikchino.data.database.model.ChapterHistoryItem
 import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
 import com.crstlnz.komikchino.data.database.model.KomikReadHistory
@@ -58,10 +60,10 @@ import com.crstlnz.komikchino.ui.util.getComicTypeColor
 fun RecentView(
     viewModel: BookmarkViewModel,
     onKomikClick: (komik: KomikHistoryItem) -> Unit = {},
-    onChapterClick: (komik: KomikHistoryItem, chapter: ChapterHistoryItem) -> Unit = { _, _ -> },
+    onChapterClick: (komik: KomikHistoryItem, chapter: ChapterEmbed) -> Unit = { _, _ -> },
     pageId: String
 ) {
-    val data by viewModel.histories.collectAsState()
+    val data by viewModel.histories.observeAsState()
 
     if (data == null) {
         LoadingView()
@@ -70,7 +72,7 @@ fun RecentView(
             EmptyView()
         }
     } else {
-        val sortedData = data!!.sortedByDescending { it.chapter?.updatedAt }
+        val sortedData = data!!.sortedByDescending { it.updatedAt }
         RecentListView(
             viewModel,
             sortedData,
@@ -88,15 +90,15 @@ fun RecentView(
 @Composable
 fun RecentListView(
     viewModel: BookmarkViewModel,
-    histories: List<KomikReadHistory>,
+    histories: List<KomikHistoryItem>,
     onKomikClick: (komik: KomikHistoryItem) -> Unit,
-    onChapterClick: (komik: KomikHistoryItem, chapter: ChapterHistoryItem) -> Unit,
+    onChapterClick: (komik: KomikHistoryItem, chapter: ChapterEmbed) -> Unit,
     pageId: String
 ) {
     val isEditMode = viewModel.editState.contains(pageId)
     LaunchedEffect(isEditMode) {
         if (isEditMode) {
-            viewModel.setData(pageId, histories.map { it.komik.id })
+            viewModel.setData(pageId, histories.map { it.id })
         } else {
             viewModel.deselectAll(pageId)
         }
@@ -108,7 +110,7 @@ fun RecentListView(
         modifier = Modifier.absoluteOffset(0.dp, 0.dp)
     ) {
         items(histories.size) {
-            val komik = histories[it].komik
+            val komik = histories[it]
             val chapter = histories[it].chapter
             Box(
                 Modifier
@@ -156,7 +158,7 @@ fun RecentListView(
                             .clip(RoundedCornerShape(8.dp))
                     ) {
                         ImageView(
-                            url = histories[it].komik.img,
+                            url = komik.img,
                             contentDescription = "Thumbnail",
                             modifier = Modifier
                                 .fillMaxSize()

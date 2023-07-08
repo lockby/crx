@@ -30,6 +30,33 @@ import java.util.regex.Pattern
 
 class Manhwalist : ScraperBase {
     private val api = KomikClient.getManhwalistClient()
+
+    private fun extractNumericValue(title: String): Int {
+        val numericRegex = Regex("\\d+")
+        val numericPart = numericRegex.find(title)?.value
+        return numericPart?.toIntOrNull() ?: 0
+    }
+
+    private fun sortChapter(): Comparator<Chapter> {
+        return Comparator<Chapter> { c1, c2 ->
+            if (c1.date != null && c2.date != null && c1.date.time != c2.date.time) {
+                if (c1.date.time > c2.date.time) {
+                    -1
+                } else {
+                    1
+                }
+            } else {
+                val numericValue1 = extractNumericValue(c1.title)
+                val numericValue2 = extractNumericValue(c2.title)
+                if (numericValue1 != numericValue2) {
+                    numericValue2 - numericValue1
+                } else {
+                    c2.title.compareTo(c1.title)
+                }
+            }
+        }
+    }
+
     override suspend fun getHome(): HomeData {
         val body = api.getHome()
         val document = Jsoup.parse(body.string())
@@ -226,7 +253,7 @@ class Manhwalist : ScraperBase {
                     date = parseDateString(
                         chapter.selectFirst(".eph-num .chapterdate")?.text()?.trim() ?: "",
                         "MMMM d, yyyy",
-                        Locale.US
+                        Locale.ENGLISH
                     ),
                     slug = getLastPathSegment(url) ?: "",
                     id = getLastPathSegment(url) ?: "",
@@ -252,7 +279,7 @@ class Manhwalist : ScraperBase {
             score = document.selectFirst(".rating .num")?.text()?.trim()?.toFloatOrNull() ?: 0f,
             genreLinks = genreLinkList,
             similar = similarList,
-            chapters = chapterList.sortedByDescending { it.title },
+            chapters = chapterList.sortedWith(sortChapter()),
             disqusConfig = getVoidScansDisqus(document.html())
         )
     }
@@ -286,7 +313,7 @@ class Manhwalist : ScraperBase {
                     date = parseDateString(
                         chapter.selectFirst(".eph-num .chapterdate")?.text()?.trim() ?: "",
                         "MMMM d, yyyy",
-                        Locale.US
+                        Locale.ENGLISH
                     ),
                     slug = getLastPathSegment(url) ?: "",
                     id = getLastPathSegment(url) ?: "",
@@ -295,7 +322,7 @@ class Manhwalist : ScraperBase {
                 )
             )
         }
-        return chapterList.sortedByDescending { it.title }
+        return chapterList.sortedWith(sortChapter())
     }
 
 

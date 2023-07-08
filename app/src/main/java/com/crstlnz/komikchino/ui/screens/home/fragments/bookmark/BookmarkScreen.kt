@@ -64,10 +64,6 @@ import kotlinx.coroutines.launch
 fun BookmarkScreen(navController: NavController) {
     val viewModel = hiltViewModel<BookmarkViewModel>()
 
-    LaunchedEffect(Unit) {
-        viewModel.updateHistories()
-    }
-
     val tabItems: List<TabRowItem> = arrayListOf(TabRowItem(title = "Recent", screen = { id ->
         RecentView(
             viewModel,
