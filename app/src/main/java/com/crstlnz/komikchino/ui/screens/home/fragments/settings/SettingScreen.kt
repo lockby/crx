@@ -117,9 +117,13 @@ fun SettingScreen(navController: NavController) {
                             ImageView(
                                 url = image?.toString() ?: "",
                                 contentDescription = "Profile Image",
+                                shape = CircleShape,
                                 modifier = Modifier
                                     .size(40.dp)
-                                    .clip(CircleShape)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.surfaceVariant,
+                                        shape = CircleShape
+                                    )
                             )
                             Spacer(Modifier.width(20.dp))
                             Column {

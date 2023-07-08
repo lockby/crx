@@ -59,7 +59,7 @@ open class ScraperViewModel<T>(
             }
         } catch (e: Exception) {
             Log.e("ERROR", e.stackTraceToString())
-            val errorString = "Fetch Fail"
+            val errorString = e.message ?: "Fetch fail!"
             _onError.emit(errorString)
             stateData.update {
                 DataState.Error(errorString)

@@ -259,15 +259,13 @@ fun LatestUpdateView(data: LatestUpdate, navController: NavController) {
             ImageView(
                 url = data.img,
                 contentDescription = data.title,
+                shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .width(100.dp)
                     .noRippleClickable {
                         MainNavigation.toKomik(navController, data.title, data.slug)
                     }
                     .aspectRatio(5f / 7f)
-                    .clip(
-                        RoundedCornerShape(8.dp)
-                    )
             )
             Spacer(Modifier.width(13.dp))
             Column {

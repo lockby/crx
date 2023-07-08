@@ -6,6 +6,9 @@ import androidx.compose.foundation.background
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.rememberAsyncImagePainter
@@ -19,6 +22,7 @@ import com.crstlnz.komikchino.config.AppSettings
 fun ImageView(
     url: String,
     modifier: Modifier = Modifier,
+    shape : Shape = RectangleShape,
     applyImageRequest: (ImageRequest.Builder) -> ImageRequest.Builder = { it },
     contentDescription: String?,
     contentScale: ContentScale = ContentScale.Crop,
@@ -39,6 +43,7 @@ fun ImageView(
         painter = painter,
         contentDescription = contentDescription,
         modifier = Modifier
+            .clip(shape)
             .background(color = MaterialTheme.colorScheme.surfaceVariant)
             .then(modifier),
         contentScale = contentScale

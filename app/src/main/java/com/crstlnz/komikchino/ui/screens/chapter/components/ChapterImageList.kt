@@ -90,12 +90,7 @@ fun ChapterImageList(
         }.toMutableList()
 
     LaunchedEffect(dataState) {
-        if (dataState.state != State.DATA) {
-            lazyColumnState.scrollToItem(0, 0)
-        }
-    }
-
-    LaunchedEffect(dataState) {
+        lazyColumnState.scrollToItem(0, 0)
         if (dataState.state == State.DATA) {
             viewModel.saveHistory(
                 lazyColumnState.firstVisibleItemIndex,

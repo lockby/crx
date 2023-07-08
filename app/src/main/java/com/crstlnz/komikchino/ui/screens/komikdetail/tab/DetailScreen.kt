@@ -80,10 +80,10 @@ fun DetailScreen(
                 ImageView(
                     url = komikDetail.img,
                     contentDescription = "Thumbnail",
+                    shape = RoundedCornerShape(8.dp),
                     modifier = Modifier
                         .width(100.dp)
                         .aspectRatio(12f / 16f)
-                        .clip(RoundedCornerShape(8.dp))
                 )
                 Spacer(Modifier.width(12.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

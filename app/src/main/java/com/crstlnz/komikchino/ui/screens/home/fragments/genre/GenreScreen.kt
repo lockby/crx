@@ -393,10 +393,10 @@ fun GenreResultView(data: KomikSearchResult, onKomikClick: (data: KomikSearchRes
         ) {
             ImageView(
                 url = data.img,
+                shape = RoundedCornerShape(5.dp),
                 modifier = Modifier
                     .width(110.dp)
-                    .height(160.dp)
-                    .clip(RoundedCornerShape(5.dp)),
+                    .height(160.dp),
                 contentDescription = "Thumbnail"
             )
             Spacer(modifier = Modifier.width(10.dp))

@@ -514,10 +514,10 @@ fun LazyListScope.sectionView(
                 Row(Modifier.padding(15.dp)) {
                     ImageView(
                         url = komikList[it].img,
+                        shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
                             .width(120.dp)
-                            .aspectRatio(11f / 16f)
-                            .clip(RoundedCornerShape(8.dp)),
+                            .aspectRatio(11f / 16f),
                         contentDescription = "Thumbnail"
                     )
                     Spacer(Modifier.width(10.dp))
