@@ -83,11 +83,8 @@ fun CheckUpdateScreen(navController: NavController) {
     val appVersion = getAppVersion(context)
     val isUpdateAvailable = versionCheck(
         dataState.getDataOrNull()?.tagName ?: "",
-        ""
-//        appVersion
-//        getAppVersion(context)
+        appVersion
     )
-//    val isUpdateAvailable = versionCheck(dataState.getDataOrNull()?.tagName ?: "", "")
     val updatesVersion = dataState.getDataOrNull()?.tagName ?: ""
     val changeLog = dataState.getDataOrNull()?.body ?: ""
     val downloadUrl = dataState.getDataOrNull()?.assets?.getOrNull(0)?.browserDownloadUrl ?: ""
