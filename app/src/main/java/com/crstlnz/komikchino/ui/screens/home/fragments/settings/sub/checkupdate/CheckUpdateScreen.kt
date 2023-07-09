@@ -234,7 +234,7 @@ fun CheckUpdateScreen(navController: NavController) {
 
                 Button(
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = dataState.state != State.LOADING || (downloadUrl.isNotEmpty() && !isUpdating),
+                    enabled = dataState.state != State.LOADING && (downloadUrl.isNotEmpty() && !isUpdating),
                     onClick = {
                         if (isUpdateAvailable) {
                             downloadUpdates()
