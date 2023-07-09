@@ -49,6 +49,7 @@ import com.crstlnz.komikchino.data.util.FirebaseInitializer
 import com.crstlnz.komikchino.data.util.HttpErrorInterceptor
 import com.crstlnz.komikchino.data.util.RequestHeaderInterceptor
 import com.crstlnz.komikchino.data.util.getAppVersion
+import com.crstlnz.komikchino.data.util.getCurrentDateString
 import com.crstlnz.komikchino.data.util.versionCheck
 import com.crstlnz.komikchino.ui.components.UpdateDialog
 import com.crstlnz.komikchino.ui.navigations.HomeSections
@@ -243,6 +244,7 @@ fun MainApp() {
     ) {
         addMainNavigation(navController)
     }
+    val context = LocalContext.current
 
 
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
@@ -263,21 +265,47 @@ fun MainApp() {
         } else {
             val user = FirebaseAuth.getInstance().currentUser
             if (user != null) {
-                FirebaseFirestore.getInstance()
+                val userDocument = FirebaseFirestore.getInstance()
                     .collection(USER_DATA)
                     .document(user.uid)
-                    .set(
-                        User(
-                            id = user.uid,
-                            name = user.displayName ?: "",
-                            email = user.email ?: "",
-                            img = user.photoUrl.toString(),
-                        )
-                    ).addOnSuccessListener {
-                        Log.d("FIRESTORE SUCCESS", "INSERT USER DATA")
-                    }.addOnFailureListener {
-                        Log.d("FIRESTORE FAILED", it.stackTraceToString())
+
+                userDocument.get().addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val userData = if (task.result.exists() && task.result != null) {
+                            try {
+                                task.result.toObject(User::class.java)?.copy(
+                                    last_online = getCurrentDateString()
+                                )
+                            } catch (e: Exception) {
+                                Log.d("USER PARSE ERROR", e.stackTraceToString())
+                                null
+                            }
+
+                        } else {
+                            User(
+                                id = user.uid,
+                                name = user.displayName ?: "",
+                                email = user.email ?: "",
+                                img = user.photoUrl.toString(),
+                                appVersion = getAppVersion(context),
+                                created_at = System.currentTimeMillis(),
+                                last_online = getCurrentDateString()
+                            )
+                        }
+
+                        userData?.let { usr ->
+                            userDocument.set(
+                                usr
+                            ).addOnSuccessListener {
+                                Log.d("FIRESTORE SUCCESS", "INSERT USER DATA")
+                            }.addOnFailureListener {
+                                Log.d("FIRESTORE FAILED", it.stackTraceToString())
+                            }
+                        }
+
                     }
+                }
+
             }
             if (currentRoute != MainNavigation.HOME) {
                 MainNavigation.toHome(navController)
@@ -286,7 +314,6 @@ fun MainApp() {
     }
 
     var openDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current
     val settings = Settings(context)
     LaunchedEffect(Unit) {
         val updateState = settings.getUpdate()

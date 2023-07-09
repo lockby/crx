@@ -36,7 +36,7 @@ object AppSettings {
     var customHttpClient: OkHttpClient = OkHttpClient.Builder().build()
 
     var cookieJar: CookieJar = EmptyCookieJar()
-    const val userAgent =
+    var userAgent =
         "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.130 Mobile Safari/537.36"
 
     //    val cloudflareBlock: MutableLiveData<Boolean> = MutableLiveData<Boolean>(false)

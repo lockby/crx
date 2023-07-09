@@ -7,6 +7,12 @@ data class ImageSize(
     val width: Float,
 )
 
+data class ScrollImagePosition(
+    val initialFirstVisibleItemIndex: Int,
+    val initialFirstVisibleItemScrollOffset: Int,
+    val calculatedImageSize: List<ImageSize>
+)
+
 data class ChapterScrollPostition(
     val imageSize: List<ImageSize>,
     val mangaId: String,

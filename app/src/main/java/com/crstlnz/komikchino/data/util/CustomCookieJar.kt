@@ -53,8 +53,9 @@ class CustomCookieJar(context: Context) : CookieJar {
     }
 
     // Add a method to update cookies
-    fun updateCookies(url: HttpUrl, cookies: List<Cookie>) {
-        this.saveFromResponse(url, cookies)
+    fun updateCookies(url: HttpUrl, cookies: List<Cookie>?) {
+        if (cookies != null)
+            this.saveFromResponse(url, cookies)
     }
 }
 

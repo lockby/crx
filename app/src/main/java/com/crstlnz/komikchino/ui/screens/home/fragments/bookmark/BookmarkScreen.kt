@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.home.fragments.bookmark
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
@@ -57,6 +59,7 @@ import com.crstlnz.komikchino.ui.theme.Red
 import com.crstlnz.komikchino.ui.theme.WhiteGray
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,9 +93,13 @@ fun BookmarkScreen(navController: NavController) {
     }))
 
     val pagerState = rememberPagerState()
-    val pageId = pagerState.currentPage.toString()
-    LaunchedEffect(pagerState.currentPage) {
-        viewModel.deselectAll(pageId)
+    var pageId by remember { mutableStateOf("0") }
+
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }.distinctUntilChanged().collect { page ->
+            pageId = page.toString()
+            viewModel.deselectAll(pageId)
+        }
     }
 
     var openDeleteDialog by remember { mutableStateOf(false) }

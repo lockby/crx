@@ -2,6 +2,7 @@ package com.crstlnz.komikchino.ui.components.customswipe
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,14 +26,12 @@ fun CustomSwipeRefresh(
     state: SwipeRefreshState,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
-    lazyColumnState: LazyListState,
-    lazyColumnModifier: Modifier = Modifier,
     swipeEnabled: Boolean = true,
     refreshTriggerDistance: Dp = 80.dp,
     indicatorAlignment: Alignment = Alignment.TopCenter,
     indicatorPadding: PaddingValues = PaddingValues(0.dp),
     clipIndicatorToPadding: Boolean = true,
-    content: LazyListScope.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val updatedOnRefresh = rememberUpdatedState(onRefresh)
@@ -65,21 +64,7 @@ fun CustomSwipeRefresh(
             .background(White)
 
     ) {
-
-        LazyColumn(
-            lazyColumnModifier
-                .fillMaxWidth()
-                .weight(1f),
-            state = lazyColumnState,
-//                .pointerInput(Unit) {
-//                    detectTapGestures(onDoubleTap = {}, onTap = {
-//                        onNavChange(null)
-//                    })
-//                }
-        ) {
-            content()
-        }
-
+        content()
         CustomSwipeRefreshIndicator(
             state,
             refreshTriggerDistance,

@@ -9,6 +9,7 @@ import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.model.DisqusConfig
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import okhttp3.Cookie
 import java.io.File
 import java.net.URI
 import java.net.URLDecoder
@@ -337,4 +338,27 @@ fun clearCache(context: Context, cachePath: String) {
             }
         }
     }
+}
+
+fun parseCookieString(cookies: String, url: String): List<Cookie>? {
+    val updatedCookies = mutableListOf<Cookie>()
+    val cookieArray = cookies.split(";")
+    for (cookieItem in cookieArray) {
+        val cookiePair = cookieItem.trim().split("=")
+        if (cookiePair.size == 2) {
+            val cookieName = cookiePair[0]
+            val cookieValue = cookiePair[1]
+            val cookie =
+                Cookie.Builder().domain(extractDomain(url) ?: "").path("/").name(cookieName)
+                    .value(cookieValue).build()
+            updatedCookies.add(cookie)
+        }
+    }
+
+    if (updatedCookies.isEmpty()) return null
+    return updatedCookies
+}
+
+fun getCurrentDateString(): String {
+    return SimpleDateFormat("dd MMMM yyyy HH:mm:ss", Locale("id", "ID")).format(Date())
 }

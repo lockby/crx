@@ -27,6 +27,7 @@ import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.util.CustomCookieJar
 import com.crstlnz.komikchino.data.util.extractDomain
+import com.crstlnz.komikchino.data.util.parseCookieString
 import com.crstlnz.komikchino.ui.components.WebViewComponent
 import com.crstlnz.komikchino.ui.theme.Black1
 import kotlinx.coroutines.flow.update
@@ -63,24 +64,13 @@ fun UnblockCloudflare(
         ) != null
     }
 
-    fun getCookie(): List<Cookie>? {
-        val cookieString = CookieManager.getInstance().getCookie(url) ?: return null
-        val updatedCookies = mutableListOf<Cookie>()
-        val cookieArray = cookieString.split(";")
-        for (cookieItem in cookieArray) {
-            val cookiePair = cookieItem.trim().split("=")
-            if (cookiePair.size == 2) {
-                val cookieName = cookiePair[0]
-                val cookieValue = cookiePair[1]
-                val cookie =
-                    Cookie.Builder().domain(extractDomain(url) ?: "").path("/").name(cookieName)
-                        .value(cookieValue).build()
-                updatedCookies.add(cookie)
-            }
-        }
+    fun getCookieString(): String? {
+        return CookieManager.getInstance().getCookie(url) ?: return null
+    }
 
-        if (updatedCookies.isEmpty()) return null
-        return updatedCookies
+    fun getCookie(): List<Cookie>? {
+        val cookieString = getCookieString() ?: return null
+        return parseCookieString(cookieString, url)
     }
 
     fun hasCloudflareKey(cookies: List<Cookie>): Boolean {
@@ -158,13 +148,9 @@ fun UnblockCloudflare(
                     title = t ?: ""
                 }, shouldInterceptRequest = { webView, request, next ->
                     val cookies = getCookie()
-                    if (cookies != null) {
-                        Log.d("COOKIE", cookies.toString())
-                    } else {
-                        Log.d("COOKIE", "NULL")
-                    }
                     if (cookies != null && hasCloudflareKey(cookies)) {
                         Log.d("COOKIE UNBLOCK", "CLOUDFLARE UNBLOCKED!")
+                        Log.d("COOKIES", getCookieString().toString())
                         webView?.post {
                             val httpURL = url.toHttpUrlOrNull()
                             if (httpURL != null) {

@@ -3,6 +3,7 @@ package com.crstlnz.komikchino.hilt
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
+import com.crstlnz.komikchino.data.api.getScraper
 import com.crstlnz.komikchino.data.api.source.Kiryuu
 import com.crstlnz.komikchino.data.api.source.Mangakatana
 import com.crstlnz.komikchino.data.api.source.Manhwalist
@@ -39,23 +40,7 @@ class AppModules {
 
     @Provides
     fun provideApiClient(databaseKey: KomikServer): ScraperBase {
-        return when (databaseKey) {
-            KomikServer.KIRYUU -> {
-                Kiryuu()
-            }
-
-            KomikServer.MANGAKATANA -> {
-                Mangakatana()
-            }
-
-            KomikServer.VOIDSCANS -> {
-                VoidScans()
-            }
-
-            KomikServer.MANHWALIST -> {
-                Manhwalist()
-            }
-        }
+       return getScraper(databaseKey)
     }
 
     @Provides

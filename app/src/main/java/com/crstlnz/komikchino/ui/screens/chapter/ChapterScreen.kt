@@ -1,9 +1,11 @@
 package com.crstlnz.komikchino.ui.screens.chapter
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,9 +18,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -73,7 +79,7 @@ import com.crstlnz.komikchino.ui.theme.WhiteGray
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun ChapterScreen(navController: NavController, chapterTitle: String) {
     val v: ChapterViewModel = hiltViewModel()
@@ -88,7 +94,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
     Scaffold(
         Modifier.fillMaxSize(), contentWindowInsets = WindowInsets.ime
     ) {
-        val dataState by v.state.collectAsState()
+        val chapterKey by v.chapterKey.collectAsState()
         var title by remember { mutableStateOf(chapterTitle) }
         var navShow by remember { mutableStateOf(true) }
         val activeNested = remember {
@@ -107,23 +113,22 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
             if (systemUiController.isSystemBarsVisible != navShow)
                 systemUiController.isSystemBarsVisible = navShow
             nestedScroll = if (navShow) activeNested else nonActiveNested
-
         }
+
         fun goToChapter(id: String, _title: String) {
             v.loadChapter(id)
             title = _title
         }
 
-        val chapterList by v.chapterList.collectAsState()
         val chapterPosition by v.currentPosition.collectAsState()
         val lazyListState = rememberLazyListState()
         var isFirst by remember { mutableStateOf(true) }
-        LaunchedEffect(chapterList.state) {
-            if (chapterList.state == State.DATA) {
-                if (isFirst && chapterPosition >= 0) {
-                    lazyListState.scrollToItem(chapterPosition)
-                }
-                isFirst = false
+
+
+
+        LaunchedEffect(chapterKey) {
+            if (chapterKey > 0) {
+                lazyListState.scrollToItem(chapterPosition)
             }
         }
 
@@ -132,60 +137,91 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
             gesturesEnabled = true,
             drawerState = drawerState,
             drawerContent = {
+                val chapterList by v.chapterList.collectAsState()
+                LaunchedEffect(chapterList) {
+                    if (chapterList.state == State.DATA) {
+                        if (isFirst && chapterPosition >= 0) {
+                            lazyListState.scrollToItem(chapterPosition)
+                        }
+                        isFirst = false
+                    }
+                }
+                val state = rememberPullRefreshState(chapterList.state == State.LOADING, {
+                    v.loadChapterList(true)
+                })
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth(0.65f)
                         .fillMaxSize()
                 ) {
-                    when (chapterList) {
-                        is DataState.Success -> {
-                            val chapters = (chapterList as DataState.Success<List<Chapter>>).data
-                            LazyColumn(
-                                Modifier
-                                    .fillMaxSize()
-                                    .statusBarsPadding(), state = lazyListState
-                            ) {
-                                items(chapters.size) {
-                                    ListItem(colors = ListItemDefaults.colors(
-                                        containerColor = if (chapterPosition == it) WhiteGray.copy(
-                                            alpha = 0.1f
-                                        ) else Color.Transparent
-                                    ), headlineContent = {
-                                        Text(
-                                            chapters[it].title, modifier = Modifier.padding(
-                                                horizontal = 10.dp, vertical = 20.dp
-                                            )
-                                        )
-                                    })
-                                }
-                            }
-                        }
-
-                        is DataState.Error -> {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                ErrorView(
-                                    resId = R.drawable.error,
-                                    message = stringResource(id = R.string.unknown_error)
+                    Box(Modifier.pullRefresh(state)) {
+                        when (chapterList) {
+                            is DataState.Success -> {
+                                val chapters =
+                                    (chapterList as DataState.Success<List<Chapter>>).data
+                                LazyColumn(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .statusBarsPadding(), state = lazyListState
                                 ) {
-                                    v.loadChapterList()
-                                }
-                            }
-                        }
+                                    items(chapters.size) {
+                                        ListItem(
+                                            modifier = Modifier.clickable {
+                                                scope.launch {
+                                                    drawerState.close()
+                                                    goToChapter(
+                                                        chapters[it].id ?: "0",
+                                                        chapters[it].title
+                                                    )
+                                                }
 
-                        else -> {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        "Loading chapter",
-                                        style = MaterialTheme.typography.labelLarge
-                                    )
-                                    Spacer(Modifier.height(25.dp))
-                                    LinearProgressIndicator(
-                                        Modifier.fillMaxWidth(0.5f), color = Blue
-                                    )
+                                            },
+                                            colors = ListItemDefaults.colors(
+                                                containerColor = if (chapterPosition == it) WhiteGray.copy(
+                                                    alpha = 0.1f
+                                                ) else Color.Transparent
+                                            ), headlineContent = {
+                                                Text(
+                                                    chapters[it].title, modifier = Modifier.padding(
+                                                        horizontal = 10.dp, vertical = 20.dp
+                                                    )
+                                                )
+                                            })
+                                    }
+                                }
+                            }
+
+                            is DataState.Error -> {
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    ErrorView(
+                                        resId = R.drawable.error,
+                                        message = stringResource(id = R.string.unknown_error)
+                                    ) {
+                                        v.loadChapterList()
+                                    }
+                                }
+                            }
+
+                            else -> {
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            "Loading chapter",
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
+                                        Spacer(Modifier.height(25.dp))
+                                        LinearProgressIndicator(
+                                            Modifier.fillMaxWidth(0.5f), color = Blue
+                                        )
+                                    }
                                 }
                             }
                         }
+                        PullRefreshIndicator(
+                            chapterList.state == State.LOADING,
+                            state,
+                            Modifier.align(Alignment.TopCenter)
+                        )
                     }
                 }
             }) {
@@ -194,6 +230,12 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                     .padding(it)
                     .fillMaxSize()
             ) {
+                val dataState by v.state.collectAsState()
+                LaunchedEffect(dataState) {
+                    if (dataState is DataState.Success) {
+                        title = dataState.getDataOrNull()?.title ?: ""
+                    }
+                }
                 when (dataState) {
                     is DataState.Success -> {
                         if ((dataState as DataState.Success<ChapterData>).data.imgs.isNotEmpty()) {
@@ -211,7 +253,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                 onNextClick = {
                                     if (!navShow) navShow = true
                                     val chapter =
-                                        chapterList.getDataOrNull()?.getOrNull(chapterPosition + 1)
+                                        v.chapterList.value.getDataOrNull()?.getOrNull(chapterPosition + 1)
                                     if (chapter != null) {
                                         goToChapter(
                                             chapter.id ?: "", chapter.title

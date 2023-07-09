@@ -103,6 +103,7 @@ class GenreViewModel @Inject constructor(
     }
 
     override suspend fun fetchData(): GenreSearch {
+        cacheKey = "${genreList.joinToString("-") { it.id }}|genreSearch"
         return fetchSearch(genreList, 1)
     }
 

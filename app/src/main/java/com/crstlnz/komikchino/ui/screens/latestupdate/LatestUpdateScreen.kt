@@ -51,6 +51,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.LocalStatusBarPadding
 import com.crstlnz.komikchino.R
+import com.crstlnz.komikchino.data.model.DataState.Loading.getDataOrNull
 import com.crstlnz.komikchino.data.model.LatestUpdate
 import com.crstlnz.komikchino.data.model.State
 import com.crstlnz.komikchino.data.util.formatRelativeDate
@@ -133,12 +134,18 @@ fun LatestUpdateScreen(navController: NavController) {
                     val filteredUpdate by v.filteredUpdate.collectAsState()
                     val highlight = filteredUpdate.highlight
                     val latestUpdates = filteredUpdate.result
-                    if (latestUpdates.isEmpty()) {
+                    if (latestUpdates.isEmpty() && dataState.getDataOrNull()?.isEmpty() == true) {
                         ErrorView(
                             resId = R.drawable.error,
                             message = "Tidak ada latest update!"
                         ) {
                             v.load()
+                        }
+                    } else if (latestUpdates.isEmpty()) {
+                        LazyColumn(contentPadding = PaddingValues(vertical = 15.dp)) {
+                            items(5) {
+                                LoadingView()
+                            }
                         }
                     } else {
                         LazyColumn(
@@ -207,6 +214,7 @@ fun LatestUpdateScreen(navController: NavController) {
                                     }
                                 }
                             }
+
                             items(latestUpdates.size) {
                                 LatestUpdateView(latestUpdates[it], navController)
                             }

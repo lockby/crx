@@ -1,6 +1,7 @@
 package com.crstlnz.komikchino.ui.screens.chapter.components
 
 import android.os.Build.VERSION.SDK_INT
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -27,11 +28,11 @@ fun ChapterImageView(
     onImageSizeCalculated: (height: Float, width: Float) -> Unit = { _, _ -> },
     defaultAspectRatio: Float = 5f / 8f
 ) {
+    Log.d("CHAPTER IMAGE", data.url)
     val painter = rememberAsyncImagePainter(
         imageLoader = AppSettings.imageLoader!!,
         model = ImageRequest.Builder(LocalContext.current).data(data.url)
             .crossfade(true)
-            .setHeader("Content-Type", "image/jpeg")
             .allowHardware(data.useHardware)
             .size(Size.ORIGINAL)
             .decoderFactory(if (SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())

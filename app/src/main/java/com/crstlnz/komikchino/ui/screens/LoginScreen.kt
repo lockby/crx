@@ -52,6 +52,7 @@ import androidx.navigation.NavController
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.config.nunito
 import com.crstlnz.komikchino.data.database.model.User
+import com.crstlnz.komikchino.data.util.getAppVersion
 import com.crstlnz.komikchino.data.util.getGoogleSignInClient
 import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.navigations.MainNavigation
@@ -78,22 +79,7 @@ fun LoginScreen(navController: NavController) {
             .addOnSuccessListener {
                 val user = FirebaseAuth.getInstance().currentUser
                 if (user != null) {
-                    MainNavigation.toHome(navController)
-                    FirebaseFirestore.getInstance()
-                        .collection("user_data")
-                        .document(user.uid)
-                        .set(
-                            User(
-                                id = user.uid,
-                                name = user.displayName ?: "",
-                                email = user.email ?: "",
-                                img = user.photoUrl.toString(),
-                            )
-                        ).addOnSuccessListener {
-                            Log.d("FIRESTORE SUCCESS", "INSERT USER DATA")
-                        }.addOnFailureListener {
-                            Log.d("FIRESTORE FAILED", it.stackTraceToString())
-                        }
+                    Log.d("LOGIN", "USER LOGGED IN")
                 } else {
                     loginProgress = false
                     Toast.makeText(context, "Gagal Login, user kosong!", Toast.LENGTH_LONG).show()
