@@ -274,6 +274,11 @@ fun MainApp() {
                         val userData = if (task.result.exists() && task.result != null) {
                             try {
                                 task.result.toObject(User::class.java)?.copy(
+                                    id = user.uid,
+                                    name = user.displayName ?: "",
+                                    email = user.email ?: "",
+                                    img = user.photoUrl.toString(),
+                                    appVersion = getAppVersion(context),
                                     last_online = getCurrentDateString()
                                 )
                             } catch (e: Exception) {
@@ -282,6 +287,7 @@ fun MainApp() {
                             }
 
                         } else {
+                            Log.d("USER UPDATE", getAppVersion(context))
                             User(
                                 id = user.uid,
                                 name = user.displayName ?: "",

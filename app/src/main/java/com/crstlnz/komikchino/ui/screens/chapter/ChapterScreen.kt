@@ -172,7 +172,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                         .weight(1f)
                                         .statusBarsPadding(), state = lazyListState
                                 ) {
-                                    items(chapters.size/2) {
+                                    items(chapters.size) {
                                         ListItem(
                                             modifier = Modifier
                                                 .clickable {
