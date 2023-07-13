@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.home.fragments.genre
 
+import android.os.Environment
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -321,7 +322,6 @@ fun GenreScreen(navController: NavController) {
                         v.load()
                     }
                 }
-
                 State.DATA -> {
                     if (searchResult.isEmpty()) {
                         ErrorView(
@@ -338,7 +338,6 @@ fun GenreScreen(navController: NavController) {
                                     MainNavigation.toKomik(navController, komik.title, komik.slug)
                                 })
                             }
-
                             item {
                                 Box(
                                     modifier = Modifier

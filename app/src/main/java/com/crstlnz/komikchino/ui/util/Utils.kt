@@ -91,18 +91,24 @@ suspend fun <T> loadWithCacheMainUtil(
     storage: StorageHelper<T>,
     force: Boolean
 ): T? {
-    Log.d("IS CACHE", "$key FORCE $force")
     val cache = storage.getRaw<T>(key)
     return if (cache?.isValid == true && !force) {
-        Log.d("IS CACHE", "$key PAKE CACHE")
         cache.data
     } else {
-        Log.d("IS CACHE", "$key GAK PAKE CACHE")
-        val data = fetch()
-        storage.set<T>(key, data)
-        data
+        try {
+            val data = fetch()
+            storage.set<T>(key, data)
+            data
+        } catch (e: Exception) {
+            if (cache?.data !== null) {
+                cache.data
+            } else {
+                throw e
+            }
+        }
     }
 }
+
 suspend fun <T> loadWithCacheUtil(
     key: String,
     fetch: suspend () -> T,

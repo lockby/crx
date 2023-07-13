@@ -4,10 +4,16 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.Toast
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -29,7 +35,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.data.api.KomikServer
@@ -38,7 +48,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ServerSelectScreen(navController: NavController) {
     val v = hiltViewModel<SettingViewModel>()
@@ -72,7 +82,8 @@ fun ServerSelectScreen(navController: NavController) {
                             Toast.LENGTH_LONG
                         ).show()
                         val packageManager: PackageManager = context.packageManager
-                        val intent: Intent = packageManager.getLaunchIntentForPackage(context.packageName)!!
+                        val intent: Intent =
+                            packageManager.getLaunchIntentForPackage(context.packageName)!!
                         val componentName: ComponentName = intent.component!!
                         val restartIntent: Intent = Intent.makeRestartActivityTask(componentName)
                         context.startActivity(restartIntent)
@@ -85,18 +96,29 @@ fun ServerSelectScreen(navController: NavController) {
             }
         )
     }) {
+        val uriHandler = LocalUriHandler.current
         Surface(Modifier.padding(it)) {
-            val serverList = KomikServer.values()
+            val serverList =
+                remember { KomikServer.values().sortedBy { server -> server.title } }
             LazyColumn(Modifier.fillMaxSize()) {
-                items(serverList.size) {
+                items(serverList.size, key = { idx -> serverList[idx].value }) {
                     ListItem(
-                        modifier = Modifier.clickable { selected = serverList[it] },
+                        modifier = Modifier
+                            .combinedClickable(onLongClick = {
+                                uriHandler.openUri(serverList[it].url)
+                            }) { selected = serverList[it] },
+                        leadingContent = {
+                            Image(
+                                painter = painterResource(id = serverList[it].bahasa.icon),
+                                contentDescription = serverList[it].bahasa.title,
+                                modifier = Modifier.clip(RoundedCornerShape(5.dp))
+                            )
+                        },
+                        supportingContent = {
+                            Text(serverList[it].url)
+                        },
                         headlineContent = {
-                            Text(serverList[it].value.replaceFirstChar {
-                                if (it.isLowerCase()) it.titlecase(
-                                    Locale.ROOT
-                                ) else it.toString()
-                            })
+                            Text(serverList[it].title)
                         },
                         trailingContent = {
                             if (selected == serverList[it]) {

@@ -1,6 +1,7 @@
 package com.crstlnz.komikchino.data.api
 
 import com.crstlnz.komikchino.config.AppSettings
+import com.crstlnz.komikchino.data.api.client.CosmicScansScrapeAPI
 import com.crstlnz.komikchino.data.api.client.GithubAPI
 import com.crstlnz.komikchino.data.api.client.KiryuuScrapeAPI
 import com.crstlnz.komikchino.data.api.client.MangaKatanaScrapeAPI
@@ -64,5 +65,13 @@ object KomikClient {
             .client(AppSettings.customHttpClient)
             .build()
             .create(ManhwalistScrapeAPI::class.java)
+    }
+
+    fun getCosmicScansClient(): CosmicScansScrapeAPI {
+        return retrofitScraper
+            .baseUrl(KomikServer.COSMICSCANS.url)
+            .client(AppSettings.customHttpClient)
+            .build()
+            .create(CosmicScansScrapeAPI::class.java)
     }
 }

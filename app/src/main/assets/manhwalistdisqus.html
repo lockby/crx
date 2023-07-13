@@ -32,9 +32,8 @@
 
       var disqus_container_id = "disqus_thread";
       var disqus_config = function () {
-        console.log(this);
-        this.page.url = decodeURI(url).replaceAll("\\/", "/");
-        this.page.identifier = decodeURI(id).replaceAll("\\/", "/");
+        this.page.url = atob(url).replaceAll("\\/", "/");
+        this.page.identifier = atob(id).replaceAll("\\/", "/");
         this.page.container_id = "disqus_thread";
       };
 

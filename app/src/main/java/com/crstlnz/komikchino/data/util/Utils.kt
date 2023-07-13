@@ -15,6 +15,7 @@ import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
+import android.util.Base64
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -361,4 +362,9 @@ fun parseCookieString(cookies: String, url: String): List<Cookie>? {
 
 fun getCurrentDateString(): String {
     return SimpleDateFormat("dd MMMM yyyy HH:mm:ss", Locale("id", "ID")).format(Date())
+}
+
+fun decodeBase64(text: String): String {
+    return Base64.encodeToString(text.toByteArray(), Base64.DEFAULT) ?: "="
+//    return Base64.getEncoder().encodeToString(text.toByteArray())
 }

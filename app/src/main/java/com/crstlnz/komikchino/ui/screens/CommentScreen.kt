@@ -1,6 +1,7 @@
 package com.crstlnz.komikchino.ui.screens
 
 import android.graphics.Color
+import android.util.Log
 import android.webkit.WebView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

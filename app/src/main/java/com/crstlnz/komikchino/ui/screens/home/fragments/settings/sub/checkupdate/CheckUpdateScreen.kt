@@ -35,6 +35,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -64,6 +65,7 @@ import com.crstlnz.komikchino.ui.util.ComposableLifecycle
 import com.crstlnz.komikchino.ui.util.checkWriteExternalPermission
 import com.crstlnz.komikchino.ui.util.convertHTML
 import dev.jeziellago.compose.markdowntext.MarkdownText
+import java.text.DecimalFormat
 
 @Composable
 fun CheckUpdateScreen(navController: NavController) {
@@ -76,7 +78,7 @@ fun CheckUpdateScreen(navController: NavController) {
             }
         }
     }
-    var isUpdating by remember { mutableStateOf(false) }
+    var isDownloading by remember { mutableStateOf(false) }
 
     val v = hiltViewModel<CheckUpdateViewModel>()
     val dataState by v.state.collectAsState()
@@ -84,6 +86,7 @@ fun CheckUpdateScreen(navController: NavController) {
     val isUpdateAvailable = versionCheck(
         dataState.getDataOrNull()?.tagName ?: "",
         appVersion
+//    ""
     )
     val updatesVersion = dataState.getDataOrNull()?.tagName ?: ""
     val changeLog = dataState.getDataOrNull()?.body ?: ""
@@ -103,20 +106,24 @@ fun CheckUpdateScreen(navController: NavController) {
     }
 
 
-    val isGranted = checkWriteExternalPermission()
+//    val isGranted = checkWriteExternalPermission()
+
+    var downloadPercent by remember { mutableFloatStateOf(0f) }
 
     fun downloadUpdates() {
-        if (isGranted) {
-            isUpdating = true
-            context.downloadApk(downloadUrl, "$name.apk", onDownloadFinish = {
-                isUpdating = false
-            },
-                onReceiverCreated = {
-                    receiver = it
-                })
-        } else {
-            navController.navigate(MainNavigation.STORAGE_REQUEST)
-        }
+//        if (isGranted) {
+        isDownloading = true
+        context.downloadApk(downloadUrl, "$name.apk", onDownloadFinish = {
+            isDownloading = false
+        }, onProgressChange = { progress ->
+            downloadPercent = progress
+        },
+            onReceiverCreated = {
+                receiver = it
+            })
+//        } else {
+//            navController.navigate(MainNavigation.STORAGE_REQUEST)
+//        }
     }
 
     Scaffold(contentWindowInsets = WindowInsets.ime) {
@@ -168,10 +175,10 @@ fun CheckUpdateScreen(navController: NavController) {
                                 MarkdownText(
                                     markdown =
                                     "#### `${appVersion}` &rarr;  `${updatesVersion}`\n\n" +
-                                            changeLog + "\n\n**[Open Github](${htmlUrl})**",
+                                            changeLog + "\n\n**[Download on Github](${htmlUrl})**",
                                     modifier = Modifier.padding(15.dp),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    style = MaterialTheme.typography.labelMedium,
+                                    style = MaterialTheme.typography.labelLarge,
                                     onLinkClicked = { url ->
                                         uriHandler.openUri(url)
                                     }
@@ -212,7 +219,7 @@ fun CheckUpdateScreen(navController: NavController) {
                                 }
                                 item {
                                     Text(
-                                        "Current version is currenlty up to dates, wait for the next updates \uD83D\uDE0E",
+                                        "Current version is currently up to dates, wait for the next updates \uD83D\uDE0E",
                                         modifier = Modifier
                                             .fillMaxWidth(),
                                         style = MaterialTheme.typography.titleMedium.copy(
@@ -234,7 +241,7 @@ fun CheckUpdateScreen(navController: NavController) {
 
                 Button(
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = dataState.state != State.LOADING && (downloadUrl.isNotEmpty() && !isUpdating),
+                    enabled = dataState.state != State.LOADING && (downloadUrl.isNotEmpty() && !isDownloading),
                     onClick = {
                         if (isUpdateAvailable) {
                             downloadUpdates()
@@ -268,7 +275,7 @@ fun CheckUpdateScreen(navController: NavController) {
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                                     )
                                 } else {
-                                    if (isUpdating) {
+                                    if (isDownloading) {
                                         CircularProgressIndicator(
                                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                                             modifier = Modifier
@@ -278,7 +285,11 @@ fun CheckUpdateScreen(navController: NavController) {
                                         )
                                         Spacer(Modifier.width(10.dp))
                                         Text(
-                                            "Updating",
+                                            "Downloading ${
+                                                DecimalFormat("#.##").format(
+                                                    downloadPercent
+                                                )
+                                            }%",
                                             modifier = Modifier.padding(vertical = 8.dp),
                                             style = MaterialTheme.typography.titleMedium.copy(
                                                 fontWeight = FontWeight.SemiBold

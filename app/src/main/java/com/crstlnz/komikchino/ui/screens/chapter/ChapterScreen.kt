@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -70,6 +71,8 @@ import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
 import com.crstlnz.komikchino.data.model.State
 import com.crstlnz.komikchino.ui.components.ErrorView
+import com.crstlnz.komikchino.ui.components.customswipe.CustomSwipeRefresh
+import com.crstlnz.komikchino.ui.components.customswipe.rememberCustomSwipeRefresh
 import com.crstlnz.komikchino.ui.navigations.ContentType
 import com.crstlnz.komikchino.ui.navigations.MainNavigation
 import com.crstlnz.komikchino.ui.screens.chapter.components.BottomAppBar
@@ -134,7 +137,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
 
         val drawerState = rememberDrawerState(DrawerValue.Closed)
         ModalNavigationDrawer(modifier = Modifier.fillMaxSize(),
-            gesturesEnabled = true,
+            gesturesEnabled = drawerState.isOpen,
             drawerState = drawerState,
             drawerContent = {
                 val chapterList by v.chapterList.collectAsState()
@@ -146,36 +149,42 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                         isFirst = false
                     }
                 }
-                val state = rememberPullRefreshState(chapterList.state == State.LOADING, {
-                    v.loadChapterList(true)
-                })
+
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth(0.65f)
                         .fillMaxSize()
                 ) {
-                    Box(Modifier.pullRefresh(state)) {
-                        when (chapterList) {
-                            is DataState.Success -> {
-                                val chapters =
-                                    (chapterList as DataState.Success<List<Chapter>>).data
+                    when (chapterList) {
+                        is DataState.Success -> {
+                            val chapters =
+                                (chapterList as DataState.Success<List<Chapter>>).data
+                            CustomSwipeRefresh(
+                                state = rememberCustomSwipeRefresh(isRefreshing = false),
+                                refreshTriggerDistance = 100.dp,
+                                onRefresh = {
+                                    v.loadChapterList(true)
+
+                                }) {
                                 LazyColumn(
                                     Modifier
                                         .fillMaxSize()
+                                        .weight(1f)
                                         .statusBarsPadding(), state = lazyListState
                                 ) {
-                                    items(chapters.size) {
+                                    items(chapters.size/2) {
                                         ListItem(
-                                            modifier = Modifier.clickable {
-                                                scope.launch {
-                                                    drawerState.close()
-                                                    goToChapter(
-                                                        chapters[it].id ?: "0",
-                                                        chapters[it].title
-                                                    )
-                                                }
+                                            modifier = Modifier
+                                                .clickable {
+                                                    scope.launch {
+                                                        drawerState.close()
+                                                        goToChapter(
+                                                            chapters[it].id ?: "0",
+                                                            chapters[it].title
+                                                        )
+                                                    }
 
-                                            },
+                                                },
                                             colors = ListItemDefaults.colors(
                                                 containerColor = if (chapterPosition == it) WhiteGray.copy(
                                                     alpha = 0.1f
@@ -190,38 +199,33 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                     }
                                 }
                             }
+                        }
 
-                            is DataState.Error -> {
-                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    ErrorView(
-                                        resId = R.drawable.error,
-                                        message = stringResource(id = R.string.unknown_error)
-                                    ) {
-                                        v.loadChapterList()
-                                    }
-                                }
-                            }
-
-                            else -> {
-                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            "Loading chapter",
-                                            style = MaterialTheme.typography.labelLarge
-                                        )
-                                        Spacer(Modifier.height(25.dp))
-                                        LinearProgressIndicator(
-                                            Modifier.fillMaxWidth(0.5f), color = Blue
-                                        )
-                                    }
+                        is DataState.Error -> {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                ErrorView(
+                                    resId = R.drawable.error,
+                                    message = stringResource(id = R.string.unknown_error)
+                                ) {
+                                    v.loadChapterList(true)
                                 }
                             }
                         }
-                        PullRefreshIndicator(
-                            chapterList.state == State.LOADING,
-                            state,
-                            Modifier.align(Alignment.TopCenter)
-                        )
+
+                        else -> {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        "Loading chapter",
+                                        style = MaterialTheme.typography.labelLarge
+                                    )
+                                    Spacer(Modifier.height(25.dp))
+                                    LinearProgressIndicator(
+                                        Modifier.fillMaxWidth(0.5f), color = Blue
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }) {
@@ -253,7 +257,8 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                 onNextClick = {
                                     if (!navShow) navShow = true
                                     val chapter =
-                                        v.chapterList.value.getDataOrNull()?.getOrNull(chapterPosition + 1)
+                                        v.chapterList.value.getDataOrNull()
+                                            ?.getOrNull(chapterPosition + 1)
                                     if (chapter != null) {
                                         goToChapter(
                                             chapter.id ?: "", chapter.title

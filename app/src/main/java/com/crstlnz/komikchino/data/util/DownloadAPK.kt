@@ -8,10 +8,17 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
+import android.os.Build.VERSION.SDK_INT
 import android.os.Environment
 import android.os.storage.StorageManager
+import android.util.Log
 import android.widget.Toast
 import androidx.core.net.toUri
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 
 
@@ -32,28 +39,47 @@ fun Context.installAPK(apkUri: Uri) {
 }
 
 
+@OptIn(DelicateCoroutinesApi::class)
 fun Context.downloadApk(
     url: String,
     fileName: String,
     onDownloadFinish: () -> Unit = {},
-    onReceiverCreated: (BroadcastReceiver) -> Unit = {}
+    onReceiverCreated: (BroadcastReceiver) -> Unit = {},
+    onProgressChange: (Float) -> Unit = {}
 ) {
-    val directory = Environment.DIRECTORY_DOWNLOADS
+//    val directory = Environment.DIRECTORY_DOWNLOADS
+    val directory = if (SDK_INT > Build.VERSION_CODES.O) {
+        kotlin.io.path.createTempFile(fileName, null).parent.toString()
+    } else {
+        createTempFile(fileName, null).name
+    }
+
+    var isFinish = false;
+    var downloadProgress: Float? = null
+    fun finish() {
+        isFinish = true
+        downloadProgress = null
+        onDownloadFinish()
+    }
+
     val file = File(directory, fileName)
     if (file.exists()) {
-        onDownloadFinish()
-        Toast.makeText(this, "Installing", Toast.LENGTH_SHORT).show()
+        finish()
         val apkUri = file.toUri()
         installAPK(apkUri)
     } else {
         val request = DownloadManager.Request(Uri.parse(url))
             .setTitle(fileName)
             .setMimeType("application/vnd.android.package-archive")
+            .setDescription("Downloading updates...")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
-            .setDestinationInExternalPublicDir(directory, fileName)
+            .setAllowedOverMetered(true)
+            .setRequiresCharging(false)
+            .setAllowedOverRoaming(true)
+            .setDestinationInExternalFilesDir(this, directory, fileName)
         val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val downloadId = downloadManager.enqueue(request)
-        Toast.makeText(this, "Downloading $fileName", Toast.LENGTH_SHORT).show()
+
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val action = intent?.action
@@ -61,8 +87,7 @@ fun Context.downloadApk(
                     val downloadIdComplete =
                         intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                     if (downloadId == downloadIdComplete) {
-                        onDownloadFinish()
-                        Toast.makeText(context, "Installing", Toast.LENGTH_SHORT).show()
+                        finish()
                         val apkUri = downloadManager.getUriForDownloadedFile(downloadIdComplete)
                         installAPK(apkUri)
                         unregisterReceiver(this)
@@ -74,15 +99,46 @@ fun Context.downloadApk(
         onReceiverCreated(receiver)
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
         registerReceiver(receiver, filter)
+
+        val updateInterval = 1000L // Interval in milliseconds
+        val context = this
+
+        GlobalScope.launch(Dispatchers.Main) {
+            while (!isFinish) {
+                val progress = getDownloadProgress(context, downloadId)
+                if (progress != downloadProgress) {
+                    downloadProgress = progress
+                    onProgressChange(progress)
+                }
+                println("Download Progress: $progress%")
+                delay(updateInterval)
+            }
+        }
     }
 }
 
-fun getInternalStorageDirectoryPath(context: Context): String? {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        val storageManager: StorageManager =
-            context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
-        storageManager.primaryStorageVolume.directory?.absolutePath
-    } else {
-        Environment.getExternalStorageDirectory().absolutePath
+@SuppressLint("Range")
+fun getDownloadProgress(context: Context, downloadId: Long): Float {
+    try {
+        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val query = DownloadManager.Query().apply {
+            setFilterById(downloadId)
+        }
+
+        val cursor = downloadManager.query(query)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val downloadedBytes =
+                    it.getLong(it.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
+                val totalBytes =
+                    it.getLong(it.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+                if (totalBytes != -1L) {
+                    return (downloadedBytes * 100F / totalBytes)
+                }
+            }
+        }
+        return 0f
+    } catch (_: Exception) {
+        return 0f
     }
 }

@@ -12,6 +12,7 @@ import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
 import com.crstlnz.komikchino.data.util.convertToStringURL
+import com.crstlnz.komikchino.data.util.decodeBase64
 import com.crstlnz.komikchino.ui.screens.CommentScreen
 import com.crstlnz.komikchino.ui.screens.LoginScreen
 import com.crstlnz.komikchino.ui.screens.UnblockCloudflare
@@ -101,9 +102,9 @@ object MainNavigation {
 
     fun toWebView(navController: NavController, url: String, title: String? = null) {
         val route = if (title.isNullOrEmpty()) {
-            "${WEBVIEW}/${URLEncoder.encode(url, "utf-8")}"
+            "${WEBVIEW}/${URLEncoder.encode(url, "UTF-8")}"
         } else {
-            "${WEBVIEW}/${title}/${URLEncoder.encode(url, "utf-8")}"
+            "${WEBVIEW}/${title}/${URLEncoder.encode(url, "UTF-8")}"
         }
         navController.navigate(route)
     }
@@ -142,25 +143,34 @@ object MainNavigation {
                 toWebView(
                     navController,
                     "file:///android_asset/voidscansdisqus.html?id=${
-                        URLEncoder.encode(
-                            slug,
-                            "UTF-8"
-                        )
-                    }&title=${title}&type=${type}url=${URLEncoder.encode(url, "UTF-8")}",
+                        decodeBase64(slug)
+                    }&title=${title.ifEmpty { "Empty Title" }}&url=${
+                        decodeBase64(url)
+                    }",
                     title
                 )
             }
 
             KomikServer.MANHWALIST -> {
-                Log.d("DISQUS URL", url)
                 toWebView(
                     navController,
                     "file:///android_asset/manhwalistdisqus.html?id=${
-                        URLEncoder.encode(
-                            slug,
-                            "UTF-8"
-                        )
-                    }&title=${title}&type=${type}&url=${URLEncoder.encode(url, "UTF-8")}",
+                        decodeBase64(slug)
+                    }&title=${title.ifEmpty { "Empty Title" }}&url=${
+                        decodeBase64(url)
+                    }",
+                    title
+                )
+            }
+
+            KomikServer.COSMICSCANS -> {
+                toWebView(
+                    navController,
+                    "file:///android_asset/cosmicscansdisqus.html?id=${
+                        decodeBase64(slug)
+                    }&title=${title.ifEmpty { "Empty Title" }}&url=${
+                        decodeBase64(url)
+                    }",
                     title
                 )
             }

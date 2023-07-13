@@ -136,7 +136,7 @@ fun FavoriteGridView(
                             Column(Modifier.padding(10.dp)) {
                                 Text(
                                     favorite.title,
-                                    maxLines = 1,
+                                    maxLines = 3,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier
                                         .fillMaxWidth(),

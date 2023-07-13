@@ -19,8 +19,8 @@ android {
         applicationId "com.crstlnz.komikchino"
         minSdk 24
         targetSdk 34
-        versionCode 9
-        versionName "0.3.4 - Beta"
+        versionCode 10
+        versionName "0.3.5 - Beta"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -83,6 +83,9 @@ android {
 }
 
 dependencies {
+    implementation 'com.github.SmartToolFactory:Compose-Zoom:0.5.0'
+//    implementation "me.saket.telephoto:zoomable:0.4.0"
+
     implementation 'com.github.jeziellago:compose-markdown:0.3.4'
 
     // FIREBASE
