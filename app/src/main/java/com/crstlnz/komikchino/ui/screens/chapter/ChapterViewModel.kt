@@ -37,6 +37,7 @@ import javax.inject.Named
 @HiltViewModel
 class ChapterViewModel @Inject constructor(
     @Named("chapterCache") private val storage: StorageHelper<ChapterData>,
+    @Named("chapterListCache") private val chapterListStorage: StorageHelper<List<Chapter>>,
     @Named("chapterScrollPostitionCache") private val chapterScrollPostitionCache: StorageHelper<ChapterScrollPostition>,
     private val chapterRepository: ChapterHistoryRepository,
     private val favoriteRepository: FavoriteKomikRepository,
@@ -92,7 +93,7 @@ class ChapterViewModel @Inject constructor(
             _state.collect {
                 if (it.state == State.DATA && !isChapterListFetched) {
                     isChapterListFetched = true
-                    loadChapterList(false)
+                    loadChapterList(true)
                 } else {
                     _currentPosition.update {
                         calculatePosition()
@@ -199,7 +200,36 @@ class ChapterViewModel @Inject constructor(
     }
 
     fun loadChapterList(force: Boolean = true) {
+        val key = "chapterlist-${komikData?.id}"
         viewModelScope.launch {
+            _chapterList.update {
+                DataState.Loading
+            }
+            val cache = chapterListStorage.getRaw<List<Chapter>>(key)
+            if (cache?.isValid == true && !force) {
+                _chapterList.update {
+                    DataState.Success(cache.data)
+                }
+            } else {
+                try {
+                    val data = api.getChapterList(komikData?.id ?: "id").reversed()
+                    chapterListStorage.set<List<Chapter>>(key, data)
+                    _chapterList.update {
+                        DataState.Success(data)
+                    }
+                } catch (e: Exception) {
+                    if (cache != null) {
+                        _chapterList.update {
+                            DataState.Success(cache.data)
+                        }
+                    } else {
+                        _chapterList.update {
+                            DataState.Error()
+                        }
+                    }
+
+                }
+            }
             loadWithCache<List<Chapter>>(
                 key = "chapterlist-${komikData?.id}",
                 fetch = {

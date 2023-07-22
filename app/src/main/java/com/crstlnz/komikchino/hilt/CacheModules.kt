@@ -2,6 +2,7 @@ package com.crstlnz.komikchino.hilt
 
 import android.content.Context
 import com.crstlnz.komikchino.data.api.KomikServer
+import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterData
 import com.crstlnz.komikchino.data.model.ChapterScrollPostition
 import com.crstlnz.komikchino.data.model.GenreSearch
@@ -137,6 +138,20 @@ class CacheModules {
             context,
             "SEARCH-HISTORY",
             TypeFactory.defaultInstance().constructType(SearchHistoryModel::class.java),
+            60000L
+        )
+    }
+
+    @Provides
+    @Named("chapterListCache")
+    fun provideChapterListCache(
+        @ApplicationContext context: Context,
+    ): StorageHelper<List<Chapter>> {
+        return StorageHelper(
+            context,
+            "SEARCH-HISTORY",
+            TypeFactory.defaultInstance()
+                .constructParametricType(List::class.java, Chapter::class.java),
             60000L
         )
     }

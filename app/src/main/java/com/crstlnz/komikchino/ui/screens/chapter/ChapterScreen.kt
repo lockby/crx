@@ -256,19 +256,27 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                 },
                                 onNextClick = {
                                     if (!navShow) navShow = true
-                                    val chapter =
-                                        v.chapterList.value.getDataOrNull()
-                                            ?.getOrNull(chapterPosition + 1)
-                                    if (chapter != null) {
-                                        goToChapter(
-                                            chapter.id ?: "", chapter.title
-                                        )
-                                    } else {
+                                    if (v.chapterList.value.state === State.LOADING) {
                                         Toast.makeText(
                                             context,
-                                            "Tidak ada chapter selanjutnya",
+                                            "Chapter list sedang loading, coba lagi!",
                                             Toast.LENGTH_SHORT
                                         ).show()
+                                    } else {
+                                        val chapter =
+                                            v.chapterList.value.getDataOrNull()
+                                                ?.getOrNull(chapterPosition + 1)
+                                        if (chapter != null) {
+                                            goToChapter(
+                                                chapter.id ?: "", chapter.title
+                                            )
+                                        } else {
+                                            Toast.makeText(
+                                                context,
+                                                "Tidak ada chapter selanjutnya",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
                                 },
                                 viewModel = v
