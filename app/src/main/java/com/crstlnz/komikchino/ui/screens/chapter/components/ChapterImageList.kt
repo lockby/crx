@@ -134,7 +134,6 @@ fun ChapterImageList(
     LaunchedEffect(chapterKey) {
         if (chapterKey > 0) {
             lazyColumnState.scrollToItem(0, 0)
-
         }
     }
 
@@ -257,7 +256,7 @@ fun ChapterImageList(
                             }
                             Spacer(Modifier.height(25.dp))
                             Text(
-                                "${viewModel.komikData?.title}",
+                                "${viewModel.komikData?.title ?: dataState.getDataOrNull()?.komik?.title}",
                                 fontFamily = nunito,
                                 textAlign = TextAlign.Center,
                                 style = MaterialTheme.typography.titleLarge.copy(

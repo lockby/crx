@@ -19,6 +19,7 @@ import android.util.Base64
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 import kotlin.math.log10
 import kotlin.math.pow
@@ -274,6 +275,33 @@ fun parseRelativeTime(relativeTime: String): Date {
     return calendar.time
 }
 
+fun parseRelativeTimeIndonesia(relativeTime: String): Date? {
+    val now = Calendar.getInstance()
+    val parts = relativeTime.split(" ")
+    if (parts.size != 3) return null
+    val amount = parts[0].toIntOrNull() ?: return null
+    val unit = parts[1]
+    val unitInMillis = when (unit) {
+        "detik" -> TimeUnit.SECONDS.toMillis(amount.toLong())
+        "menit" -> TimeUnit.MINUTES.toMillis(amount.toLong())
+        "jam" -> TimeUnit.HOURS.toMillis(amount.toLong())
+        "hari" -> TimeUnit.DAYS.toMillis(amount.toLong())
+        "minggu" -> TimeUnit.DAYS.toMillis(amount.toLong() * 7)
+        "bulan" -> {
+            val cal = Calendar.getInstance()
+            cal.add(Calendar.MONTH, -amount)
+            return cal.time
+        }
+        "tahun" -> {
+            val cal = Calendar.getInstance()
+            cal.add(Calendar.YEAR, -amount)
+            return cal.time
+        }
+        else -> return null
+    }
+    return Date(now.timeInMillis - unitInMillis)
+}
+
 fun getVoidScansDisqus(string: String): DisqusConfig? {
     val identifierPattern = Pattern.compile("\"disqusIdentifier\":\"([^\"]+)\"")
     val urlPattern = Pattern.compile("\"disqusUrl\":\"([^\"]+)\"")
@@ -367,4 +395,15 @@ fun getCurrentDateString(): String {
 fun decodeBase64(text: String): String {
     return Base64.encodeToString(text.toByteArray(), Base64.DEFAULT) ?: "="
 //    return Base64.getEncoder().encodeToString(text.toByteArray())
+}
+
+// extract komik id and chapter id from mirror komik onclick button
+fun extractIdsFromOnClick(onClick: String): Pair<String, String>? {
+    val regex = Regex("'(\\d+)','(\\d+)'")
+    val matchResult = regex.find(onClick)
+
+    return matchResult?.let {
+        val (komikId, chapterId) = it.destructured
+        Pair(komikId, chapterId)
+    }
 }

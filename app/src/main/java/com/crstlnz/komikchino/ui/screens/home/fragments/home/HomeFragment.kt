@@ -64,6 +64,7 @@ import com.crstlnz.komikchino.LocalStatusBarPadding
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.FeaturedComic
+import com.crstlnz.komikchino.data.model.OpenType
 import com.crstlnz.komikchino.data.model.Section
 import com.crstlnz.komikchino.data.model.State
 import com.crstlnz.komikchino.ui.components.ErrorView
@@ -135,9 +136,15 @@ fun HomeFragment(navController: NavController) {
                                 MainNavigation.toKomik(navController, title, slug)
                             }, 4
                         )
-                        sectionView(data.sections) { title, slug ->
-                            MainNavigation.toKomik(navController, title, slug)
-                        }
+                        sectionView(
+                            data.sections,
+                            { title, slug ->
+                                MainNavigation.toKomik(navController, title, slug)
+                            },
+                            { title, slug ->
+                                MainNavigation.toChapter(navController, slug, title)
+                            }
+                        )
                     }
 
                     State.ERROR -> {
@@ -448,7 +455,7 @@ fun LazyListScope.featuredView(
                                 featureds[it].genreLink.joinToString(", ") { it.title },
                                 modifier = Modifier.weight(1f),
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    color = if (featureds[it].type.isEmpty() || featureds[it].score == null) Blue else Color.White,
+                                    color = if (featureds[it].type.isEmpty() && featureds[it].score == null) Blue else Color.White,
                                     fontWeight = FontWeight.SemiBold,
                                     shadow = Shadow(
                                         Color.Black, blurRadius = 8f, offset = Offset(2f, 0f)
@@ -468,7 +475,8 @@ fun LazyListScope.featuredView(
 @OptIn(ExperimentalLayoutApi::class)
 fun LazyListScope.sectionView(
     sections: List<Section> = listOf(),
-    onKomikClick: (title: String, slug: String) -> Unit = { _, _ -> }
+    onKomikClick: (title: String, slug: String) -> Unit = { _, _ -> },
+    onChapterClick: (title: String, slug: String) -> Unit = { _, _ -> }
 ) {
     val section = sections.getOrNull(0)
     if (section == null) {
@@ -507,9 +515,15 @@ fun LazyListScope.sectionView(
             Box(modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    onKomikClick(
-                        komikList[it].title, komikList[it].slug
-                    )
+                    if (komikList[it].openType === OpenType.KOMIK) {
+                        onKomikClick(
+                            komikList[it].title, komikList[it].slug
+                        )
+                    } else {
+                        onChapterClick(
+                            komikList[it].title, komikList[it].slug
+                        )
+                    }
                 }) {
                 Row(Modifier.padding(15.dp)) {
                     ImageView(

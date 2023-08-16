@@ -6,6 +6,7 @@ import com.crstlnz.komikchino.data.api.client.GithubAPI
 import com.crstlnz.komikchino.data.api.client.KiryuuScrapeAPI
 import com.crstlnz.komikchino.data.api.client.MangaKatanaScrapeAPI
 import com.crstlnz.komikchino.data.api.client.ManhwalistScrapeAPI
+import com.crstlnz.komikchino.data.api.client.MirrorKomikScrapeAPI
 import com.crstlnz.komikchino.data.api.client.VoidScansScrapeAPI
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
@@ -73,5 +74,14 @@ object KomikClient {
             .client(AppSettings.customHttpClient)
             .build()
             .create(CosmicScansScrapeAPI::class.java)
+    }
+
+    fun getMirrorKomikClient(): MirrorKomikScrapeAPI {
+        return retrofitScraper
+            .addConverterFactory(JacksonConverterFactory.create())
+            .baseUrl(KomikServer.MIRRORKOMIK.url)
+            .client(AppSettings.customHttpClient)
+            .build()
+            .create(MirrorKomikScrapeAPI::class.java)
     }
 }

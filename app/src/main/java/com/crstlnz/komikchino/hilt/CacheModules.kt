@@ -5,6 +5,7 @@ import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterData
 import com.crstlnz.komikchino.data.model.ChapterScrollPostition
+import com.crstlnz.komikchino.data.model.Genre
 import com.crstlnz.komikchino.data.model.GenreSearch
 import com.crstlnz.komikchino.data.model.GithubModel
 import com.crstlnz.komikchino.data.model.HomeData
@@ -153,6 +154,20 @@ class CacheModules {
             TypeFactory.defaultInstance()
                 .constructParametricType(List::class.java, Chapter::class.java),
             60000L
+        )
+    }
+
+    @Provides
+    @Named("genreList")
+    fun provideGenreListCache(
+        @ApplicationContext context: Context,
+    ): StorageHelper<List<Genre>> {
+        return StorageHelper(
+            context,
+            "GENRE-LIST-C",
+            TypeFactory.defaultInstance()
+                .constructParametricType(List::class.java, Genre::class.java),
+            86400000L
         )
     }
 }

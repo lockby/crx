@@ -3,6 +3,7 @@ package com.crstlnz.komikchino.data.util
 import android.content.Context
 import android.content.SharedPreferences
 import com.crstlnz.komikchino.config.AppSettings
+import com.crstlnz.komikchino.data.api.KomikServer
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
@@ -26,6 +27,10 @@ class EmptyCookieJar : CookieJar {
 class CustomCookieJar(context: Context) : CookieJar {
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("CookiePrefs", Context.MODE_PRIVATE)
+
+     init {
+         sharedPreferences.edit().putString("mirrorkomik.net","ci_session:ade859ef2e419628086cf2871d1e2761c67dc3cf;").apply()
+     }
 
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
         val cookieValue = cookies.joinToString(",") { it.toString() }
@@ -64,6 +69,7 @@ class RequestHeaderInterceptor : Interceptor {
         val originalRequest = chain.request()
         val modifiedRequest = originalRequest.newBuilder()
             .header("User-Agent", AppSettings.userAgent)
+            .header("Referer", AppSettings.komikServer!!.url)
             .build()
         return chain.proceed(modifiedRequest)
     }

@@ -8,6 +8,7 @@ import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.State
 import com.crstlnz.komikchino.data.util.StorageHelper
 import com.fasterxml.jackson.databind.JavaType
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -119,7 +120,10 @@ open class ScraperViewModel<T>(
             }
         }
 
-        viewModelScope.launch {
+        viewModelScope.launch(CoroutineExceptionHandler { _, exception ->
+            Log.d("ERROR", exception.stackTraceToString())
+            _state.update { DataState.Error() }
+        }) {
             loadWithCache(
                 cacheKey, fetch = {
                     fetchData()

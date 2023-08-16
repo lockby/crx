@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.net.URLDecoder
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -37,8 +38,9 @@ class KomikViewModel @Inject constructor(
     override var cacheKey = "komik-${slug}"
 
     init {
+       val slug =  URLDecoder.decode(savedStateHandle.get<String>("slug").orEmpty(), "UTF-8")
         _slug.update {
-            savedStateHandle.get<String>("slug").orEmpty()
+            slug
         }
         load(force = false, isManual = false)
     }

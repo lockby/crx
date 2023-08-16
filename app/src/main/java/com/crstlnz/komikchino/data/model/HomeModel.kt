@@ -22,6 +22,11 @@ data class FeaturedComic(
     val score: Float? = null,
 )
 
+enum class OpenType {
+    KOMIK,
+    CHAPTER
+}
+
 data class SectionComic(
     var title: String = "",
     var url: String = "",
@@ -29,5 +34,6 @@ data class SectionComic(
     val img: String = "",
     val slug: String = "",
     val score: Float? = null,
-    val chapterString: String = ""
+    val chapterString: String = "",
+    val openType : OpenType = OpenType.KOMIK
 )

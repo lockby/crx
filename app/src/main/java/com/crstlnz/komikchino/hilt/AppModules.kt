@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.hilt
 
+import android.content.Context
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
@@ -16,6 +17,7 @@ import com.crstlnz.komikchino.ui.navigations.HomeSections
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.runBlocking
 
@@ -39,8 +41,11 @@ class AppModules {
     }
 
     @Provides
-    fun provideApiClient(databaseKey: KomikServer): ScraperBase {
-       return getScraper(databaseKey)
+    fun provideApiClient(
+        databaseKey: KomikServer,
+        @ApplicationContext context: Context,
+    ): ScraperBase {
+        return getScraper(databaseKey, context)
     }
 
     @Provides

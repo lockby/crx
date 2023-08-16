@@ -1,5 +1,8 @@
 package com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub
 
+import android.os.Environment
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -18,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,6 +33,9 @@ import com.crstlnz.komikchino.data.util.clearCache
 import com.crstlnz.komikchino.data.util.formatSize
 import com.crstlnz.komikchino.data.util.getCacheFolderSize
 import com.crstlnz.komikchino.ui.navigations.HomeSections
+import kotlinx.coroutines.launch
+import java.io.File
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,6 +81,11 @@ fun CacheScreen(navController: NavController) {
                 item {
                     ListItem(
                         modifier = Modifier.clickable {
+                            Toast.makeText(
+                                context,
+                                "Menghapus image cache...",
+                                Toast.LENGTH_LONG
+                            ).show()
                             clearCache(context, IMAGE_CACHE_PATH)
                             refreshImageCache()
                         },
@@ -92,6 +104,43 @@ fun CacheScreen(navController: NavController) {
                         trailingContent = {
                             Text(imageCacheSize)
                         }
+                    )
+                }
+
+                item {
+                    val scope = rememberCoroutineScope()
+                    ListItem(
+                        modifier = Modifier.clickable {
+                            Toast.makeText(
+                                context,
+                                "Menghapus data cache...",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            scope.launch {
+                                val prefDirs = File(
+                                    Environment.getDataDirectory()
+                                        .toString() + "/data/" + context.packageName + "/shared_prefs"
+                                )
+                                val files = prefDirs.listFiles()
+                                if (files !== null) {
+                                    for (file in files) {
+                                        file?.delete()
+                                    }
+                                }
+                            }
+                        },
+                        leadingContent = {
+                            Icon(
+                                painter = painterResource(id = R.drawable.database),
+                                contentDescription = null
+                            )
+                        },
+                        headlineContent = {
+                            Text("Data Cache")
+                        },
+                        supportingContent = {
+                            Text("Click to clear cache")
+                        },
                     )
                 }
             }

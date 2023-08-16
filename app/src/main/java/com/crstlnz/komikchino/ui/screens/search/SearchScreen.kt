@@ -100,9 +100,7 @@ fun SearchScreen(navController: NavController) {
             if (it != null) {
                 v.consumeExactMatch()
                 MainNavigation.toKomik(
-                    navController, it.title, getLastPathSegment(
-                        it.url
-                    ) ?: ""
+                    navController, it.title, it.slug
                 )
             }
         }
@@ -342,9 +340,7 @@ fun SearchItemView(navController: NavController, data: SearchResult.ExactMatch) 
     Box(Modifier.clickable {
         scope.launch {
             MainNavigation.toKomik(
-                navController, data.title, getLastPathSegment(
-                    data.url
-                ) ?: ""
+                navController, data.title, data.slug
             )
         }
     }) {

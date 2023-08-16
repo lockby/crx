@@ -13,6 +13,7 @@ import com.crstlnz.komikchino.data.util.StorageHelper
 import com.crstlnz.komikchino.ui.screens.search.InfiniteState
 import com.crstlnz.komikchino.ui.util.ScraperViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,7 +49,9 @@ class GenreViewModel @Inject constructor(
     fun next() {
         if (_infiniteState.value == InfiniteState.LOADING || _infiniteState.value == InfiniteState.FINISH) return
         page++
-        viewModelScope.launch {
+        viewModelScope.launch(CoroutineExceptionHandler { _, _ ->
+            _state.update { DataState.Error() }
+        }) {
             _infiniteState.update { InfiniteState.LOADING }
             if (AppSettings.komikServer == KomikServer.MANGAKATANA) {
                 val timeElapsed = System.currentTimeMillis() - lastFetch
@@ -60,12 +63,17 @@ class GenreViewModel @Inject constructor(
             }
 
             try {
-                val data = fetchSearch(listOf(), page)
+                val data = fetchSearch(genreList, page)
                 if (data.result.isNotEmpty()) {
                     _searchResult.update {
                         (it + data.result).toMutableList()
                     }
-                    _infiniteState.update { InfiniteState.IDLE }
+
+                    if (data.hasNext) {
+                        _infiniteState.update { InfiniteState.IDLE }
+                    } else {
+                        _infiniteState.update { InfiniteState.FINISH }
+                    }
                 } else {
                     _infiniteState.update { InfiniteState.FINISH }
                 }

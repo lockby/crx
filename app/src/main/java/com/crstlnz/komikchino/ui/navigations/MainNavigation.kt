@@ -130,8 +130,6 @@ object MainNavigation {
                 val mangaSlug = split.getOrNull(0)?.split(".")?.getOrNull(0) ?: ""
                 val chapterId = split.getOrNull(1)
                 val id = if (chapterId != null) "$mangaSlug/$chapterId" else mangaSlug
-                Log.d("SLUG DISQUS", slug)
-                Log.d("ID DISQUS", id)
                 toWebView(
                     navController,
                     "file:///android_asset/mangakatanadisqus.html?url=https://mangakatana.com/manga/${slug}&id=${id}&title=${title}",
@@ -175,6 +173,20 @@ object MainNavigation {
                 )
             }
 
+            KomikServer.MIRRORKOMIK -> {
+                Log.d("SLUG DISQUS", slug)
+                Log.d("ID DISQUS", url)
+                toWebView(
+                    navController,
+                    "file:///android_asset/mirrorkomik.html?id=${
+                        decodeBase64(slug)
+                    }&title=${title.ifEmpty { "Empty Title" }}&url=${
+                        decodeBase64(url)
+                    }",
+                    title
+                )
+            }
+
             else -> {}
         }
     }
@@ -185,7 +197,7 @@ object MainNavigation {
         slug: String,
     ) {
         navController.navigate(
-            "${KOMIKDETAIL}/${title}/${slug}",
+            "${KOMIKDETAIL}/${title}/${URLEncoder.encode(slug, "UTF-8")}",
         )
     }
 }
