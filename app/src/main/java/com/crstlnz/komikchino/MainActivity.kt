@@ -3,6 +3,7 @@ package com.crstlnz.komikchino
 //import com.facebook.drawee.backends.pipeline.Fresco
 //import com.facebook.imagepipeline.backends.okhttp3.OkHttpImagePipelineConfigFactory
 import android.annotation.SuppressLint
+import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -10,7 +11,6 @@ import android.view.View
 import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -38,6 +38,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil.ImageLoader
 import coil.disk.DiskCache
+import coil.request.ErrorResult
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.config.IMAGE_CACHE_PATH
 import com.crstlnz.komikchino.config.USER_DATA
@@ -53,7 +54,6 @@ import com.crstlnz.komikchino.data.util.RequestHeaderInterceptor
 import com.crstlnz.komikchino.data.util.getAppVersion
 import com.crstlnz.komikchino.data.util.getCurrentDateString
 import com.crstlnz.komikchino.data.util.versionCheck
-import com.crstlnz.komikchino.services.DownloadViewModel
 import com.crstlnz.komikchino.ui.components.UpdateDialog
 import com.crstlnz.komikchino.ui.navigations.HomeSections
 import com.crstlnz.komikchino.ui.navigations.MainNavigation
@@ -94,6 +94,8 @@ class UrlLoggingInterceptor : Interceptor {
     }
 }
 
+const val MAX_BITMAP_SIZE = 100 * 1024 * 1024 // 100 MB
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject
@@ -101,6 +103,7 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var homepage: HomeSections
+
 
     @SuppressLint("InternalInsetResource", "DiscouragedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -121,11 +124,27 @@ class MainActivity : ComponentActivity() {
             .addInterceptor(RequestHeaderInterceptor())
             .addInterceptor(UrlLoggingInterceptor())
             .build()
-
         AppSettings.imageLoader =
             ImageLoader
                 .Builder(this)
                 .okHttpClient(AppSettings.customHttpClient)
+                .components {
+                    add { chain ->
+                        val request = chain.request
+                        val result = chain.proceed(request)
+                        val bitmap = (result.drawable as? BitmapDrawable)?.bitmap
+                        if (bitmap != null && bitmap.byteCount >= MAX_BITMAP_SIZE) {
+                            ErrorResult(
+                                request.error,
+                                request,
+                                RuntimeException("Bitmap is too large (${bitmap.byteCount} bytes)")
+                            )
+                        } else {
+                            result
+                        }
+
+                    }
+                }
                 .diskCache {
                     DiskCache.Builder()
                         .directory(this.cacheDir.resolve(IMAGE_CACHE_PATH))

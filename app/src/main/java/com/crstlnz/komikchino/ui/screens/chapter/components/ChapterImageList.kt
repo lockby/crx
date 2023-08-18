@@ -52,6 +52,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -94,7 +96,8 @@ fun ChapterImageList(
     onNextClick: () -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-
+    val screenWidthPixel =
+        with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }.toInt()
     val chapterImages = remember {
         mutableStateListOf<ChapterImage>()
     }
@@ -309,7 +312,8 @@ fun ChapterImageList(
                         calculatedImageSize[idx] = ImageSize(
                             true, h, w
                         )
-                    }, defaultAspectRatio = aspectRatio
+                    }, defaultAspectRatio = aspectRatio,
+                        screenWidthPixel = screenWidthPixel
                     )
                 }
 
