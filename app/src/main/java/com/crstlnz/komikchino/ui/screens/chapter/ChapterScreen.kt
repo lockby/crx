@@ -247,11 +247,11 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                             ChapterImageList(
                                 Modifier.nestedScroll(nestedScroll),
                                 images = (dataState as DataState.Success<ChapterData>).data.imgs,
-                                onNavChange = { it ->
-                                    if (it == null) {
-                                        navShow = !navShow
+                                onNavChange = {
+                                    navShow = if (it == null) {
+                                        !navShow
                                     } else {
-                                        navShow = it
+                                        it
                                     }
                                 },
                                 onNextClick = {

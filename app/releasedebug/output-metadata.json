@@ -4,16 +4,16 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.crstlnz.komikchino",
-  "variantName": "release",
+  "applicationId": "com.crstlnz.komikchino.releasedev",
+  "variantName": "releasedebug",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
       "versionCode": 13,
-      "versionName": "0.3.8 - Beta",
-      "outputFile": "app-release.apk"
+      "versionName": "0.3.8 - Beta-DEBUGRELEASE",
+      "outputFile": "app-releasedebug.apk"
     }
   ],
   "elementType": "File"

@@ -14,6 +14,7 @@ import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
 import com.crstlnz.komikchino.data.util.convertToStringURL
 import com.crstlnz.komikchino.data.util.decodeBase64
 import com.crstlnz.komikchino.ui.screens.CommentScreen
+import com.crstlnz.komikchino.ui.screens.DownloadScreen
 import com.crstlnz.komikchino.ui.screens.LoginScreen
 import com.crstlnz.komikchino.ui.screens.UnblockCloudflare
 import com.crstlnz.komikchino.ui.screens.chapter.ChapterScreen
@@ -46,6 +47,7 @@ object MainNavigation {
     const val CHAPTER = "chapter"
     const val WEBVIEW = "webview"
     const val CLOUDFLARE_UNBLOCK = "cloudflare_unblock"
+    const val DOWNLOAD_SCREEN = "download_screen"
 
     const val CHECK_UPDATE = "update"
 
@@ -314,5 +316,8 @@ fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
 
     composable(MainNavigation.APP_INFO) {
         AppInfoScreen(navController)
+    }
+    composable(MainNavigation.DOWNLOAD_SCREEN) {
+        DownloadScreen(navController)
     }
 }

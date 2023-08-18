@@ -2,6 +2,7 @@ package com.crstlnz.komikchino
 
 //import com.facebook.drawee.backends.pipeline.Fresco
 //import com.facebook.imagepipeline.backends.okhttp3.OkHttpImagePipelineConfigFactory
+import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -9,6 +10,7 @@ import android.view.View
 import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -51,6 +53,7 @@ import com.crstlnz.komikchino.data.util.RequestHeaderInterceptor
 import com.crstlnz.komikchino.data.util.getAppVersion
 import com.crstlnz.komikchino.data.util.getCurrentDateString
 import com.crstlnz.komikchino.data.util.versionCheck
+import com.crstlnz.komikchino.services.DownloadViewModel
 import com.crstlnz.komikchino.ui.components.UpdateDialog
 import com.crstlnz.komikchino.ui.navigations.HomeSections
 import com.crstlnz.komikchino.ui.navigations.MainNavigation
@@ -86,10 +89,7 @@ class UrlLoggingInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request: Request = chain.request()
         val url = request.url.toString()
-
-        // Log or store the URL as per your requirement
         println("Request URL: $url")
-
         return chain.proceed(request)
     }
 }
@@ -102,14 +102,16 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var homepage: HomeSections
 
+    @SuppressLint("InternalInsetResource", "DiscouragedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppSettings.komikServer = databaseKey
         FirebaseInitializer.initialize(this)
         firebaseAnalytics = Firebase.analytics
         actionBar?.show()
-        AppSettings.komikServer = databaseKey
         AppSettings.homepage = homepage
-
+//        val dlViewModel: DownloadViewModel by viewModels()
+//        AppSettings.downloadViewModel = dlViewModel
         AppSettings.cookieJar = CustomCookieJar(this)
         AppSettings.customHttpClient = OkHttpClient.Builder()
             .followRedirects(true) // Enable automatic following of redirects
@@ -135,10 +137,10 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         // Calculating Status Bar and SystemBar or Navigation bar on bottom
         val statusBarHeightId = resources.getIdentifier("status_bar_height", "dimen", "android")
-        val systemBarHeighId = resources.getIdentifier("navigation_bar_height", "dimen", "android")
+        val systemBarHeightId = resources.getIdentifier("navigation_bar_height", "dimen", "android")
         val density = resources.displayMetrics.density
         val statusBarHeight = resources.getDimensionPixelSize(statusBarHeightId) / density
-        val systemBarHeight = resources.getDimensionPixelSize(systemBarHeighId) / density
+        val systemBarHeight = resources.getDimensionPixelSize(systemBarHeightId) / density
 
 //        val pipelineConfig =
 //            OkHttpImagePipelineConfigFactory

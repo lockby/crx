@@ -28,10 +28,6 @@ class CustomCookieJar(context: Context) : CookieJar {
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("CookiePrefs", Context.MODE_PRIVATE)
 
-     init {
-         sharedPreferences.edit().putString("mirrorkomik.net","ci_session:ade859ef2e419628086cf2871d1e2761c67dc3cf;").apply()
-     }
-
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
         val cookieValue = cookies.joinToString(",") { it.toString() }
         sharedPreferences.edit()
@@ -69,7 +65,6 @@ class RequestHeaderInterceptor : Interceptor {
         val originalRequest = chain.request()
         val modifiedRequest = originalRequest.newBuilder()
             .header("User-Agent", AppSettings.userAgent)
-            .header("Referer", AppSettings.komikServer!!.url)
             .build()
         return chain.proceed(modifiedRequest)
     }

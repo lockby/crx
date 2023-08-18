@@ -11,6 +11,7 @@ import com.crstlnz.komikchino.data.model.GithubModel
 import com.crstlnz.komikchino.data.model.HomeData
 import com.crstlnz.komikchino.data.model.KomikDetail
 import com.crstlnz.komikchino.data.model.LatestUpdate
+import com.crstlnz.komikchino.data.model.MangaDownload
 import com.crstlnz.komikchino.data.model.SearchHistoryModel
 import com.crstlnz.komikchino.data.model.SearchResult
 import com.crstlnz.komikchino.data.util.StorageHelper
@@ -63,6 +64,20 @@ class CacheModules {
             "$databaseKey-CACHE",
             TypeFactory.defaultInstance().constructType(KomikDetail::class.java),
             expireTimeInMillis = 1800000L,
+        )
+    }
+
+    @Provides
+    @Named("mangaDownloadCache")
+    fun provideMangaDownloadCache(
+        @ApplicationContext context: Context,
+        databaseKey: KomikServer
+    ): StorageHelper<MangaDownload> {
+        return StorageHelper(
+            context,
+            "$databaseKey-CACHE",
+            TypeFactory.defaultInstance().constructType(MangaDownload::class.java),
+            expireTimeInMillis = 0,
         )
     }
 

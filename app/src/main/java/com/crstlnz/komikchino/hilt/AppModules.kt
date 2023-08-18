@@ -35,9 +35,11 @@ class AppModules {
     @Provides
     fun provideDatabaseKey(settings: Settings): KomikServer {
         val server = AppSettings.komikServer
-        return server ?: runBlocking {
-            settings.getServer()
-        }
+            ?: return runBlocking {
+                AppSettings.komikServer = settings.getServer()
+                AppSettings.komikServer!!
+            }
+        return server
     }
 
     @Provides

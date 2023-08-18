@@ -107,42 +107,42 @@ fun CacheScreen(navController: NavController) {
                     )
                 }
 
-                item {
-                    val scope = rememberCoroutineScope()
-                    ListItem(
-                        modifier = Modifier.clickable {
-                            Toast.makeText(
-                                context,
-                                "Menghapus data cache...",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            scope.launch {
-                                val prefDirs = File(
-                                    Environment.getDataDirectory()
-                                        .toString() + "/data/" + context.packageName + "/shared_prefs"
-                                )
-                                val files = prefDirs.listFiles()
-                                if (files !== null) {
-                                    for (file in files) {
-                                        file?.delete()
-                                    }
-                                }
-                            }
-                        },
-                        leadingContent = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.database),
-                                contentDescription = null
-                            )
-                        },
-                        headlineContent = {
-                            Text("Data Cache")
-                        },
-                        supportingContent = {
-                            Text("Click to clear cache")
-                        },
-                    )
-                }
+//                item {
+//                    val scope = rememberCoroutineScope()
+//                    ListItem(
+//                        modifier = Modifier.clickable {
+//                            Toast.makeText(
+//                                context,
+//                                "Menghapus data cache...",
+//                                Toast.LENGTH_LONG
+//                            ).show()
+//                            scope.launch {
+//                                val prefDirs = File(
+//                                    Environment.getDataDirectory()
+//                                        .toString() + "/data/" + context.packageName + "/shared_prefs"
+//                                )
+//                                val files = prefDirs.listFiles()
+//                                if (files !== null) {
+//                                    for (file in files) {
+//                                        file?.delete()
+//                                    }
+//                                }
+//                            }
+//                        },
+//                        leadingContent = {
+//                            Icon(
+//                                painter = painterResource(id = R.drawable.database),
+//                                contentDescription = null
+//                            )
+//                        },
+//                        headlineContent = {
+//                            Text("Data Cache")
+//                        },
+//                        supportingContent = {
+//                            Text("Click to clear cache")
+//                        },
+//                    )
+//                }
             }
         }
     }

@@ -222,6 +222,12 @@ fun KomikScreen(
                                         )
                                     }
                                 }
+                                IconButton(onClick = { }) {
+                                    Icon(
+                                        painterResource(id = R.drawable.download),
+                                        contentDescription = "Favorite"
+                                    )
+                                }
                             },
 //                        elevation = 0.dp
                         )

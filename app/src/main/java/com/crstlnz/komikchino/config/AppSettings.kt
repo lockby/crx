@@ -4,6 +4,7 @@ import coil.ImageLoader
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.model.CloudflareState
 import com.crstlnz.komikchino.data.util.EmptyCookieJar
+import com.crstlnz.komikchino.services.DownloadViewModel
 import com.crstlnz.komikchino.ui.navigations.HomeSections
 import kotlinx.coroutines.flow.MutableStateFlow
 import okhttp3.CookieJar
@@ -25,6 +26,7 @@ object AppSettings {
     val homeDefaultRoute = HomeSections.HOME.route
     const val animationDuration = 180
     var komikServer: KomikServer? = null
+    lateinit var downloadViewModel: DownloadViewModel
     var homepage: HomeSections? = null
     private fun bannerURL(id: String): String {
         return "https://lockby.github.io/assets/img/$id.jpg"

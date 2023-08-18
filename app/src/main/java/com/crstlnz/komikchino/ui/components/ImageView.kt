@@ -30,6 +30,7 @@ fun ImageView(
     val imageRequest = ImageRequest.Builder(LocalContext.current)
         .data(url)
         .crossfade(true)
+        .setHeader("Referer", AppSettings.komikServer!!.url)
         .decoderFactory(if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
         .size(Size.ORIGINAL) // Set the target size to load the image at.
 
