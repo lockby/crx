@@ -1,8 +1,7 @@
 package com.crstlnz.komikchino
 
-//import com.facebook.drawee.backends.pipeline.Fresco
-//import com.facebook.imagepipeline.backends.okhttp3.OkHttpImagePipelineConfigFactory
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.os.Bundle
@@ -13,10 +12,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -44,8 +41,8 @@ import com.crstlnz.komikchino.config.IMAGE_CACHE_PATH
 import com.crstlnz.komikchino.config.USER_DATA
 import com.crstlnz.komikchino.data.api.ApiClient
 import com.crstlnz.komikchino.data.api.KomikServer
-import com.crstlnz.komikchino.data.database.model.User
 import com.crstlnz.komikchino.data.datastore.Settings
+import com.crstlnz.komikchino.data.firebase.model.User
 import com.crstlnz.komikchino.data.model.UpdateState
 import com.crstlnz.komikchino.data.util.CustomCookieJar
 import com.crstlnz.komikchino.data.util.FirebaseInitializer
@@ -61,6 +58,10 @@ import com.crstlnz.komikchino.ui.navigations.addMainNavigation
 import com.crstlnz.komikchino.ui.theme.KomikChinoTheme
 import com.crstlnz.komikchino.ui.util.NotificationPermission
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException
+import com.google.android.gms.common.GooglePlayServicesRepairableException
+import com.google.android.gms.common.GooglePlayServicesUtil
+import com.google.android.gms.security.ProviderInstaller
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.auth.FirebaseAuth
@@ -69,11 +70,18 @@ import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import okhttp3.CipherSuite
+import okhttp3.ConnectionSpec
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.TlsVersion
+import org.conscrypt.Conscrypt
+import java.security.Security
 import javax.inject.Inject
+import javax.net.ssl.SSLContext
+
 
 var LocalStatusBarPadding = compositionLocalOf {
     0.dp
@@ -108,15 +116,33 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("InternalInsetResource", "DiscouragedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        updateAndroidSecurityProvider(this)
         AppSettings.komikServer = databaseKey
+        ProviderInstaller.installIfNeeded(applicationContext);
         FirebaseInitializer.initialize(this)
         firebaseAnalytics = Firebase.analytics
         actionBar?.show()
         AppSettings.homepage = homepage
+
+//        AppSettings.downloadDir =
+//            File(
+//                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+//                "/komikchino"
+//            ).path
 //        val dlViewModel: DownloadViewModel by viewModels()
 //        AppSettings.downloadViewModel = dlViewModel
         AppSettings.cookieJar = CustomCookieJar(this)
+        Security.insertProviderAt(Conscrypt.newProvider(), 1);
         AppSettings.customHttpClient = OkHttpClient.Builder()
+            .connectionSpecs(
+                listOf(
+                    ConnectionSpec.CLEARTEXT,
+                    ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                        .allEnabledTlsVersions()
+                        .allEnabledCipherSuites()
+                        .build()
+                )
+            )
             .followRedirects(true) // Enable automatic following of redirects
             .followSslRedirects(true)
             .cookieJar(AppSettings.cookieJar)
@@ -124,10 +150,24 @@ class MainActivity : ComponentActivity() {
             .addInterceptor(RequestHeaderInterceptor())
             .addInterceptor(UrlLoggingInterceptor())
             .build()
+
+        fun getImageClient(komikServer: KomikServer): OkHttpClient {
+            if (komikServer === KomikServer.COSMICSCANSINDO || komikServer === KomikServer.COSMICSCANS) {
+                return AppSettings.customHttpClient.newBuilder().addInterceptor {
+                    val newRequest = it.request().newBuilder().addHeader(
+                        "Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+                    ).build()
+                    it.proceed(newRequest)
+                }.build()
+
+            }
+            return AppSettings.customHttpClient
+        }
+
         AppSettings.imageLoader =
             ImageLoader
                 .Builder(this)
-                .okHttpClient(AppSettings.customHttpClient)
+                .okHttpClient(getImageClient(AppSettings.komikServer!!))
                 .components {
                     add { chain ->
                         val request = chain.request
@@ -198,6 +238,21 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private fun updateAndroidSecurityProvider(callingActivity: Activity) {
+    try {
+        ProviderInstaller.installIfNeeded(callingActivity)
+        val sslContext: SSLContext = SSLContext.getInstance("TLSv1.2")
+        sslContext.init(null, null, null)
+        sslContext.createSSLEngine()
+    } catch (e: GooglePlayServicesRepairableException) {
+        // Thrown when Google Play Services is not installed, up-to-date, or enabled
+        // Show dialog to allow users to install, update, or otherwise enable Google Play services.
+        GooglePlayServicesUtil.getErrorDialog(e.connectionStatusCode, callingActivity, 0)
+    } catch (e: GooglePlayServicesNotAvailableException) {
+        Log.e("SecurityException", "Google Play Services not available.")
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -240,14 +295,17 @@ fun MainApp() {
             scaleIn(
                 animationSpec = tween(AppSettings.animationDuration, easing = EaseOutCubic),
                 initialScale = 0.95F
-            ) + fadeIn(tween((AppSettings.animationDuration).toInt()))
+            )
+//            + fadeIn(tween((AppSettings.animationDuration).toInt()))
         },
         exitTransition = {
-            scaleOut(
-                animationSpec = tween(
-                    (AppSettings.animationDuration * 1.5f).toInt(), easing = EaseOutCubic
-                ), targetScale = 1.05F
-            ) + fadeOut(tween((AppSettings.animationDuration / 1.5f).toInt()), 0.4f)
+//            scaleOut(
+//                animationSpec = tween(
+//                    (AppSettings.animationDuration * 1.5f).toInt(), easing = EaseOutCubic
+//                ), targetScale = 1.05F
+//            )
+//            +
+            fadeOut(tween((AppSettings.animationDuration / 2f).toInt()), 0f)
         },
         popEnterTransition = {
             scaleIn(
@@ -257,10 +315,12 @@ fun MainApp() {
             )
         },
         popExitTransition = {
-            scaleOut(
-                animationSpec = tween(AppSettings.animationDuration, easing = EaseOutCubic),
-                targetScale = 0.95F
-            ) + fadeOut(tween((AppSettings.animationDuration / 1.5f).toInt()))
+//            scaleOut(
+//                animationSpec = tween(AppSettings.animationDuration, easing = EaseOutCubic),
+//                targetScale = 0.95F
+//            )
+//            +
+            fadeOut(tween((AppSettings.animationDuration / 2f).toInt()), 0f)
         },
     ) {
         addMainNavigation(navController)
@@ -300,7 +360,7 @@ fun MainApp() {
                                     email = user.email ?: "",
                                     img = user.photoUrl.toString(),
                                     appVersion = getAppVersion(context),
-                                    last_online = getCurrentDateString()
+                                    lastOnline = getCurrentDateString()
                                 )
                             } catch (e: Exception) {
                                 Log.d("USER PARSE ERROR", e.stackTraceToString())
@@ -308,15 +368,14 @@ fun MainApp() {
                             }
 
                         } else {
-                            Log.d("USER UPDATE", getAppVersion(context))
                             User(
                                 id = user.uid,
                                 name = user.displayName ?: "",
                                 email = user.email ?: "",
                                 img = user.photoUrl.toString(),
                                 appVersion = getAppVersion(context),
-                                created_at = System.currentTimeMillis(),
-                                last_online = getCurrentDateString()
+                                createdAt = System.currentTimeMillis(),
+                                lastOnline = getCurrentDateString()
                             )
                         }
 

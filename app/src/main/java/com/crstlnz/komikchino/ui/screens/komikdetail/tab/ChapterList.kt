@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.crstlnz.komikchino.R
+import com.crstlnz.komikchino.config.AppSettings
+import com.crstlnz.komikchino.data.api.Bahasa
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.DataState.Loading.getDataOrNull
 import com.crstlnz.komikchino.data.util.formatRelativeDate
@@ -116,11 +119,15 @@ fun ChapterList(
                     supportingContent = {
                         val date = chapters[index].date
                         if (date != null) {
-                            Text(if (!isToday(date)) formatRelativeDate(date) else "Hari ini")
+                            Text(
+                                if (!isToday(date)) formatRelativeDate(date)
+                                else if (AppSettings.komikServer!!.bahasa === Bahasa.ENGLISH) "Today"
+                                else "Hari ini"
+                            )
                         }
                     }
                 )
-                Divider()
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             }
         }
     }

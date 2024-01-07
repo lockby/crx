@@ -1,4 +1,4 @@
-package com.crstlnz.komikchino.data.database.repository
+package com.crstlnz.komikchino.data.firebase.repository
 
 import android.util.Log
 import androidx.lifecycle.LiveData
@@ -7,15 +7,14 @@ import com.crstlnz.komikchino.config.CHAPTER
 import com.crstlnz.komikchino.config.KOMIK
 import com.crstlnz.komikchino.config.SERVER
 import com.crstlnz.komikchino.data.api.KomikServer
-import com.crstlnz.komikchino.data.database.model.ChapterHistoryItem
-import com.crstlnz.komikchino.data.database.model.FavoriteKomikItem
-import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
-import com.crstlnz.komikchino.data.database.model.KomikReadHistory
-import com.crstlnz.komikchino.data.util.BaseRepository
+import com.crstlnz.komikchino.data.firebase.model.ChapterHistoryItem
+import com.crstlnz.komikchino.data.firebase.model.KomikHistoryItem
+import com.crstlnz.komikchino.data.firebase.model.KomikReadHistory
+import com.crstlnz.komikchino.data.util.BaseFirebaseRepository
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 
-class KomikHistoryRepository(private val databaseKey: KomikServer) : BaseRepository() {
+class KomikHistoryRepository(private val databaseKey: KomikServer) : BaseFirebaseRepository() {
     private val komikCollection =
         userData.collection(SERVER).document(databaseKey.value).collection(KOMIK)
 

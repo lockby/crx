@@ -23,6 +23,7 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -113,8 +114,8 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
         var nestedScroll by remember { mutableStateOf<NestedScrollConnection>(activeNested) }
         val nonActiveNested = rememberNestedScrollInteropConnection()
         LaunchedEffect(navShow) {
-            if (systemUiController.isSystemBarsVisible != navShow)
-                systemUiController.isSystemBarsVisible = navShow
+            if (systemUiController.isSystemBarsVisible != navShow) systemUiController.isSystemBarsVisible =
+                navShow
             nestedScroll = if (navShow) activeNested else nonActiveNested
         }
 
@@ -157,10 +158,8 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                 ) {
                     when (chapterList) {
                         is DataState.Success -> {
-                            val chapters =
-                                (chapterList as DataState.Success<List<Chapter>>).data
-                            CustomSwipeRefresh(
-                                state = rememberCustomSwipeRefresh(isRefreshing = false),
+                            val chapters = (chapterList as DataState.Success<List<Chapter>>).data
+                            CustomSwipeRefresh(state = rememberCustomSwipeRefresh(isRefreshing = false),
                                 refreshTriggerDistance = 100.dp,
                                 onRefresh = {
                                     v.loadChapterList(true)
@@ -170,32 +169,30 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                     Modifier
                                         .fillMaxSize()
                                         .weight(1f)
-                                        .statusBarsPadding(), state = lazyListState
+                                        .statusBarsPadding(),
+                                    state = lazyListState
                                 ) {
                                     items(chapters.size) {
-                                        ListItem(
-                                            modifier = Modifier
-                                                .clickable {
-                                                    scope.launch {
-                                                        drawerState.close()
-                                                        goToChapter(
-                                                            chapters[it].id ?: "0",
-                                                            chapters[it].title
-                                                        )
-                                                    }
-
-                                                },
-                                            colors = ListItemDefaults.colors(
-                                                containerColor = if (chapterPosition == it) WhiteGray.copy(
-                                                    alpha = 0.1f
-                                                ) else Color.Transparent
-                                            ), headlineContent = {
-                                                Text(
-                                                    chapters[it].title, modifier = Modifier.padding(
-                                                        horizontal = 10.dp, vertical = 20.dp
-                                                    )
+                                        ListItem(modifier = Modifier.clickable {
+                                            scope.launch {
+                                                drawerState.close()
+                                                goToChapter(
+                                                    chapters[it].id ?: "0",
+                                                    chapters[it].title
                                                 )
-                                            })
+                                            }
+
+                                        }, colors = ListItemDefaults.colors(
+                                            containerColor = if (chapterPosition == it) WhiteGray.copy(
+                                                alpha = 0.1f
+                                            ) else Color.Transparent
+                                        ), headlineContent = {
+                                            Text(
+                                                chapters[it].title, modifier = Modifier.padding(
+                                                    horizontal = 10.dp, vertical = 20.dp
+                                                )
+                                            )
+                                        })
                                     }
                                 }
                             }
@@ -235,6 +232,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                     .fillMaxSize()
             ) {
                 val dataState by v.state.collectAsState()
+                val chapterScrollPosition = remember { v.getChapterScrollPosition() }
                 LaunchedEffect(dataState) {
                     if (dataState is DataState.Success) {
                         title = dataState.getDataOrNull()?.title ?: ""
@@ -248,11 +246,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                 Modifier.nestedScroll(nestedScroll),
                                 images = (dataState as DataState.Success<ChapterData>).data.imgs,
                                 onNavChange = {
-                                    navShow = if (it == null) {
-                                        !navShow
-                                    } else {
-                                        it
-                                    }
+                                    navShow = it ?: !navShow
                                 },
                                 onNextClick = {
                                     if (!navShow) navShow = true
@@ -263,9 +257,8 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     } else {
-                                        val chapter =
-                                            v.chapterList.value.getDataOrNull()
-                                                ?.getOrNull(chapterPosition + 1)
+                                        val chapter = v.chapterList.value.getDataOrNull()
+                                            ?.getOrNull(chapterPosition + 1)
                                         if (chapter != null) {
                                             goToChapter(
                                                 chapter.id ?: "", chapter.title
@@ -279,20 +272,21 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                         }
                                     }
                                 },
+                                chapterScrollPosition = chapterScrollPosition,
                                 viewModel = v
                             )
                         } else {
                             ErrorView(
                                 resId = R.drawable.error, message = "Gambar tidak ditemukan!"
                             ) {
-                                v.load()
+                                v.load(true)
                             }
                         }
                     }
 
                     is DataState.Error -> {
                         ErrorView(resId = R.drawable.error, message = "Error Misterius!") {
-                            v.load()
+                            v.load(true)
                         }
                     }
 
@@ -332,6 +326,23 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                 ContentType.CHAPTER
                             )
                         }
+                    }, onMangaClick = {
+                        val data = dataState.getDataOrNull()
+                        if (data != null) {
+                            MainNavigation.toKomik(
+                                navController = navController, data.komik.title, data.komik.slug
+                            )
+
+                        }
+                    }, onDownloadClick = {
+                        val data = dataState.getDataOrNull()
+                        if (data != null) {
+                            MainNavigation.toDownloadSelect(
+                                navController,
+                                data.komik.title,
+                                data.komik.slug
+                            )
+                        }
                     })
                 }
 
@@ -352,25 +363,30 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
-                        }, navigationIcon = {
+                        },
+                        navigationIcon = {
                             IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(Icons.Filled.ArrowBack, "backIcon")
                             }
                         },
                         actions = {
-                            IconButton(
-                                modifier = Modifier.padding(end = 5.dp),
-                                onClick = {
-                                    val data = dataState.getDataOrNull()
-                                    if (data != null) {
-                                        MainNavigation.toKomik(
-                                            navController = navController,
-                                            data.komik.title,
-                                            data.komik.slug
-                                        )
+                            IconButton(modifier = Modifier.padding(end = 5.dp), onClick = {
+                                v.load(true)
+                            }) {
+                                Icon(Icons.Outlined.Refresh, "refresh")
+                            }
 
-                                    }
-                                }) {
+                            IconButton(modifier = Modifier.padding(end = 5.dp), onClick = {
+                                val data = dataState.getDataOrNull()
+                                if (data != null) {
+                                    MainNavigation.toKomik(
+                                        navController = navController,
+                                        data.komik.title,
+                                        data.komik.slug
+                                    )
+
+                                }
+                            }) {
                                 Icon(Icons.Outlined.Info, "backIcon")
                             }
                         }

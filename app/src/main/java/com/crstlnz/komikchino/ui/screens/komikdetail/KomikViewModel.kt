@@ -1,13 +1,14 @@
 package com.crstlnz.komikchino.ui.screens.komikdetail
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.crstlnz.komikchino.data.api.ScraperBase
-import com.crstlnz.komikchino.data.database.model.ChapterHistoryItem
-import com.crstlnz.komikchino.data.database.model.FavoriteKomikItem
-import com.crstlnz.komikchino.data.database.repository.ChapterHistoryRepository
-import com.crstlnz.komikchino.data.database.repository.FavoriteKomikRepository
+import com.crstlnz.komikchino.data.firebase.model.ChapterHistoryItem
+import com.crstlnz.komikchino.data.firebase.model.FavoriteKomikItem
+import com.crstlnz.komikchino.data.firebase.repository.ChapterHistoryRepository
+import com.crstlnz.komikchino.data.firebase.repository.FavoriteKomikRepository
 import com.crstlnz.komikchino.data.datastore.Settings
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
 import com.crstlnz.komikchino.data.model.KomikDetail
@@ -33,15 +34,13 @@ class KomikViewModel @Inject constructor(
 ) : ScraperViewModel<KomikDetail>(
     storage, false
 ) {
-    private val _slug = MutableStateFlow("0")
-    val slug = _slug.asStateFlow()
+    private var slug = "0"
     override var cacheKey = "komik-${slug}"
 
     init {
-       val slug =  URLDecoder.decode(savedStateHandle.get<String>("slug").orEmpty(), "UTF-8")
-        _slug.update {
-            slug
-        }
+        slug = URLDecoder.decode(savedStateHandle.get<String>("slug").orEmpty(), "UTF-8")
+            .ifEmpty { "0" }
+        cacheKey = "komik-$slug"
         load(force = false, isManual = false)
     }
 
@@ -76,7 +75,7 @@ class KomikViewModel @Inject constructor(
     }
 
     override suspend fun fetchData(): KomikDetail {
-        return api.getDetailKomik(slug.value)
+        return api.getDetailKomik(slug)
     }
 
     override fun onCleared() {

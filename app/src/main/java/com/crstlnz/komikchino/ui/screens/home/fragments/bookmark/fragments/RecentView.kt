@@ -28,7 +28,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -46,10 +45,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.crstlnz.komikchino.R
-import com.crstlnz.komikchino.data.database.model.ChapterEmbed
-import com.crstlnz.komikchino.data.database.model.ChapterHistoryItem
-import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
-import com.crstlnz.komikchino.data.database.model.KomikReadHistory
+import com.crstlnz.komikchino.data.firebase.model.ChapterEmbed
+import com.crstlnz.komikchino.data.firebase.model.ChapterHistoryItem
+import com.crstlnz.komikchino.data.firebase.model.KomikHistoryItem
+import com.crstlnz.komikchino.data.firebase.model.KomikReadHistory
 import com.crstlnz.komikchino.ui.components.ErrorView
 import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.BookmarkViewModel

@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.data.api.source
 
+import android.util.Log
 import com.crstlnz.komikchino.data.api.KomikClient
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.Chapter
@@ -26,11 +27,20 @@ import com.crstlnz.komikchino.data.util.parseKiryuUpdateTime
 import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 import java.util.Locale
 import java.util.regex.Pattern
 
 class Kiryuu : ScraperBase {
     private val api = KomikClient.getKiryuuClient()
+
+    private fun getDynamicSRC(img : Element?) : String{
+        if(img !== null){
+            val src = img.attr("src")
+            return if(!src.isNullOrEmpty()) src else img.attr("data-cfsrc")
+        }
+        return ""
+    }
     override suspend fun getHome(): HomeData {
         val document = fetch {
             api.getHome()
@@ -81,7 +91,7 @@ class Kiryuu : ScraperBase {
                     type = comic.selectFirst(".limit .type")?.classNames()?.toList()?.getOrNull(1)
                         ?.toString()
                         ?: if (comic.selectFirst(".novelabel") != null) "Novel" else "",
-                    img = comic.selectFirst("img")?.attr("src") ?: "",
+                    img = getDynamicSRC(comic.selectFirst("img")),
                     slug = getLastPathSegment(url) ?: "",
                     score = comic.selectFirst(".rating .numscore")?.text()?.trim()
                         ?.toFloatOrNull() ?: 0f,
@@ -95,11 +105,13 @@ class Kiryuu : ScraperBase {
             featured = featuredList,
             sections = listOf(Section(
                 title = document.selectFirst("#content .hotslid .releases")?.text()?.trim()
-                    ?.split(" ")?.joinToString(" ") { it.replaceFirstChar {
-                        if (it.isLowerCase()) it.titlecase(
-                            Locale.ROOT
-                        ) else it.toString()
-                    } } ?: "",
+                    ?.split(" ")?.joinToString(" ") {
+                        it.replaceFirstChar {
+                            if (it.isLowerCase()) it.titlecase(
+                                Locale.ROOT
+                            ) else it.toString()
+                        }
+                    } ?: "",
                 list = sectionList
             ))
         )
@@ -131,7 +143,7 @@ class Kiryuu : ScraperBase {
             latestUpdate.add(
                 LatestUpdate(
                     title = latest.selectFirst(".luf a")?.text() ?: "",
-                    img = latest.selectFirst("img")?.attr("src") ?: "",
+                    img = getDynamicSRC(latest.selectFirst("img")),
                     description = "",
                     slug = getLastPathSegment(url) ?: "",
                     url = url,
@@ -158,7 +170,7 @@ class Kiryuu : ScraperBase {
             searchItems.add(
                 SearchResult.ExactMatch(
                     title = search.selectFirst(".bigor .tt")?.text()?.trim() ?: "",
-                    img = search.selectFirst(".limit img.ts-post-image")?.attr("src") ?: "",
+                    img = getDynamicSRC(search.selectFirst(".limit img.ts-post-image")),
                     score = search.selectFirst(".rating .numscore")?.text()?.trim()?.toFloatOrNull()
                         ?: 0f,
                     type = search.selectFirst(".limit .type")?.classNames()?.toList()?.getOrNull(1)
@@ -204,7 +216,7 @@ class Kiryuu : ScraperBase {
             similarList.add(
                 SimilarTitle(
                     title = similar.selectFirst(".tt")?.text()?.trim() ?: "",
-                    img = similar.selectFirst("a img")?.attr("src") ?: "",
+                    img = getDynamicSRC(similar.selectFirst("a img")),
                     genre = null,
                     type = similar.selectFirst(".limit .type")?.classNames()?.toList()?.getOrNull(1)
                         ?.toString()
@@ -230,8 +242,8 @@ class Kiryuu : ScraperBase {
                     date = parseDateString(
                         chapter.selectFirst(".eph-num .chapterdate")?.text()?.trim() ?: ""
                     ),
-                    slug = getLastPathSegment(url) ?: "",
-                    id = getQuery(dlUrl, "id")?.toString(),
+                    slug = getLastPathSegment(url) ?: "0",
+                    id = getQuery(dlUrl, "id") ?: "0",
                     mangaId = id.toString(),
                     url = url,
                 )
@@ -246,7 +258,7 @@ class Kiryuu : ScraperBase {
             ) ?: "",
             title = title
                 ?.replace("Bahasa Indonesia", "")?.trim() ?: "",
-            img = document.selectFirst(".seriestucontent .thumb img")?.attr("src") ?: "",
+            img = getDynamicSRC(document.selectFirst(".seriestucontent .thumb img")),
             banner = getBackgroundImage(
                 document.selectFirst(".bigcover .bigbanner")?.attr("style") ?: ""
             ),
@@ -293,8 +305,8 @@ class Kiryuu : ScraperBase {
                         chapter.selectFirst(".eph-num .chapterdate")?.text()?.trim() ?: ""
                     ),
                     slug = getLastPathSegment(url) ?: "",
-                    id = getQuery(dlUrl, "id"),
-                    mangaId = document.selectFirst(".bookmark")?.attr("data-id")?.toString(),
+                    id = getQuery(dlUrl, "id") ?: "0",
+                    mangaId = document.selectFirst(".bookmark")?.attr("data-id")?.toString() ?: "0",
                     url = url,
                 )
             )
@@ -307,7 +319,7 @@ class Kiryuu : ScraperBase {
         val imgs = document.select("#readerarea img")
         val imgList = arrayListOf<String>()
         for (img in imgs) {
-            imgList.add(img.attr("src") ?: "")
+            imgList.add(getDynamicSRC(img))
         }
         val id =
             getQuery(document.selectFirst("link[rel='shortlink']")?.attr("href") ?: "", "p") ?: ""
@@ -376,7 +388,7 @@ class Kiryuu : ScraperBase {
             searchItems.add(
                 KomikSearchResult(
                     title = search.selectFirst(".bigor .tt")?.text()?.trim() ?: "",
-                    img = search.selectFirst(".limit img.ts-post-image")?.attr("src") ?: "",
+                    img = getDynamicSRC(search.selectFirst(".limit img.ts-post-image")),
                     score = search.selectFirst(".rating .numscore")?.text()?.trim()?.toFloatOrNull()
                         ?: 0f,
                     type = search.selectFirst(".limit .type")?.classNames()?.toList()?.getOrNull(1)
@@ -391,6 +403,7 @@ class Kiryuu : ScraperBase {
         }
 
         val hasNext = document.selectFirst(".hpage .r") != null
+        Log.d("WEWEW", genreListResult.toString())
         return GenreSearch(
             genreList = genreListResult,
             page = page,

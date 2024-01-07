@@ -4,15 +4,11 @@ package com.crstlnz.komikchino.ui.screens.home.fragments.bookmark
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.crstlnz.komikchino.data.database.model.KomikReadHistory
-import com.crstlnz.komikchino.data.database.repository.FavoriteKomikRepository
-import com.crstlnz.komikchino.data.database.repository.KomikHistoryRepository
+import com.crstlnz.komikchino.data.firebase.repository.FavoriteKomikRepository
+import com.crstlnz.komikchino.data.firebase.repository.KomikHistoryRepository
 import com.crstlnz.komikchino.data.model.ChapterScrollPostition
 import com.crstlnz.komikchino.data.util.StorageHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Named
@@ -22,7 +18,7 @@ import javax.inject.Named
 class BookmarkViewModel @Inject constructor(
     private val historyRepository: KomikHistoryRepository,
     private val favoriteRepository: FavoriteKomikRepository,
-    @Named("chapterScrollPostitionCache") private val chapterScrollPostition: StorageHelper<ChapterScrollPostition>,
+    @Named("chapterScrollPositionCache") private val chapterScrollPosition: StorageHelper<ChapterScrollPostition>,
 ) : ViewModel() {
     //    private val _histories = MutableStateFlow<List<KomikReadHistory>?>(null)
     val histories = historyRepository.readHistories()
@@ -42,7 +38,7 @@ class BookmarkViewModel @Inject constructor(
 //    }
 
     fun getChapterScrollPosition(mangaId: String, chapterId: String): ChapterScrollPostition? {
-        val pos = chapterScrollPostition.get<ChapterScrollPostition>(mangaId)
+        val pos = chapterScrollPosition.get<ChapterScrollPostition>(mangaId)
         return if (pos != null && pos.chapterId == chapterId) pos else null
     }
 

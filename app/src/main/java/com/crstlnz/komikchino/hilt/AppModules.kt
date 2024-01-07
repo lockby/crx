@@ -5,13 +5,11 @@ import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.api.getScraper
-import com.crstlnz.komikchino.data.api.source.Kiryuu
-import com.crstlnz.komikchino.data.api.source.Mangakatana
-import com.crstlnz.komikchino.data.api.source.Manhwalist
-import com.crstlnz.komikchino.data.api.source.VoidScans
-import com.crstlnz.komikchino.data.database.repository.ChapterHistoryRepository
-import com.crstlnz.komikchino.data.database.repository.FavoriteKomikRepository
-import com.crstlnz.komikchino.data.database.repository.KomikHistoryRepository
+import com.crstlnz.komikchino.data.database.KomikDatabase
+import com.crstlnz.komikchino.data.database.repository.MangaDownloadRepository
+import com.crstlnz.komikchino.data.firebase.repository.ChapterHistoryRepository
+import com.crstlnz.komikchino.data.firebase.repository.FavoriteKomikRepository
+import com.crstlnz.komikchino.data.firebase.repository.KomikHistoryRepository
 import com.crstlnz.komikchino.data.datastore.Settings
 import com.crstlnz.komikchino.ui.navigations.HomeSections
 import dagger.Module
@@ -69,5 +67,17 @@ class AppModules {
         databaseKey: KomikServer
     ): FavoriteKomikRepository {
         return FavoriteKomikRepository(databaseKey)
+    }
+
+    @Provides
+    fun provideMangaDownloadRepository(
+        @ApplicationContext context: Context,
+        databaseKey: KomikServer
+    ): MangaDownloadRepository {
+        val database = KomikDatabase.getInstance(context, databaseKey)
+        return MangaDownloadRepository(
+            database.getMangaDownloadDao(),
+            database.getChapterDownloadDao()
+        )
     }
 }

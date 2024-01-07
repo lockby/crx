@@ -7,7 +7,7 @@ import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 
-open class BaseRepository {
+open class BaseFirebaseRepository {
     protected val listeners: MutableList<ListenerRegistration> = mutableListOf()
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     protected val userData: DocumentReference =

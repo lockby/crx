@@ -63,6 +63,7 @@ import androidx.lifecycle.Lifecycle
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.config.nunito
+import com.crstlnz.komikchino.data.model.ChapterScrollPostition
 import com.crstlnz.komikchino.data.model.DataState.Loading.getDataOrNull
 import com.crstlnz.komikchino.data.model.ImageSize
 import com.crstlnz.komikchino.data.model.ScrollImagePosition
@@ -73,10 +74,9 @@ import com.crstlnz.komikchino.ui.components.customswipe.rememberCustomSwipeRefre
 import com.crstlnz.komikchino.ui.screens.chapter.ChapterViewModel
 import com.crstlnz.komikchino.ui.theme.Black1
 import com.crstlnz.komikchino.ui.util.ComposableLifecycle
-import com.smarttoolfactory.zoom.rememberZoomState
-import com.smarttoolfactory.zoom.zoom
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.isActive
+import com.crstlnz.komikchino.ui.util.Zoomable
+import com.crstlnz.komikchino.ui.util.ZoomableConsumeDirection
+import com.crstlnz.komikchino.ui.util.rememberZoomableState
 
 data class ChapterImage(
     val url: String, var useHardware: Boolean, val key: String,
@@ -91,11 +91,13 @@ fun ChapterImageList(
     modifier: Modifier = Modifier,
     images: List<String>,
 //    images: List<ImageBitmap?>,
+    chapterScrollPosition : ChapterScrollPostition?,
     onNavChange: (isShow: Boolean?) -> Unit = {},
     viewModel: ChapterViewModel,
     onNextClick: () -> Unit = {}
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
+    val defaultAspectRatio = remember { 5f / 8f }
     val screenWidthPixel =
         with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }.toInt()
     val chapterImages = remember {
@@ -111,11 +113,9 @@ fun ChapterImageList(
         })
     }
 
-    val chapterScrollPostition = remember { viewModel.getChapterScrollPosition() }
-
     val lazyColumnState = rememberLazyListState(
-        chapterScrollPostition?.initialFirstVisibleItemIndex ?: 0,
-        chapterScrollPostition?.initialFirstVisibleItemScrollOffset ?: 0
+        chapterScrollPosition?.initialFirstVisibleItemIndex ?: 0,
+        chapterScrollPosition?.initialFirstVisibleItemScrollOffset ?: 0
     )
 
     val dataState by viewModel.state.collectAsState()
@@ -123,8 +123,8 @@ fun ChapterImageList(
 
     val calculatedImageSize =
         remember {
-            if (chapterScrollPostition?.imageSize != null && chapterScrollPostition.imageSize.size == images.size) {
-                chapterScrollPostition.imageSize
+            if (chapterScrollPosition?.imageSize != null && chapterScrollPosition.imageSize.size == images.size) {
+                chapterScrollPosition.imageSize
             } else {
                 images.map {
                     ImageSize(
@@ -147,18 +147,23 @@ fun ChapterImageList(
     }
 
     LaunchedEffect(Unit) {
-//        Log.d("CHAPTER FIRST ITEM", chapterScrollPostition?.initialFirstVisibleItemIndex.toString())
-//        Log.d(
-//            "CHAPTER SCROLL OFFSET",
-//            chapterScrollPostition?.initialFirstVisibleItemScrollOffset.toString()
-//        )
-//        Log.d("CHAPTER STATE ITEM", lazyColumnState.firstVisibleItemIndex.toString())
-//        Log.d("CHAPTER STATE OFFSET", lazyColumnState.firstVisibleItemScrollOffset.toString())
-        lazyColumnState.scrollToItem(
-            chapterScrollPostition?.initialFirstVisibleItemIndex ?: 0,
-            chapterScrollPostition?.initialFirstVisibleItemScrollOffset ?: 0
-        )
+        val firstVisible = chapterScrollPosition?.initialFirstVisibleItemIndex ?: 0
+        val firstVisibleOffset = chapterScrollPosition?.initialFirstVisibleItemScrollOffset ?: 0
+        if (lazyColumnState.firstVisibleItemIndex != firstVisible || lazyColumnState.firstVisibleItemScrollOffset != firstVisibleOffset) {
+            Log.d("First Visible Item Index" , lazyColumnState.firstVisibleItemIndex.toString())
+            Log.d("First Visible Scroll Offset" , lazyColumnState.firstVisibleItemScrollOffset.toString())
+
+            Log.d("First Visible Item Index New" , firstVisible.toString())
+            Log.d("First Visible Scroll Offset New" , firstVisibleOffset.toString())
+
+            Log.d("SCROLL STATE", "CHANGING")
+            lazyColumnState.scrollToItem(
+                chapterScrollPosition?.initialFirstVisibleItemIndex ?: 0,
+                chapterScrollPosition?.initialFirstVisibleItemScrollOffset ?: 0
+            )
+        }
     }
+
     ComposableLifecycle(lifecycleOwner) { _, event ->
         if (event == Lifecycle.Event.ON_PAUSE) {
             viewModel.saveHistory(
@@ -193,15 +198,25 @@ fun ChapterImageList(
 //                rotation += rotationChange
 //                offset += offsetChange
 //            }
-
+//
+//            val state = rememberZoomableState(
+//                minScale = 1f
+//            )
+//            Zoomable(
+//                modifier = Modifier.weight(1f),
+//                state = state,
+//                finishDragNotConsumeDirection = ZoomableConsumeDirection.Vertical
+//                ) {
+//
+//                }
             LazyColumn(
                 modifier
                     .fillMaxWidth()
 //                    .zoom(
-//                        key = Unit,
-//                        consume = isMultipleTouch,
+//                        key = isMultipleTouch,
+//                        consume = true,
 //                        clip = true,
-//                        zoomState = rememberZoomState(limitPan = true),
+//                        zoomState = rememberZoomState(limitPan = true, zoomable = isMultipleTouch),
 //                        onGestureStart = null,
 //                        onGesture = null,
 //                        onGestureEnd = null
@@ -227,10 +242,12 @@ fun ChapterImageList(
 //                        }
 //                    }
 //                    .zoomable(rememberZoomableState(), enabled = isMultipleTouch)
-                    .combinedClickable(interactionSource = interactionSource, indication = null) {
+                    .combinedClickable(
+                        interactionSource = interactionSource,
+                        indication = null
+                    ) {
                         onNavChange(null)
-                    }
-                    .weight(1f),
+                    },
                 state = lazyColumnState,
 //                userScrollEnabled = !isMultipleTouch
             ) {
@@ -238,6 +255,7 @@ fun ChapterImageList(
                     Box(
                         Modifier
                             .aspectRatio(4f / 3f)
+                            .fillMaxWidth()
                             .background(White),
                         contentAlignment = Alignment.Center
                     ) {
@@ -253,7 +271,9 @@ fun ChapterImageList(
                                     "Komik Chino",
                                     color = Black1,
                                     fontFamily = nunito,
-                                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black)
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontWeight = FontWeight.Black
+                                    )
                                 )
                                 Spacer(Modifier.width(5.dp))
                             }
@@ -291,19 +311,21 @@ fun ChapterImageList(
                     }
                 }
 
+
                 items(
                     chapterImages.size,
                     key = { chapterImages[it].key },
                     contentType = { ChapterImage::class.java }
                 ) { idx ->
-                    val imageSize = chapterScrollPostition?.imageSize?.getOrNull(idx)
-                    val aspectRatio =
+                    val imageSize = chapterScrollPosition?.imageSize?.getOrNull(idx)
+                    var aspectRatio =
                         if (imageSize != null && imageSize.calculated && imageSize.height > 0f && imageSize.width > 0f) {
                             imageSize.width / imageSize.height
                         } else {
-                            5f / 8f
+                            defaultAspectRatio
                         }
 
+                    if(aspectRatio == 0f || aspectRatio.isNaN()) aspectRatio = defaultAspectRatio
                     ChapterImageView(chapterImages[idx], onDisableHardware = {
                         val data = chapterImages[idx]
                         data.useHardware = false
@@ -312,7 +334,9 @@ fun ChapterImageList(
                         calculatedImageSize[idx] = ImageSize(
                             true, h, w
                         )
-                    }, defaultAspectRatio = aspectRatio,
+                    },
+                        defaultAspectRatio = defaultAspectRatio,
+                        aspectRatio = aspectRatio,
                         screenWidthPixel = screenWidthPixel
                     )
                 }

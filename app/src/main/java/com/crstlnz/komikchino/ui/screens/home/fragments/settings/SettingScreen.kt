@@ -190,11 +190,7 @@ fun SettingScreen(navController: NavController) {
                         Text("Server")
                     },
                     trailingContent = {
-                        Text(komikServer.value.replaceFirstChar {
-                            if (it.isLowerCase()) it.titlecase(
-                                Locale.ROOT
-                            ) else it.toString()
-                        })
+                        Text(komikServer.title)
                     },
                     leadingContent = {
                         Icon(

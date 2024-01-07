@@ -1,7 +1,8 @@
 package com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub
 
+import android.content.Context
 import android.os.Environment
-import android.util.Log
+import android.preference.PreferenceManager
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,9 +30,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.config.IMAGE_CACHE_PATH
+import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.util.clearCache
 import com.crstlnz.komikchino.data.util.formatSize
 import com.crstlnz.komikchino.data.util.getCacheFolderSize
+import com.crstlnz.komikchino.hilt.Cache
 import com.crstlnz.komikchino.ui.navigations.HomeSections
 import kotlinx.coroutines.launch
 import java.io.File
@@ -45,8 +48,7 @@ fun CacheScreen(navController: NavController) {
         mutableStateOf(
             formatSize(
                 getCacheFolderSize(
-                    context,
-                    IMAGE_CACHE_PATH
+                    context, IMAGE_CACHE_PATH
                 )
             )
         )
@@ -55,94 +57,79 @@ fun CacheScreen(navController: NavController) {
     fun refreshImageCache() {
         imageCacheSize = formatSize(
             getCacheFolderSize(
-                context,
-                IMAGE_CACHE_PATH
+                context, IMAGE_CACHE_PATH
             )
         )
     }
 
     Scaffold(topBar = {
-        TopAppBar(
-            navigationIcon = {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                }
-            },
-            title = {
-                Text("Cache")
-            },
-            actions = {
+        TopAppBar(navigationIcon = {
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
             }
-        )
+        }, title = {
+            Text("Cache")
+        }, actions = {})
     }) {
         Surface(Modifier.padding(it)) {
             val homepageList = HomeSections.values()
             LazyColumn(Modifier.fillMaxSize()) {
                 item {
+                    ListItem(modifier = Modifier.clickable {
+                        Toast.makeText(
+                            context, "Menghapus image cache...", Toast.LENGTH_LONG
+                        ).show()
+                        clearCache(context, IMAGE_CACHE_PATH)
+                        refreshImageCache()
+                    }, leadingContent = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.image_outline),
+                            contentDescription = null
+                        )
+                    }, headlineContent = {
+                        Text("Image Cache")
+                    }, supportingContent = {
+                        Text("Click to clear cache")
+                    }, trailingContent = {
+                        Text(imageCacheSize)
+                    })
+                }
+
+                item {
+                    val scope = rememberCoroutineScope()
                     ListItem(
                         modifier = Modifier.clickable {
-                            Toast.makeText(
-                                context,
-                                "Menghapus image cache...",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            clearCache(context, IMAGE_CACHE_PATH)
-                            refreshImageCache()
+                            scope.launch {
+                                for (server in KomikServer.values()) {
+                                    try {
+                                        for (cache in Cache.values()) {
+                                            context.getSharedPreferences(
+                                                "$server-$cache", Context.MODE_PRIVATE
+                                            ).edit().clear().apply()
+                                        }
+                                    } catch (e: Exception) {
+                                        e.stackTraceToString()
+                                    }
+                                }
+                                Toast.makeText(
+                                    context, "Menghapus data cache...", Toast.LENGTH_LONG
+                                ).show()
+                            }
                         },
                         leadingContent = {
                             Icon(
-                                painter = painterResource(id = R.drawable.image_outline),
+                                painter = painterResource(id = R.drawable.database),
                                 contentDescription = null
                             )
                         },
                         headlineContent = {
-                            Text("Image Cache")
+                            Text("Data Cache")
                         },
                         supportingContent = {
                             Text("Click to clear cache")
                         },
-                        trailingContent = {
-                            Text(imageCacheSize)
-                        }
                     )
                 }
-
-//                item {
-//                    val scope = rememberCoroutineScope()
-//                    ListItem(
-//                        modifier = Modifier.clickable {
-//                            Toast.makeText(
-//                                context,
-//                                "Menghapus data cache...",
-//                                Toast.LENGTH_LONG
-//                            ).show()
-//                            scope.launch {
-//                                val prefDirs = File(
-//                                    Environment.getDataDirectory()
-//                                        .toString() + "/data/" + context.packageName + "/shared_prefs"
-//                                )
-//                                val files = prefDirs.listFiles()
-//                                if (files !== null) {
-//                                    for (file in files) {
-//                                        file?.delete()
-//                                    }
-//                                }
-//                            }
-//                        },
-//                        leadingContent = {
-//                            Icon(
-//                                painter = painterResource(id = R.drawable.database),
-//                                contentDescription = null
-//                            )
-//                        },
-//                        headlineContent = {
-//                            Text("Data Cache")
-//                        },
-//                        supportingContent = {
-//                            Text("Click to clear cache")
-//                        },
-//                    )
-//                }
             }
         }
     }

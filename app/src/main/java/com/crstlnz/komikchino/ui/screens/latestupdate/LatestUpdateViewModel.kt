@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
-import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
-import com.crstlnz.komikchino.data.database.repository.KomikHistoryRepository
+import com.crstlnz.komikchino.data.firebase.model.KomikHistoryItem
+import com.crstlnz.komikchino.data.firebase.repository.KomikHistoryRepository
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
 import com.crstlnz.komikchino.data.model.FilteredUpdate
 import com.crstlnz.komikchino.data.model.LatestUpdate

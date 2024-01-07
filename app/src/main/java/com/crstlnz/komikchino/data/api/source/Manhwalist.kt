@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.data.api.source
 
+import android.util.Log
 import com.crstlnz.komikchino.data.api.KomikClient
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.Chapter
@@ -25,6 +26,8 @@ import com.crstlnz.komikchino.data.util.parseRelativeTime
 import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import java.net.URLDecoder
+import java.net.URLEncoder
 import java.util.Locale
 import java.util.regex.Pattern
 
@@ -60,33 +63,33 @@ class Manhwalist : ScraperBase {
     override suspend fun getHome(): HomeData {
         val body = api.getHome()
         val document = Jsoup.parse(body.string())
-        val featureds = document.select("#content .owl-carousel .slide-item")
+        val featureds = document.select(".listupd .bs")
         val featuredList = arrayListOf<FeaturedComic>()
         for (featured in featureds) {
-            val url = featured.selectFirst(".poster a")?.attr("href") ?: ""
-            // mangakatana tak ade genre di home
+            val url = featured.selectFirst(".bsx a")?.attr("href") ?: ""
             val genreLinkList = arrayListOf<GenreLink>()
-            val genres = featured.select(".extras .extra-category a")
-            for (genre in genres) {
-                genreLinkList.add(
-                    GenreLink(
-                        title = genre.text() ?: "",
-                        url = genre.attr("href") ?: "",
-                        slug = getLastPathSegment(genres.attr("href") ?: "") ?: ""
-                    )
-                )
-            }
+//            val genres = emptyList<GenreLink>()
+//            val genres = featured.select(".extras .extra-category a")
+//            for (genre in genres) {
+//                genreLinkList.add(
+//                    GenreLink(
+//                        title = genre.text() ?: "",
+//                        url = genre.attr("href") ?: "",
+//                        slug = getLastPathSegment(genres.attr("href") ?: "") ?: ""
+//                    )
+//                )
+//            }
             featuredList.add(
                 FeaturedComic(
-                    title = featured.selectFirst(".title .ellipsis a")?.text()?.trim() ?: "",
+                    title = featured.selectFirst(".bigor .tt")?.text()?.trim() ?: "",
                     url = url,
-                    description = featured.selectFirst(".excerpt > p:nth-child(3)")?.text()?.trim()
-                        ?: "No description.",
+                    description = "Tak ade deskripsi budak ni",
                     genreLink = genreLinkList,
-                    type = featured.selectFirst(".title .release-year")?.text()?.trim() ?: "",
-                    img = featured.selectFirst(".poster img")?.attr("src") ?: "",
+                    type = featured.selectFirst(".limit .type")?.classNames()?.toList()?.getOrNull(1)
+                        ?.toString() ?: "",
+                    img = featured.selectFirst(".limit img")?.attr("src") ?: "",
                     slug = getLastPathSegment(url) ?: "",
-                    score = featured.selectFirst(".rating .vote")?.text()?.toFloatOrNull()
+                    score = featured.selectFirst(".numscore")?.text()?.toFloatOrNull()
                 )
             )
         }
@@ -132,13 +135,13 @@ class Manhwalist : ScraperBase {
         val body = api.getLatestUpdate(page)
         val document = Jsoup.parse(body.string())
         val latestUpdateBox = document.select(".postbody .listupd")
-        val latestUpdateElemets = latestUpdateBox.getOrNull(1)?.select(".bs")
+        val latestUpdateElemets = latestUpdateBox.getOrNull(1)?.select(".utao")
             ?: listOf()
         val latestUpdate = arrayListOf<LatestUpdate>()
 
         for (latest in latestUpdateElemets) {
-            val url = latest.selectFirst(".bsx a")?.attr("href") ?: ""
-            val chapterElements = latest.select(".bigor ul li")
+            val url = latest.selectFirst(".uta .imgu a")?.attr("href") ?: "0"
+            val chapterElements = latest.select(".uta ul li")
             val chapters = arrayListOf<ChapterUpdate>()
 
             for (chapter in chapterElements) {
@@ -154,7 +157,7 @@ class Manhwalist : ScraperBase {
             }
             latestUpdate.add(
                 LatestUpdate(
-                    title = latest.selectFirst(".bigor .tt")?.text() ?: "",
+                    title = latest.selectFirst("h4")?.text() ?: "",
                     img = latest.selectFirst("img")?.attr("src") ?: "",
                     description = "",
                     slug = getLastPathSegment(url) ?: "",
@@ -167,7 +170,7 @@ class Manhwalist : ScraperBase {
         return LatestUpdatePage(
             page = page,
             result = latestUpdate,
-            hasNext = document.selectFirst(".hpage .r") != null
+            hasNext = document.selectFirst(".pagination .next") != null
         )
     }
 
@@ -327,16 +330,28 @@ class Manhwalist : ScraperBase {
 
 
     private fun parseChapter(document: Document): ChapterApi {
-        val imgs = document.select("#readerarea img")
+//        val imgs = document.select("#readerarea img")
         val imgList = arrayListOf<String>()
-        for (img in imgs) {
-            imgList.add(img.attr("src") ?: "")
+//        for (img in imgs) {
+//            imgList.add(img.attr("src") ?: "")
+//        }
+
+        val pp = Pattern.compile("\"images\":\\[(.*?)\\]")
+        val mmatcher = pp.matcher(document.html())
+
+        if (mmatcher.find()) {
+            val imagesJson = mmatcher.group(1)
+            val imagesList = imagesJson?.split(",")?.map { it.trim('"') }
+            imagesList?.forEach {
+                println(URLDecoder.decode(it, "UTF-8"))
+                imgList.add(URLDecoder.decode(it, "UTF-8"))
+            }
         }
 
         val breadCrumbs = document.select(".ts-breadcrumb li")
         val mangaTitle = breadCrumbs.getOrNull(1)?.selectFirst("span")?.text()?.trim()
         val chapterTitle =
-            document.selectFirst(".readingnavtop .chpnw")?.text()?.trim() ?: ""
+            document.selectFirst("h1")?.text()?.trim() ?: ""
 
 
         val slug =
@@ -344,13 +359,14 @@ class Manhwalist : ScraperBase {
 
         val regex = "var post_id = (\\d+);"
         val pattern = Pattern.compile(regex)
-        val matcher = pattern.matcher(document.select("script").html())
+        val matcher = pattern.matcher(document.html())
 
         var mangaId: String = ""
         if (matcher.find()) {
             mangaId = matcher.group(1)?.toString() ?: ""
         }
 
+        Log.d("MANGA ID", mangaId )
         val mangaSlug =
             getLastPathSegment(document.selectFirst(".allc a")?.attr("href") ?: "") ?: ""
         return ChapterApi(

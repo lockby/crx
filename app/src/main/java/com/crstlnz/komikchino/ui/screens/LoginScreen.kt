@@ -51,8 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.config.nunito
-import com.crstlnz.komikchino.data.database.model.User
-import com.crstlnz.komikchino.data.util.getAppVersion
 import com.crstlnz.komikchino.data.util.getGoogleSignInClient
 import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.navigations.MainNavigation
@@ -62,7 +60,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

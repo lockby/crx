@@ -1,7 +1,5 @@
 package com.crstlnz.komikchino.ui.util
 
-import android.text.Html
-import android.util.Log
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -9,6 +7,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.graphics.Color
+import androidx.core.text.HtmlCompat
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.util.StorageHelper
@@ -53,7 +52,7 @@ fun LazyListState.OnBottomReached(
 }
 
 fun convertHTML(str: String): String {
-    return Html.fromHtml(str, Html.FROM_HTML_MODE_LEGACY).toString()
+    return HtmlCompat.fromHtml(str, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
 }
 
 fun getComicTypeColor(type: String): Color {

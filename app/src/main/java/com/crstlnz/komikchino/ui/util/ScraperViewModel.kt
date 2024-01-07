@@ -7,6 +7,7 @@ import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.State
 import com.crstlnz.komikchino.data.util.StorageHelper
+import com.crstlnz.komikchino.hilt.Cache
 import com.fasterxml.jackson.databind.JavaType
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
@@ -77,7 +78,15 @@ open class ScraperViewModel<T>(
         type: JavaType
     ) {
         this.loadWithCacheMain(
-            key, fetch, stateData, StorageHelper<T>(this.storage.getContext(), "CACHE", type), force
+            key,
+            fetch,
+            stateData,
+            StorageHelper<T>(
+                this.storage.getContext(),
+                "${AppSettings.komikServer}-${Cache.DEFAULT_CACHE}",
+                type
+            ),
+            force
         )
     }
 

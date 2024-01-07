@@ -2,6 +2,7 @@ package com.crstlnz.komikchino.data.util
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.crstlnz.komikchino.data.model.StorageItem
 import com.crstlnz.komikchino.data.model.StorageItemValue
 import com.fasterxml.jackson.databind.JavaType

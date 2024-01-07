@@ -2,27 +2,15 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "5517a7d2fcd78e6ccf516a4d6ccc1e61",
+    "identityHash": "fe7204ec2c0336fbde4308c747614f74",
     "entities": [
       {
-        "tableName": "readhistory",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `manga_id` TEXT NOT NULL, `title` TEXT NOT NULL, `slug` TEXT NOT NULL, `created_at` INTEGER NOT NULL)",
+        "tableName": "mangaDownload",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `img` TEXT NOT NULL, `slug` TEXT NOT NULL, `description` TEXT NOT NULL, `type` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
-          {
-            "fieldPath": "data_id",
-            "columnName": "_id",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
           {
             "fieldPath": "id",
             "columnName": "id",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "mangaId",
-            "columnName": "manga_id",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -33,47 +21,59 @@
             "notNull": true
           },
           {
+            "fieldPath": "img",
+            "columnName": "img",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
             "fieldPath": "slug",
             "columnName": "slug",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
             "affinity": "TEXT",
             "notNull": true
           },
           {
             "fieldPath": "createdAt",
-            "columnName": "created_at",
+            "columnName": "createdAt",
             "affinity": "INTEGER",
             "notNull": true
           }
         ],
         "primaryKey": {
-          "autoGenerate": true,
+          "autoGenerate": false,
           "columnNames": [
-            "_id"
+            "id"
           ]
         },
         "indices": [
           {
-            "name": "index_readhistory_id",
+            "name": "index_mangaDownload_id",
             "unique": true,
             "columnNames": [
               "id"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_readhistory_id` ON `${TABLE_NAME}` (`id`)"
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_mangaDownload_id` ON `${TABLE_NAME}` (`id`)"
           }
         ],
         "foreignKeys": []
       },
       {
-        "tableName": "komik",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `title` TEXT NOT NULL, `img` TEXT NOT NULL, `slug` TEXT NOT NULL, `description` TEXT NOT NULL, `type` TEXT NOT NULL)",
+        "tableName": "chapterDownload",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `slug` TEXT NOT NULL, `mangaId` TEXT NOT NULL, `disqusConfig` TEXT, PRIMARY KEY(`id`))",
         "fields": [
-          {
-            "fieldPath": "data_id",
-            "columnName": "_id",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
           {
             "fieldPath": "id",
             "columnName": "id",
@@ -87,59 +87,47 @@
             "notNull": true
           },
           {
-            "fieldPath": "img",
-            "columnName": "img",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
             "fieldPath": "slug",
             "columnName": "slug",
             "affinity": "TEXT",
             "notNull": true
           },
           {
-            "fieldPath": "description",
-            "columnName": "description",
+            "fieldPath": "mangaId",
+            "columnName": "mangaId",
             "affinity": "TEXT",
             "notNull": true
           },
           {
-            "fieldPath": "type",
-            "columnName": "type",
+            "fieldPath": "disqusConfig",
+            "columnName": "disqusConfig",
             "affinity": "TEXT",
-            "notNull": true
+            "notNull": false
           }
         ],
         "primaryKey": {
-          "autoGenerate": true,
+          "autoGenerate": false,
           "columnNames": [
-            "_id"
+            "id"
           ]
         },
         "indices": [
           {
-            "name": "index_komik_id",
+            "name": "index_chapterDownload_id",
             "unique": true,
             "columnNames": [
               "id"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_komik_id` ON `${TABLE_NAME}` (`id`)"
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_chapterDownload_id` ON `${TABLE_NAME}` (`id`)"
           }
         ],
         "foreignKeys": []
       },
       {
-        "tableName": "favorite_komik",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `title` TEXT NOT NULL, `img` TEXT NOT NULL, `slug` TEXT NOT NULL, `description` TEXT NOT NULL, `type` TEXT NOT NULL)",
+        "tableName": "chapterImages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `index` INTEGER NOT NULL, `url` TEXT NOT NULL, `state` TEXT NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
-          {
-            "fieldPath": "data_id",
-            "columnName": "_id",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
           {
             "fieldPath": "id",
             "columnName": "id",
@@ -147,51 +135,39 @@
             "notNull": true
           },
           {
-            "fieldPath": "title",
-            "columnName": "title",
+            "fieldPath": "index",
+            "columnName": "index",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "url",
+            "columnName": "url",
             "affinity": "TEXT",
             "notNull": true
           },
           {
-            "fieldPath": "img",
-            "columnName": "img",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "slug",
-            "columnName": "slug",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "description",
-            "columnName": "description",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "type",
-            "columnName": "type",
+            "fieldPath": "state",
+            "columnName": "state",
             "affinity": "TEXT",
             "notNull": true
           }
         ],
         "primaryKey": {
-          "autoGenerate": true,
+          "autoGenerate": false,
           "columnNames": [
-            "_id"
+            "id"
           ]
         },
         "indices": [
           {
-            "name": "index_favorite_komik_id",
+            "name": "index_chapterImages_id",
             "unique": true,
             "columnNames": [
               "id"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_favorite_komik_id` ON `${TABLE_NAME}` (`id`)"
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_chapterImages_id` ON `${TABLE_NAME}` (`id`)"
           }
         ],
         "foreignKeys": []
@@ -200,7 +176,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5517a7d2fcd78e6ccf516a4d6ccc1e61')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fe7204ec2c0336fbde4308c747614f74')"
     ]
   }
 }

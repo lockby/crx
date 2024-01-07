@@ -1,6 +1,7 @@
 package com.crstlnz.komikchino.data.api
 
 import com.crstlnz.komikchino.config.AppSettings
+import com.crstlnz.komikchino.data.api.client.CosmicScansIndonesiaScrapeAPI
 import com.crstlnz.komikchino.data.api.client.CosmicScansScrapeAPI
 import com.crstlnz.komikchino.data.api.client.GithubAPI
 import com.crstlnz.komikchino.data.api.client.KiryuuScrapeAPI
@@ -8,6 +9,11 @@ import com.crstlnz.komikchino.data.api.client.MangaKatanaScrapeAPI
 import com.crstlnz.komikchino.data.api.client.ManhwalistScrapeAPI
 import com.crstlnz.komikchino.data.api.client.MirrorKomikScrapeAPI
 import com.crstlnz.komikchino.data.api.client.VoidScansScrapeAPI
+import com.crstlnz.komikchino.data.api.source.CosmicScansIndonesia
+import okhttp3.CipherSuite
+import okhttp3.ConnectionSpec
+import okhttp3.OkHttpClient
+import okhttp3.TlsVersion
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 
@@ -74,6 +80,14 @@ object KomikClient {
             .client(AppSettings.customHttpClient)
             .build()
             .create(CosmicScansScrapeAPI::class.java)
+    }
+
+    fun getCosmicScansIndonesiaClient(): CosmicScansIndonesiaScrapeAPI {
+        return retrofitScraper
+            .baseUrl(KomikServer.COSMICSCANSINDO.url)
+            .client(AppSettings.customHttpClient)
+            .build()
+            .create(CosmicScansIndonesiaScrapeAPI::class.java)
     }
 
     fun getMirrorKomikClient(): MirrorKomikScrapeAPI {

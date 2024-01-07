@@ -30,8 +30,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.crstlnz.komikchino.R
-import com.crstlnz.komikchino.data.database.model.FavoriteKomikItem
-import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
+import com.crstlnz.komikchino.data.firebase.model.FavoriteKomikItem
+import com.crstlnz.komikchino.data.firebase.model.KomikHistoryItem
 import com.crstlnz.komikchino.ui.components.ErrorView
 import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.BookmarkViewModel
@@ -42,7 +42,7 @@ fun FavoriteView(
     viewModel: BookmarkViewModel,
     onKomikClick: (komik: KomikHistoryItem) -> Unit = {},
     pageId: String
-) {
+): Unit {
     val data by viewModel.favorites.observeAsState()
     if (data == null) {
         LoadingView()

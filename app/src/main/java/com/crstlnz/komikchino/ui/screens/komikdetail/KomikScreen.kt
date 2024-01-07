@@ -70,7 +70,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.LocalStatusBarPadding
 import com.crstlnz.komikchino.R
-import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
+import com.crstlnz.komikchino.data.firebase.model.KomikHistoryItem
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
 import com.crstlnz.komikchino.data.model.State
@@ -222,12 +222,21 @@ fun KomikScreen(
                                         )
                                     }
                                 }
-                                IconButton(onClick = { }) {
-                                    Icon(
-                                        painterResource(id = R.drawable.download),
-                                        contentDescription = "Favorite"
-                                    )
-                                }
+//                                IconButton(onClick = {
+//                                    val data = dataState.getDataOrNull()
+//                                    if (data != null) {
+//                                        MainNavigation.toDownloadSelect(
+//                                            navController,
+//                                            data.title,
+//                                            data.slug
+//                                        )
+//                                    }
+//                                }) {
+//                                    Icon(
+//                                        painterResource(id = R.drawable.download),
+//                                        contentDescription = "Download"
+//                                    )
+//                                }
                             },
 //                        elevation = 0.dp
                         )

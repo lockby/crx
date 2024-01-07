@@ -1,4 +1,4 @@
-package com.crstlnz.komikchino.data.database.repository
+package com.crstlnz.komikchino.data.firebase.repository
 
 import android.util.Log
 import androidx.lifecycle.LiveData
@@ -6,12 +6,12 @@ import androidx.lifecycle.MutableLiveData
 import com.crstlnz.komikchino.config.CHAPTER
 import com.crstlnz.komikchino.config.SERVER
 import com.crstlnz.komikchino.data.api.KomikServer
-import com.crstlnz.komikchino.data.database.model.ChapterHistoryItem
-import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
-import com.crstlnz.komikchino.data.util.BaseRepository
+import com.crstlnz.komikchino.data.firebase.model.ChapterHistoryItem
+import com.crstlnz.komikchino.data.firebase.model.KomikHistoryItem
+import com.crstlnz.komikchino.data.util.BaseFirebaseRepository
 import kotlinx.coroutines.tasks.await
 
-class ChapterHistoryRepository(private val databaseKey: KomikServer) : BaseRepository() {
+class ChapterHistoryRepository(private val databaseKey: KomikServer) : BaseFirebaseRepository() {
     private val chapterCollection =
         userData.collection(SERVER).document(databaseKey.value).collection(CHAPTER)
 

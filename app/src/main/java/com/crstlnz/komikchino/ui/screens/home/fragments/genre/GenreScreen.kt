@@ -90,11 +90,12 @@ import kotlinx.coroutines.launch
 )
 @Composable
 fun GenreScreen(navController: NavController) {
-    val v = hiltViewModel<GenreViewModel>()
     var openBottomSheet by rememberSaveable { mutableStateOf(false) }
     val bottomSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = false
     )
+    val scope = rememberCoroutineScope()
+    val v = hiltViewModel<GenreViewModel>()
     if (openBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { openBottomSheet = false },
@@ -108,8 +109,12 @@ fun GenreScreen(navController: NavController) {
                 if (AppSettings.komikServer!!.multiGenreSearch) {
                     Button(
                         onClick = {
-                            openBottomSheet = false
-                            v.search(selectedGenre)
+                            scope.launch { bottomSheetState.hide() }.invokeOnCompletion {
+                                if (!bottomSheetState.isVisible) {
+                                    openBottomSheet = false
+                                }
+                                v.search(selectedGenre)
+                            }
                         },
                         enabled = selectedGenre != v.genreList,
                         modifier = Modifier.align(CenterHorizontally)
@@ -139,8 +144,14 @@ fun GenreScreen(navController: NavController) {
                                     }
                                     selectedGenre = genre
                                 } else {
-                                    openBottomSheet = false
-                                    v.search(listOf(genreList[it]))
+                                    scope
+                                        .launch { bottomSheetState.hide() }
+                                        .invokeOnCompletion { _ ->
+                                            if (!bottomSheetState.isVisible) {
+                                                openBottomSheet = false
+                                            }
+                                            v.search(listOf(genreList[it]))
+                                        }
                                 }
                             }) {
                             Text(
@@ -322,6 +333,7 @@ fun GenreScreen(navController: NavController) {
                         v.load()
                     }
                 }
+
                 State.DATA -> {
                     if (searchResult.isEmpty()) {
                         ErrorView(

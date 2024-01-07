@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Disqus!</title>
+    <style>
+      body {
+        padding: 10px;
+        background-color: #1e2124;
+      }
+
+      #disqus_thread a {
+        color: #fe322e;
+      }
+    </style>
+
+    <script src="/script.js" defer></script>
+</head>
+<body>
+<div id="disqus_thread"></div>
+<script>
+      /**
+       *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+       *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+      var url_string = window.location.href;
+      var url = new URL(url_string);
+      var title = url.searchParams.get("title");
+      var id = url.searchParams.get("id");
+      var url = url.searchParams.get("url");
+      document.title = title;
+
+      var disqus_container_id = "disqus_thread";
+      var disqus_config = function () {
+        this.page.url = atob(url).replaceAll("\\/", "/");
+        this.page.identifier = atob(id).replaceAll("\\/", "/");
+        this.page.container_id = "disqus_thread";
+      };
+
+      (function () {
+        // DON'T EDIT BELOW THIS LINE
+        var d = document,
+          s = d.createElement("script");
+        s.src = "https://cosmic-id.disqus.com/embed.js";
+        s.setAttribute("data-timestamp", +new Date());
+        (d.head || d.body).appendChild(s);
+      })();
+
+      // // hide disqus ads
+      // const targetNode = document.getElementById('disqus_thread');
+      // const config = { attributes: true, childList: true, subtree: true };
+      // const callback = function (mutationList, observer) {
+      //   for (const mutation of mutationList) {
+      //     if (mutation.type === "childList") {
+      //       let ads = document.getElementById('disqus_thread')?.querySelector("iframe:first-child")
+      //       if(ads){
+      //         ads.style.display = "none"
+      //       }
+      //     }
+      //   }
+      // };
+
+      //const observer = new MutationObserver(callback);
+      // Start observing the target node for configured mutations
+      //observer.observe(targetNode, config);
+    </script>
+<noscript>
+    Please enable JavaScript to view the
+    <a href="https://disqus.com/?ref_noscript" rel="nofollow">
+        comments powered by Disqus.
+    </a>
+</noscript>
+</body>
+</html>

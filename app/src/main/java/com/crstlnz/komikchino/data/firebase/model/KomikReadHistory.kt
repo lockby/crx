@@ -1,4 +1,4 @@
-package com.crstlnz.komikchino.data.database.model
+package com.crstlnz.komikchino.data.firebase.model
 
 data class KomikReadHistory(
     val komik: KomikHistoryItem,

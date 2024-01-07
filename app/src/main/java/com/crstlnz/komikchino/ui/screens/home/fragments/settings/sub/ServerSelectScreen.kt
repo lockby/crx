@@ -3,6 +3,7 @@ package com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi

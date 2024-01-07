@@ -1,23 +1,21 @@
 package com.crstlnz.komikchino.ui.screens.chapter
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.crstlnz.komikchino.data.api.ScraperBase
-import com.crstlnz.komikchino.data.database.model.ChapterEmbed
-import com.crstlnz.komikchino.data.database.model.ChapterHistoryItem
-import com.crstlnz.komikchino.data.database.model.FavoriteKomikItem
-import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
-import com.crstlnz.komikchino.data.database.repository.ChapterHistoryRepository
-import com.crstlnz.komikchino.data.database.repository.FavoriteKomikRepository
-import com.crstlnz.komikchino.data.database.repository.KomikHistoryRepository
+import com.crstlnz.komikchino.data.firebase.model.ChapterEmbed
+import com.crstlnz.komikchino.data.firebase.model.ChapterHistoryItem
+import com.crstlnz.komikchino.data.firebase.model.FavoriteKomikItem
+import com.crstlnz.komikchino.data.firebase.model.KomikHistoryItem
+import com.crstlnz.komikchino.data.firebase.repository.ChapterHistoryRepository
+import com.crstlnz.komikchino.data.firebase.repository.FavoriteKomikRepository
+import com.crstlnz.komikchino.data.firebase.repository.KomikHistoryRepository
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterData
 import com.crstlnz.komikchino.data.model.ChapterScrollPostition
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.DataState.Loading.getDataOrNull
-import com.crstlnz.komikchino.data.model.ImageSize
 import com.crstlnz.komikchino.data.model.PreloadedImages
 import com.crstlnz.komikchino.data.model.ScrollImagePosition
 import com.crstlnz.komikchino.data.model.State
@@ -38,7 +36,7 @@ import javax.inject.Named
 class ChapterViewModel @Inject constructor(
     @Named("chapterCache") private val storage: StorageHelper<ChapterData>,
     @Named("chapterListCache") private val chapterListStorage: StorageHelper<List<Chapter>>,
-    @Named("chapterScrollPostitionCache") private val chapterScrollPostitionCache: StorageHelper<ChapterScrollPostition>,
+    @Named("chapterScrollPositionCache") private val chapterScrollPositionCache: StorageHelper<ChapterScrollPostition>,
     private val chapterRepository: ChapterHistoryRepository,
     private val favoriteRepository: FavoriteKomikRepository,
     private val komikRepository: KomikHistoryRepository,
@@ -101,6 +99,7 @@ class ChapterViewModel @Inject constructor(
                 }
             }
         }
+
         viewModelScope.launch {
             _chapterList.collect {
                 _currentPosition.update {
@@ -138,9 +137,8 @@ class ChapterViewModel @Inject constructor(
 
     fun getChapterScrollPosition(): ChapterScrollPostition? {
         val komikId = state.value.getDataOrNull()?.komik?.id ?: return null
-        val pos = chapterScrollPostitionCache.get<ChapterScrollPostition>(komikId)
-        val result = if (pos?.chapterId == id) pos else null
-        return result
+        val pos = chapterScrollPositionCache.get<ChapterScrollPostition>(komikId)
+        return if (pos?.chapterId == id) pos else null
     }
 
     fun saveHistory(scrollImagePosition: ScrollImagePosition? = null) {
@@ -154,7 +152,7 @@ class ChapterViewModel @Inject constructor(
         )
 
         if (komikId != null && scrollImagePosition != null) {
-            chapterScrollPostitionCache.set<ChapterScrollPostition>(
+            chapterScrollPositionCache.set<ChapterScrollPostition>(
                 komikId, ChapterScrollPostition(
                     scrollImagePosition.calculatedImageSize,
                     mangaId = komikId,
@@ -201,7 +199,7 @@ class ChapterViewModel @Inject constructor(
     }
 
     fun loadChapterList(force: Boolean = true) {
-        val key = "chapterlist-${komikData?.id}"
+        val key = "chapterList-${komikData?.id}"
         val komikId = state.value.getDataOrNull()?.komik?.id
         viewModelScope.launch {
             _chapterList.update {
@@ -273,7 +271,7 @@ class ChapterViewModel @Inject constructor(
             komik = komikData!!,
             title = chapterApi.title,
             slug = chapterApi.slug,
-            id = chapterApi.slug,
+            id = chapterApi.id,
             imgs = chapterApi.imgs,
             disqusConfig = chapterApi.disqusConfig
         )

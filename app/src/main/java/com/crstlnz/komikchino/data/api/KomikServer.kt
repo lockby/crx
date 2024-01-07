@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.annotation.DrawableRes
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.data.api.source.CosmicScans
+import com.crstlnz.komikchino.data.api.source.CosmicScansIndonesia
 import com.crstlnz.komikchino.data.api.source.Kiryuu
 import com.crstlnz.komikchino.data.api.source.Mangakatana
 import com.crstlnz.komikchino.data.api.source.Manhwalist
@@ -29,9 +30,10 @@ enum class KomikServer(
     KIRYUU("Kiryuu", "kiryuu", "https://kiryuu.id/", true),
     MANGAKATANA("MangaKatana", "mangakatana", "https://mangakatana.com/", true, Bahasa.ENGLISH),
     VOIDSCANS("Void Scans", "voidscans", "https://void-scans.com/", true, Bahasa.ENGLISH),
-    MANHWALIST("Manhwalist", "manhwalist", "https://manhwalist.xyz/", true),
-    COSMICSCANS("Cosmic Scans", "cosmicscans", "https://cosmicscans.com/", true, Bahasa.ENGLISH),
-    MIRRORKOMIK("MirrorKomik", "mirrorkomik", "https://mirrorkomik.net/", false, Bahasa.INDONESIA)
+    MANHWALIST("Manhwalist", "manhwalist", "https://manhwalist.com/", true),
+    MIRRORKOMIK("MirrorKomik", "mirrorkomik", "https://mirrorkomik.net/", false, Bahasa.INDONESIA),
+    COSMICSCANS("Cosmic Scans", "cosmicscans", "https://cosmic-scans.com/", true, Bahasa.ENGLISH),
+    COSMICSCANSINDO("Cosmic Scans Indo", "cosmicscansindo", "https://cosmicscans.id/", true, Bahasa.INDONESIA)
 }
 
 fun getScraper(databaseKey: KomikServer, context: Context): ScraperBase {
@@ -54,6 +56,10 @@ fun getScraper(databaseKey: KomikServer, context: Context): ScraperBase {
 
         KomikServer.COSMICSCANS -> {
             CosmicScans()
+        }
+
+        KomikServer.COSMICSCANSINDO -> {
+            CosmicScansIndonesia()
         }
 
         KomikServer.MIRRORKOMIK -> {

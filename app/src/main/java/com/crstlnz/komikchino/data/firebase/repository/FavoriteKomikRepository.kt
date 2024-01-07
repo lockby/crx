@@ -1,4 +1,4 @@
-package com.crstlnz.komikchino.data.database.repository
+package com.crstlnz.komikchino.data.firebase.repository
 
 import android.util.Log
 import androidx.lifecycle.LiveData
@@ -6,14 +6,14 @@ import androidx.lifecycle.MutableLiveData
 import com.crstlnz.komikchino.config.FAVORITES
 import com.crstlnz.komikchino.config.SERVER
 import com.crstlnz.komikchino.data.api.KomikServer
-import com.crstlnz.komikchino.data.database.model.FavoriteKomikItem
-import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
-import com.crstlnz.komikchino.data.util.BaseRepository
+import com.crstlnz.komikchino.data.firebase.model.FavoriteKomikItem
+import com.crstlnz.komikchino.data.firebase.model.KomikHistoryItem
+import com.crstlnz.komikchino.data.util.BaseFirebaseRepository
 import kotlinx.coroutines.tasks.await
 
 class FavoriteKomikRepository(
     val databaseKey: KomikServer,
-) : BaseRepository() {
+) : BaseFirebaseRepository() {
     private val favoriteCollection =
         userData.collection(SERVER).document(databaseKey.value).collection(FAVORITES)
 
@@ -92,7 +92,9 @@ class FavoriteKomikRepository(
                     null
                 }
             } ?: emptyList()
-            favoriteLiveData.value = komikItems
+            favoriteLiveData.value = komikItems.sortedByDescending {
+                it.updatedAt
+            }
         }
         listeners.add(listenerRegistration)
         return favoriteLiveData

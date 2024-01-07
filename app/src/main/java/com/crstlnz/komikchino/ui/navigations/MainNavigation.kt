@@ -10,14 +10,16 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
-import com.crstlnz.komikchino.data.database.model.KomikHistoryItem
+import com.crstlnz.komikchino.data.firebase.model.KomikHistoryItem
 import com.crstlnz.komikchino.data.util.convertToStringURL
 import com.crstlnz.komikchino.data.util.decodeBase64
 import com.crstlnz.komikchino.ui.screens.CommentScreen
-import com.crstlnz.komikchino.ui.screens.DownloadScreen
+import com.crstlnz.komikchino.ui.screens.download.DownloadScreen
+import com.crstlnz.komikchino.ui.screens.download.DownloadSelectScreen
 import com.crstlnz.komikchino.ui.screens.LoginScreen
 import com.crstlnz.komikchino.ui.screens.UnblockCloudflare
 import com.crstlnz.komikchino.ui.screens.chapter.ChapterScreen
+import com.crstlnz.komikchino.ui.screens.download.DownloadDetailScreen
 import com.crstlnz.komikchino.ui.screens.home.HomeScreen
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.AppInfoScreen
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.CacheScreen
@@ -48,6 +50,8 @@ object MainNavigation {
     const val WEBVIEW = "webview"
     const val CLOUDFLARE_UNBLOCK = "cloudflare_unblock"
     const val DOWNLOAD_SCREEN = "download_screen"
+    const val DOWNLOAD_SELECT_SCREEN = "download_screen"
+    const val DOWNLOAD_DETAIL = "download_detail"
 
     const val CHECK_UPDATE = "update"
 
@@ -175,6 +179,19 @@ object MainNavigation {
                 )
             }
 
+            KomikServer.COSMICSCANSINDO -> {
+                toWebView(
+                    navController,
+                    "file:///android_asset/cosmicscansindonesiadisqus.html?id=${
+                        decodeBase64(slug)
+                    }&title=${title.ifEmpty { "Empty Title" }}&url=${
+                        decodeBase64(url)
+                    }",
+                    title
+                )
+            }
+
+
             KomikServer.MIRRORKOMIK -> {
                 Log.d("SLUG DISQUS", slug)
                 Log.d("ID DISQUS", url)
@@ -200,6 +217,26 @@ object MainNavigation {
     ) {
         navController.navigate(
             "${KOMIKDETAIL}/${title}/${URLEncoder.encode(slug, "UTF-8")}",
+        )
+    }
+
+    fun toDownloadSelect(
+        navController: NavController,
+        title: String,
+        slug: String,
+    ) {
+        navController.navigate(
+            "${DOWNLOAD_SELECT_SCREEN}/${title}/${URLEncoder.encode(slug, "UTF-8")}",
+        )
+    }
+
+    fun toDownloadDetail(
+        navController: NavController,
+        title: String,
+        slug: String,
+    ) {
+        navController.navigate(
+            "${DOWNLOAD_DETAIL}/${title}/${URLEncoder.encode(slug, "UTF-8")}",
         )
     }
 }
@@ -317,7 +354,22 @@ fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
     composable(MainNavigation.APP_INFO) {
         AppInfoScreen(navController)
     }
+
     composable(MainNavigation.DOWNLOAD_SCREEN) {
         DownloadScreen(navController)
+    }
+
+    composable(
+        "${MainNavigation.DOWNLOAD_SELECT_SCREEN}/{title}/{slug}",
+    ) {
+        val title = it.arguments?.getString("title")
+        DownloadSelectScreen(navController, title ?: "")
+    }
+
+    composable(
+        "${MainNavigation.DOWNLOAD_DETAIL}/{title}/{id}",
+    ) {
+        val title = it.arguments?.getString("title")
+        DownloadDetailScreen(navController, title ?: "")
     }
 }

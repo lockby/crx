@@ -13,7 +13,6 @@ fun Context.downloadManager(command: String) {
     val intent = Intent(this, DownloadManagerService::class.java)
     if (command == DOWNLOAD_MANAGER_START) {
         intent.putExtra(INTENT_COMMAND, command)
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             this.startForegroundService(intent)
         } else {

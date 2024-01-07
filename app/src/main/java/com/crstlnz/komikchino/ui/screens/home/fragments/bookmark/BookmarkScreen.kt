@@ -53,6 +53,7 @@ import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.data.model.TabRowItem
 import com.crstlnz.komikchino.ui.navigations.HomeSections
 import com.crstlnz.komikchino.ui.navigations.MainNavigation
+import com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.fragments.DownloadView
 import com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.fragments.FavoriteView
 import com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.fragments.RecentView
 import com.crstlnz.komikchino.ui.theme.Red
@@ -68,29 +69,37 @@ fun BookmarkScreen(navController: NavController) {
     val viewModel = hiltViewModel<BookmarkViewModel>()
 
     val tabItems: List<TabRowItem> = arrayListOf(TabRowItem(title = "Recent", screen = { id ->
-        RecentView(
-            viewModel,
-            onKomikClick = {
-                MainNavigation.toKomik(navController, it.title, it.slug)
-            }, onChapterClick = { komik, chapter ->
-                MainNavigation.toChapter(
-                    navController,
-                    chapterId = chapter.id,
-                    chapter.title,
-                    komik,
-                )
-            },
-            pageId = id
+        RecentView(viewModel, onKomikClick = {
+            MainNavigation.toKomik(navController, it.title, it.slug)
+        }, onChapterClick = { komik, chapter ->
+            MainNavigation.toChapter(
+                navController,
+                chapterId = chapter.id,
+                chapter.title,
+                komik,
+            )
+        }, pageId = id
         )
     }), TabRowItem(title = "Favorites", screen = { id ->
         FavoriteView(
-            viewModel,
-            onKomikClick = {
+            viewModel, onKomikClick = {
                 MainNavigation.toKomik(navController, it.title, it.slug)
-            },
-            pageId = id
+            }, pageId = id
         )
-    }))
+    }),
+//        TabRowItem(title = "Download", screen = { id ->
+//        DownloadView(
+//            viewModel,
+//            onKomikClick = {
+//                MainNavigation.toKomik(navController, it.title, it.slug)
+//            },
+//            onDownloadDetailClick = {
+//                MainNavigation.toDownloadDetail(navController, it.title, it.slug)
+//            },
+//            pageId = id
+//        )
+//    })
+    )
 
     val pagerState = rememberPagerState()
     var pageId by remember { mutableStateOf("0") }
@@ -174,8 +183,7 @@ fun BookmarkScreen(navController: NavController) {
                     })
                     IconButton(
                         onClick = {
-                            if (viewModel.getSelected(pageId).size > 0)
-                                openDeleteDialog = true
+                            if (viewModel.getSelected(pageId).size > 0) openDeleteDialog = true
                         },
                     ) {
                         Icon(
@@ -200,8 +208,7 @@ fun BookmarkScreen(navController: NavController) {
         )
         TabRow(selectedTabIndex = pagerState.currentPage) {
             tabItems.forEachIndexed { index, item ->
-                Tab(
-                    selected = index == pagerState.currentPage,
+                Tab(selected = index == pagerState.currentPage,
                     unselectedContentColor = WhiteGray,
                     onClick = {
                         scope.launch {
@@ -228,14 +235,12 @@ fun BookmarkScreen(navController: NavController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeleteDialog(viewModel: BookmarkViewModel, pageId: String, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = {
-            // Dismiss the dialog when the user clicks outside the dialog or on the back
-            // button. If you want to disable that functionality, simply use an empty
-            // onDismissRequest.
-            onDismiss()
-        }
-    ) {
+    AlertDialog(onDismissRequest = {
+        // Dismiss the dialog when the user clicks outside the dialog or on the back
+        // button. If you want to disable that functionality, simply use an empty
+        // onDismissRequest.
+        onDismiss()
+    }) {
         Surface(
             modifier = Modifier
                 .wrapContentWidth()
@@ -271,8 +276,7 @@ fun DeleteDialog(viewModel: BookmarkViewModel, pageId: String, onDismiss: () -> 
                         onClick = {
                             viewModel.deleteItem(pageId)
                             onDismiss()
-                        },
-                        colors = ButtonDefaults.textButtonColors(contentColor = Red)
+                        }, colors = ButtonDefaults.textButtonColors(contentColor = Red)
                     ) {
                         Text("Delete")
                     }

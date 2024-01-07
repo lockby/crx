@@ -24,8 +24,8 @@ data class DisqusConfig(
 )
 
 data class Chapter(
-    val id: String?,
-    val mangaId: String?,
+    val id: String,
+    val mangaId: String,
     val title: String = "",
     val date: Date? = null,
     val slug: String = "",

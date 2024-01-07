@@ -11,7 +11,6 @@ import com.crstlnz.komikchino.data.model.GithubModel
 import com.crstlnz.komikchino.data.model.HomeData
 import com.crstlnz.komikchino.data.model.KomikDetail
 import com.crstlnz.komikchino.data.model.LatestUpdate
-import com.crstlnz.komikchino.data.model.MangaDownload
 import com.crstlnz.komikchino.data.model.SearchHistoryModel
 import com.crstlnz.komikchino.data.model.SearchResult
 import com.crstlnz.komikchino.data.util.StorageHelper
@@ -22,6 +21,19 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Named
+
+enum class Cache {
+    SCROLL_POSITION,
+    DEFAULT_CACHE,
+    LATEST_UPDATES,
+    KOMIK,
+    CHAPTER,
+    SEARCH,
+    GENRE_SEARCH,
+    UPDATE,
+    CHAPTER_LIST,
+    GENRE_LIST
+}
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -34,7 +46,7 @@ class CacheModules {
     ): StorageHelper<HomeData> {
         return StorageHelper(
             context,
-            "$databaseKey-CACHE",
+            "$databaseKey-${Cache.DEFAULT_CACHE}",
             TypeFactory.defaultInstance().constructType(HomeData::class.java),
             3600000
         )
@@ -47,7 +59,7 @@ class CacheModules {
         databaseKey: KomikServer
     ): StorageHelper<List<LatestUpdate>> {
         return StorageHelper(
-            context, "$databaseKey-CACHE", TypeFactory.defaultInstance()
+            context, "$databaseKey-${Cache.LATEST_UPDATES}", TypeFactory.defaultInstance()
                 .constructParametricType(List::class.java, LatestUpdate::class.java),
             3600000L
         )
@@ -61,23 +73,9 @@ class CacheModules {
     ): StorageHelper<KomikDetail> {
         return StorageHelper(
             context,
-            "$databaseKey-CACHE",
+            "$databaseKey-${Cache.KOMIK}",
             TypeFactory.defaultInstance().constructType(KomikDetail::class.java),
             expireTimeInMillis = 1800000L,
-        )
-    }
-
-    @Provides
-    @Named("mangaDownloadCache")
-    fun provideMangaDownloadCache(
-        @ApplicationContext context: Context,
-        databaseKey: KomikServer
-    ): StorageHelper<MangaDownload> {
-        return StorageHelper(
-            context,
-            "$databaseKey-CACHE",
-            TypeFactory.defaultInstance().constructType(MangaDownload::class.java),
-            expireTimeInMillis = 0,
         )
     }
 
@@ -88,7 +86,7 @@ class CacheModules {
         databaseKey: KomikServer
     ): StorageHelper<ChapterData> {
         return StorageHelper(
-            context, "$databaseKey-CACHE", TypeFactory.defaultInstance()
+            context, "$databaseKey-${Cache.CHAPTER}", TypeFactory.defaultInstance()
                 .constructType(ChapterData::class.java),
             604800000L
         )
@@ -101,7 +99,7 @@ class CacheModules {
         databaseKey: KomikServer
     ): StorageHelper<List<SearchResult.ExactMatch>> {
         return StorageHelper(
-            context, "$databaseKey-CACHE", TypeFactory.defaultInstance()
+            context, "$databaseKey-${Cache.SEARCH}", TypeFactory.defaultInstance()
                 .constructParametricType(List::class.java, SearchResult.ExactMatch::class.java),
             3600000L
         )
@@ -114,21 +112,21 @@ class CacheModules {
         databaseKey: KomikServer
     ): StorageHelper<GenreSearch> {
         return StorageHelper(
-            context, "$databaseKey-CACHE", TypeFactory.defaultInstance()
+            context, "$databaseKey-${Cache.GENRE_SEARCH}", TypeFactory.defaultInstance()
                 .constructType(GenreSearch::class.java),
             7200000L
         )
     }
 
     @Provides
-    @Named("chapterScrollPostitionCache")
+    @Named("chapterScrollPositionCache")
     fun provideChapterScrollPositionCache(
         @ApplicationContext context: Context,
         databaseKey: KomikServer
     ): StorageHelper<ChapterScrollPostition> {
         return StorageHelper(
             context,
-            "$databaseKey-SCROLL-POSITION-CACHE",
+            "$databaseKey-${Cache.SCROLL_POSITION}",
             TypeFactory.defaultInstance().constructType(ChapterScrollPostition::class.java),
             0L
         )
@@ -140,7 +138,9 @@ class CacheModules {
         @ApplicationContext context: Context,
     ): StorageHelper<GithubModel> {
         return StorageHelper(
-            context, "CACHE", TypeFactory.defaultInstance().constructType(GithubModel::class.java),
+            context,
+            Cache.UPDATE.name,
+            TypeFactory.defaultInstance().constructType(GithubModel::class.java),
             1000L
         )
     }
@@ -162,10 +162,11 @@ class CacheModules {
     @Named("chapterListCache")
     fun provideChapterListCache(
         @ApplicationContext context: Context,
+        databaseKey: KomikServer
     ): StorageHelper<List<Chapter>> {
         return StorageHelper(
             context,
-            "SEARCH-HISTORY",
+            "$databaseKey-${Cache.CHAPTER_LIST}",
             TypeFactory.defaultInstance()
                 .constructParametricType(List::class.java, Chapter::class.java),
             60000L
@@ -176,10 +177,11 @@ class CacheModules {
     @Named("genreList")
     fun provideGenreListCache(
         @ApplicationContext context: Context,
+        databaseKey: KomikServer
     ): StorageHelper<List<Genre>> {
         return StorageHelper(
             context,
-            "GENRE-LIST-C",
+            "$databaseKey-${Cache.GENRE_LIST}",
             TypeFactory.defaultInstance()
                 .constructParametricType(List::class.java, Genre::class.java),
             86400000L
