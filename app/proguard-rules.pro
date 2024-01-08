@@ -37,6 +37,7 @@
 -keep class androidx.annotation.** { *; }
 -keep class javax.inject.** { *; }
 -keep class com.crstlnz.komikchino.data.model.** { *; }
+-keep class com.crstlnz.komikchino.data.firebase.model.** { *; }
 -keep class com.crstlnz.komikchino.data.database.model.** { *; }
 # End Retrofit2 with Jackson
 

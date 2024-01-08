@@ -6,6 +6,8 @@ import android.graphics.Insets
 import android.os.Build
 import android.os.Build.VERSION.SDK_INT
 import android.util.DisplayMetrics
+import android.util.Log
+import android.widget.Toast
 import androidx.annotation.NonNull
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -67,7 +69,8 @@ fun ChapterImageView(
         val intrinsicSize =
             (painter.state as? AsyncImagePainter.State.Success)?.painter?.intrinsicSize
 
-        val aspect = if (intrinsicSize != null) intrinsicSize.width / intrinsicSize.height else aspectRatio
+        val aspect =
+            if (intrinsicSize != null) intrinsicSize.width / intrinsicSize.height else aspectRatio
         Image(
             painter = painter,
             contentDescription = "Komik Images",
@@ -117,7 +120,14 @@ fun ChapterImageView(
                 )
                 Spacer(modifier = Modifier.height(5.dp))
                 val uriHandler = LocalUriHandler.current
-                TextButton(onClick = { uriHandler.openUri(data.url) }) {
+                val context = LocalContext.current
+                TextButton(onClick = {
+                    try {
+                        uriHandler.openUri(data.url)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Gagal membuka link!", Toast.LENGTH_SHORT).show()
+                    }
+                }) {
                     Text(
                         "Open in Browser",
                         style = MaterialTheme.typography.bodySmall.copy(Blue.copy(alpha = 0.8f))

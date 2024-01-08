@@ -36,6 +36,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -318,7 +319,7 @@ fun GenreScreen(navController: NavController) {
                 }
             }
         }
-        Divider(Modifier.height(1.dp), thickness = 1.dp)
+        HorizontalDivider(Modifier.height(1.dp), thickness = 1.dp)
         Box(
             modifier = Modifier
                 .weight(1f)

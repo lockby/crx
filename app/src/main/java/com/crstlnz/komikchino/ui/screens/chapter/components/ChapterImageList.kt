@@ -6,6 +6,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -183,7 +184,7 @@ fun ChapterImageList(
         CustomSwipeRefresh(
             state = refreshState,
             modifier = Modifier.background(White),
-            refreshTriggerDistance = 100.dp,
+            refreshTriggerDistance = 120.dp,
             indicatorBackground = White,
             onRefresh = {
                 onNextClick()
@@ -212,6 +213,7 @@ fun ChapterImageList(
             LazyColumn(
                 modifier
                     .fillMaxWidth()
+                    .weight(1f)
 //                    .zoom(
 //                        key = isMultipleTouch,
 //                        consume = true,
@@ -242,12 +244,18 @@ fun ChapterImageList(
 //                        }
 //                    }
 //                    .zoomable(rememberZoomableState(), enabled = isMultipleTouch)
-                    .combinedClickable(
+                    .clickable(
                         interactionSource = interactionSource,
                         indication = null
                     ) {
                         onNavChange(null)
                     },
+//                    .combinedClickable(
+//                        interactionSource = interactionSource,
+//                        indication = null
+//                    ) {
+//                        onNavChange(null)
+//                    },
                 state = lazyColumnState,
 //                userScrollEnabled = !isMultipleTouch
             ) {
