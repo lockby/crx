@@ -81,7 +81,7 @@ class LatestUpdateViewModel @Inject constructor(
 
     private suspend fun fetchSearch(page: Int = 1): List<LatestUpdate> {
         this.page = page
-        val result = api.getLatestUpdate(page)
+        val result = api.getLatestUpdate(1)
         if (!result.hasNext) {
             _infiniteState.update { InfiniteState.FINISH }
         }

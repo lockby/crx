@@ -376,14 +376,16 @@ fun SearchItemView(navController: NavController, data: SearchResult.ExactMatch) 
                         )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Filled.Star,
-                            contentDescription = "Star",
-                            modifier = Modifier.height(16.dp),
-                            tint = Yellow
-                        )
-                        Spacer(Modifier.width(2.dp))
-                        Text(data.score.toString(), style = MaterialTheme.typography.bodyMedium)
+                        if(data.score != null) {
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = "Star",
+                                modifier = Modifier.height(16.dp),
+                                tint = Yellow
+                            )
+                            Spacer(Modifier.width(2.dp))
+                            Text(data.score.toString(), style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
                 }
                 Spacer(Modifier.height(5.dp))

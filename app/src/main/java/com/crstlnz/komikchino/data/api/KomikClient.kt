@@ -5,6 +5,7 @@ import com.crstlnz.komikchino.data.api.client.CosmicScansIndonesiaScrapeAPI
 import com.crstlnz.komikchino.data.api.client.CosmicScansScrapeAPI
 import com.crstlnz.komikchino.data.api.client.GithubAPI
 import com.crstlnz.komikchino.data.api.client.KiryuuScrapeAPI
+import com.crstlnz.komikchino.data.api.client.KomikuScrapeAPI
 import com.crstlnz.komikchino.data.api.client.MangaKatanaScrapeAPI
 import com.crstlnz.komikchino.data.api.client.ManhwalistScrapeAPI
 import com.crstlnz.komikchino.data.api.client.MirrorKomikScrapeAPI
@@ -97,5 +98,14 @@ object KomikClient {
             .client(AppSettings.customHttpClient)
             .build()
             .create(MirrorKomikScrapeAPI::class.java)
+    }
+
+    fun getKomikuIdClient(): KomikuScrapeAPI {
+        return retrofitScraper
+            .addConverterFactory(JacksonConverterFactory.create())
+            .baseUrl(KomikServer.KOMIKUID.url)
+            .client(AppSettings.customHttpClient)
+            .build()
+            .create(KomikuScrapeAPI::class.java)
     }
 }

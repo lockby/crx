@@ -62,6 +62,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.LocalStatusBarPadding
 import com.crstlnz.komikchino.R
+import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.FeaturedComic
 import com.crstlnz.komikchino.data.model.OpenType
@@ -102,7 +103,7 @@ fun HomeFragment(navController: NavController) {
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        stringResource(HomeSections.HOME.title),
+                        AppSettings.komikServer?.title ?: stringResource(HomeSections.HOME.title),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

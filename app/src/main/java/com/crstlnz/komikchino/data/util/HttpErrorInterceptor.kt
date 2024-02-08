@@ -20,7 +20,7 @@ class HttpErrorInterceptor : Interceptor {
         if (!response.isSuccessful && isBlocked(response)) {
             AppSettings.cloudflareState.update {
                 it.copy(
-                    isBlocked = true, key = it.key + 1
+                    isBlocked = true, key = it.key + 1, url = chain.request().url.toString()
                 )
             }
         } else if (AppSettings.cloudflareState.value.tryCount > 0) {

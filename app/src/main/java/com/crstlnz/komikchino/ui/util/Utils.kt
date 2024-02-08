@@ -1,5 +1,8 @@
 package com.crstlnz.komikchino.ui.util
 
+import android.app.Activity
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -15,9 +18,17 @@ import com.crstlnz.komikchino.ui.theme.Blue
 import com.crstlnz.komikchino.ui.theme.Green
 import com.crstlnz.komikchino.ui.theme.Purple
 import com.crstlnz.komikchino.ui.theme.Red
+import com.crstlnz.komikchino.ui.theme.Yellow
+import com.google.android.gms.common.GoogleApiAvailability
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException
+import com.google.android.gms.common.GooglePlayServicesRepairableException
+import com.google.android.gms.common.GooglePlayServicesUtil
+import com.google.android.gms.security.ProviderInstaller
 import kotlinx.coroutines.delay
 import java.util.Locale
+import javax.net.ssl.SSLContext
 import kotlin.system.measureTimeMillis
+
 
 suspend fun <T> delayBlock(time: Long = 300L, block: suspend () -> T): T {
     val usedTime = measureTimeMillis {
@@ -79,7 +90,7 @@ fun getComicTypeColor(type: String): Color {
         }
 
         else -> {
-            Purple
+            Yellow
         }
     }
 }
@@ -115,4 +126,44 @@ suspend fun <T> loadWithCacheUtil(
     force: Boolean = true,
 ): T? {
     return loadWithCacheMainUtil(key, fetch, storage, force)
+}
+
+fun providerInstallerCheck(context: Activity) {
+    try {
+        // Checking if the ProviderInstaller is installed and updated
+        ProviderInstaller.installIfNeeded(context)
+        val sslContext: SSLContext = SSLContext.getInstance("TLSv1.2")
+        sslContext.init(null, null, null)
+        sslContext.createSSLEngine()
+        Toast.makeText(
+            context,
+            "Provider updated",
+            Toast.LENGTH_LONG
+        ).show()
+    } catch (e: GooglePlayServicesRepairableException) {
+        /* If the ProviderInstaller is installed but not updated
+        A popup asks the user to do a manual update of the Google Play Services
+         */
+        e.printStackTrace()
+        GoogleApiAvailability.getInstance().showErrorNotification(context, e.connectionStatusCode)
+        Toast.makeText(
+            context,
+            "Provider it outdated. Please update your Google Play Service",
+            Toast.LENGTH_LONG
+        ).show()
+    } catch (e: GooglePlayServicesNotAvailableException) {
+        e.printStackTrace()
+
+        /* If the ProviderInstaller is not installed but not updated
+        A popup redirects the user to the Google Play Services page on the Google PlayStore
+        and let the user download them.
+         */
+        val dialog = GoogleApiAvailability.getInstance()
+            .getErrorDialog(
+                context, e.errorCode,
+                9000
+            )
+        dialog!!.setCancelable(false)
+        dialog.show()
+    }
 }

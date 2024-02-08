@@ -34,9 +34,12 @@ object AppSettings {
     private fun bannerURL(id: String): String {
         return "https://lockby.github.io/assets/img/$id.jpg"
     }
+
     var interceptor = HttpLoggingInterceptor()
 
-    val banner = bannerURL(Random.nextInt(1, 6).toString())
+    fun banner(): String {
+        return bannerURL(Random.nextInt(1, 6).toString())
+    }
 
     var imageLoader: ImageLoader? = null
     var customHttpClient: OkHttpClient = OkHttpClient.Builder().build()
@@ -46,7 +49,7 @@ object AppSettings {
         "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (HTML, like Gecko) Chrome/114.0.5735.130 Mobile Safari/537.36"
 
     val cloudflareState: MutableStateFlow<CloudflareState> =
-        MutableStateFlow(CloudflareState(false, 0, false))
+        MutableStateFlow(CloudflareState(false, 0, null, false))
 
     var downloadServiceRunning = false
 }

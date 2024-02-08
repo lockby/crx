@@ -1,13 +1,15 @@
 package com.crstlnz.komikchino
 
+//import org.conscrypt.Conscrypt
 import android.annotation.SuppressLint
-import android.app.Activity
+import android.content.Intent
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.WindowInsetsController
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.EaseOutCubic
@@ -50,6 +52,8 @@ import com.crstlnz.komikchino.data.util.HttpErrorInterceptor
 import com.crstlnz.komikchino.data.util.RequestHeaderInterceptor
 import com.crstlnz.komikchino.data.util.getAppVersion
 import com.crstlnz.komikchino.data.util.getCurrentDateString
+import com.crstlnz.komikchino.data.util.getCustomHttpClient
+import com.crstlnz.komikchino.data.util.getImageLoader
 import com.crstlnz.komikchino.data.util.versionCheck
 import com.crstlnz.komikchino.ui.components.UpdateDialog
 import com.crstlnz.komikchino.ui.navigations.HomeSections
@@ -58,9 +62,7 @@ import com.crstlnz.komikchino.ui.navigations.addMainNavigation
 import com.crstlnz.komikchino.ui.theme.KomikChinoTheme
 import com.crstlnz.komikchino.ui.util.NotificationPermission
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
-import com.google.android.gms.common.GooglePlayServicesNotAvailableException
-import com.google.android.gms.common.GooglePlayServicesRepairableException
-import com.google.android.gms.common.GooglePlayServicesUtil
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.security.ProviderInstaller
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
@@ -79,8 +81,8 @@ import okhttp3.Response
 import okhttp3.TlsVersion
 import org.conscrypt.Conscrypt
 import java.security.Security
+import java.util.Collections
 import javax.inject.Inject
-import javax.net.ssl.SSLContext
 
 
 var LocalStatusBarPadding = compositionLocalOf {
@@ -102,10 +104,11 @@ class UrlLoggingInterceptor : Interceptor {
     }
 }
 
+private const val ERROR_DIALOG_REQUEST_CODE = 1
 const val MAX_BITMAP_SIZE = 100 * 1024 * 1024 // 100 MB
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), ProviderInstaller.ProviderInstallListener {
     @Inject
     lateinit var databaseKey: KomikServer
 
@@ -115,83 +118,23 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("InternalInsetResource", "DiscouragedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
+        Security.insertProviderAt(Conscrypt.newProvider(), 1);
+        ProviderInstaller.installIfNeededAsync(this, this)
         super.onCreate(savedInstanceState)
-        updateAndroidSecurityProvider(this)
+        AppSettings.homepage = homepage
+        // Cookie -> HttpClient -> ImageLoader
+        AppSettings.cookieJar = CustomCookieJar(this)
+        AppSettings.customHttpClient = getCustomHttpClient()
+        AppSettings.imageLoader = getImageLoader(this)
+        ////////////////////
         AppSettings.komikServer = databaseKey
-        ProviderInstaller.installIfNeeded(applicationContext);
+
+        /////Firebase///////
         FirebaseInitializer.initialize(this)
         firebaseAnalytics = Firebase.analytics
+        ///////////////////
+
         actionBar?.show()
-        AppSettings.homepage = homepage
-
-//        AppSettings.downloadDir =
-//            File(
-//                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-//                "/komikchino"
-//            ).path
-//        val dlViewModel: DownloadViewModel by viewModels()
-//        AppSettings.downloadViewModel = dlViewModel
-        AppSettings.cookieJar = CustomCookieJar(this)
-        Security.insertProviderAt(Conscrypt.newProvider(), 1);
-        AppSettings.customHttpClient = OkHttpClient.Builder()
-            .connectionSpecs(
-                listOf(
-                    ConnectionSpec.CLEARTEXT,
-                    ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                        .allEnabledTlsVersions()
-                        .allEnabledCipherSuites()
-                        .build()
-                )
-            )
-            .followRedirects(true) // Enable automatic following of redirects
-            .followSslRedirects(true)
-            .cookieJar(AppSettings.cookieJar)
-            .addInterceptor(HttpErrorInterceptor())
-            .addInterceptor(RequestHeaderInterceptor())
-            .addInterceptor(UrlLoggingInterceptor())
-            .build()
-
-        fun getImageClient(komikServer: KomikServer): OkHttpClient {
-            if (komikServer === KomikServer.COSMICSCANSINDO || komikServer === KomikServer.COSMICSCANS) {
-                return AppSettings.customHttpClient.newBuilder().addInterceptor {
-                    val newRequest = it.request().newBuilder().addHeader(
-                        "Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
-                    ).build()
-                    it.proceed(newRequest)
-                }.build()
-
-            }
-            return AppSettings.customHttpClient
-        }
-
-        AppSettings.imageLoader =
-            ImageLoader
-                .Builder(this)
-                .okHttpClient(getImageClient(AppSettings.komikServer!!))
-                .components {
-                    add { chain ->
-                        val request = chain.request
-                        val result = chain.proceed(request)
-                        val bitmap = (result.drawable as? BitmapDrawable)?.bitmap
-                        if (bitmap != null && bitmap.byteCount >= MAX_BITMAP_SIZE) {
-                            ErrorResult(
-                                request.error,
-                                request,
-                                RuntimeException("Bitmap is too large (${bitmap.byteCount} bytes)")
-                            )
-                        } else {
-                            result
-                        }
-
-                    }
-                }
-                .diskCache {
-                    DiskCache.Builder()
-                        .directory(this.cacheDir.resolve(IMAGE_CACHE_PATH))
-                        .maxSizePercent(0.05)
-                        .build()
-                }
-                .build()
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         // Calculating Status Bar and SystemBar or Navigation bar on bottom
@@ -201,20 +144,9 @@ class MainActivity : ComponentActivity() {
         val statusBarHeight = resources.getDimensionPixelSize(statusBarHeightId) / density
         val systemBarHeight = resources.getDimensionPixelSize(systemBarHeightId) / density
 
-//        val pipelineConfig =
-//            OkHttpImagePipelineConfigFactory
-//                .newBuilder(this, OkHttpClient.Builder().build())
-//                .setDiskCacheEnabled(true)
-//                .setDownsampleEnabled(true)
-//                .setResizeAndRotateEnabledForNetwork(true)
-//                .build()
-//
-//        Fresco.initialize(this, pipelineConfig)
-
         LocalStatusBarPadding = compositionLocalOf {
             statusBarHeight.dp
         }
-//
         LocalSystemBarPadding = compositionLocalOf {
             systemBarHeight.dp
         }
@@ -234,25 +166,42 @@ class MainActivity : ComponentActivity() {
                 MainApp()
             }
         }
+    }
 
+    override fun onProviderInstallFailed(errorCode: Int, recoveryIntent: Intent?) {
+        GoogleApiAvailability.getInstance().apply {
+            if (isUserResolvableError(errorCode)) {
+                // Recoverable error. Show a dialog prompting the user to
+                // install/update/enable Google Play services.
+                showErrorDialogFragment(this@MainActivity, errorCode, ERROR_DIALOG_REQUEST_CODE) {
+                    // The user chose not to take the recovery action.
+                    onProviderInstallerNotAvailable()
+                }
+            } else {
+                onProviderInstallerNotAvailable()
+            }
+        }
+    }
+
+    override fun onProviderInstalled() {
+        Toast.makeText(
+            this,
+            "Provider installed!",
+            Toast.LENGTH_LONG
+        ).show()
+    }
+
+    private fun onProviderInstallerNotAvailable() {
+        Toast.makeText(
+            this,
+            "Provider not available! Some komik server will be inaccessible",
+            Toast.LENGTH_LONG
+        ).show()
+        // This is reached if the provider can't be updated for some reason.
+        // App should consider all HTTP communication to be vulnerable and take
+        // appropriate action.
     }
 }
-
-private fun updateAndroidSecurityProvider(callingActivity: Activity) {
-    try {
-        ProviderInstaller.installIfNeeded(callingActivity)
-        val sslContext: SSLContext = SSLContext.getInstance("TLSv1.2")
-        sslContext.init(null, null, null)
-        sslContext.createSSLEngine()
-    } catch (e: GooglePlayServicesRepairableException) {
-        // Thrown when Google Play Services is not installed, up-to-date, or enabled
-        // Show dialog to allow users to install, update, or otherwise enable Google Play services.
-        GooglePlayServicesUtil.getErrorDialog(e.connectionStatusCode, callingActivity, 0)
-    } catch (e: GooglePlayServicesNotAvailableException) {
-        Log.e("SecurityException", "Google Play Services not available.")
-    }
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

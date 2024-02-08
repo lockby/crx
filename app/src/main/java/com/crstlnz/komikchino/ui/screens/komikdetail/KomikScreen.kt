@@ -70,6 +70,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.LocalStatusBarPadding
 import com.crstlnz.komikchino.R
+import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.firebase.model.KomikHistoryItem
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
@@ -190,10 +191,11 @@ fun KomikScreen(
                                 }
                             },
                             actions = {
-                                IconButton(onClick = {
+                                IconButton(
+                                    enabled = AppSettings.komikServer!!.haveComment,
+                                    onClick = {
                                     val komik = dataState.getDataOrNull()
                                     if (komik != null) {
-                                        Log.d("DISQUS CONFIG", komik.disqusConfig.toString())
                                         MainNavigation.toCommentView(
                                             navController,
                                             slug = komik.disqusConfig?.identifier ?: komik.slug,
@@ -222,23 +224,7 @@ fun KomikScreen(
                                         )
                                     }
                                 }
-//                                IconButton(onClick = {
-//                                    val data = dataState.getDataOrNull()
-//                                    if (data != null) {
-//                                        MainNavigation.toDownloadSelect(
-//                                            navController,
-//                                            data.title,
-//                                            data.slug
-//                                        )
-//                                    }
-//                                }) {
-//                                    Icon(
-//                                        painterResource(id = R.drawable.download),
-//                                        contentDescription = "Download"
-//                                    )
-//                                }
                             },
-//                        elevation = 0.dp
                         )
 
                         Box(

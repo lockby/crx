@@ -204,7 +204,7 @@ fun GenreScreen(navController: NavController) {
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        stringResource(HomeSections.LATEST_UPDATE.title),
+                        stringResource(HomeSections.GENRE.title),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

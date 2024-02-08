@@ -1,6 +1,7 @@
 package com.crstlnz.komikchino.hilt
 
 import android.content.Context
+import android.util.Log
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
@@ -21,7 +22,8 @@ import kotlinx.coroutines.runBlocking
 
 @Module
 @InstallIn(SingletonComponent::class)
-class AppModules {
+class AppModules() {
+
     @Provides
     fun provideHomepage(settings: Settings): HomeSections {
         val server = AppSettings.homepage

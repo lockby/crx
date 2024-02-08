@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.crstlnz.komikchino.R
+import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
 import com.crstlnz.komikchino.ui.screens.chapter.ChapterViewModel
 import com.crstlnz.komikchino.ui.theme.Black1
@@ -117,7 +118,9 @@ fun BottomAppBar(
                         painter = painterResource(id = R.drawable.list), contentDescription = "Menu"
                     )
                 }
-                IconButton(onClick = {
+                IconButton(
+                    enabled = AppSettings.komikServer!!.haveComment,
+                    onClick = {
                     onCommentClick()
                 }) {
 

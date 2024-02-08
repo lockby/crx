@@ -16,6 +16,8 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import android.util.Base64
+import android.util.Log
+import java.net.HttpCookie
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -292,11 +294,13 @@ fun parseRelativeTimeIndonesia(relativeTime: String): Date? {
             cal.add(Calendar.MONTH, -amount)
             return cal.time
         }
+
         "tahun" -> {
             val cal = Calendar.getInstance()
             cal.add(Calendar.YEAR, -amount)
             return cal.time
         }
+
         else -> return null
     }
     return Date(now.timeInMillis - unitInMillis)
@@ -369,23 +373,36 @@ fun clearCache(context: Context, cachePath: String) {
     }
 }
 
-fun parseCookieString(cookies: String, url: String): List<Cookie>? {
-    val updatedCookies = mutableListOf<Cookie>()
-    val cookieArray = cookies.split(";")
-    for (cookieItem in cookieArray) {
-        val cookiePair = cookieItem.trim().split("=")
-        if (cookiePair.size == 2) {
-            val cookieName = cookiePair[0]
-            val cookieValue = cookiePair[1]
-            val cookie =
-                Cookie.Builder().domain(extractDomain(url) ?: "").path("/").name(cookieName)
-                    .value(cookieValue).build()
-            updatedCookies.add(cookie)
-        }
-    }
+//fun parseCookieString(cookies: String, url: String): List<Cookie>? {
+//    val updatedCookies = mutableListOf<Cookie>()
+//    val cookieArray = cookies.split(";")
+//    for (cookieItem in cookieArray) {
+//        val cookiePair = cookieItem.trim().split("=")
+//        if (cookiePair.size >= 2) {
+//            val cookieName = cookiePair[0]
+//            val cookieValue = cookiePair.slice(1 until cookiePair.size).joinToString("=")
+//            val cookie =
+//                Cookie.Builder().domain(extractDomain(url) ?: "").path("/").name(cookieName)
+//                    .value(cookieValue).build()
+//            updatedCookies.add(cookie)
+//        }
+//    }
+//    if (updatedCookies.isEmpty()) return null
+//    return updatedCookies
+//}
 
-    if (updatedCookies.isEmpty()) return null
-    return updatedCookies
+fun parseCookieString(cookieString: String, url: String): List<Cookie>? {
+    return try {
+        val cookies = HttpCookie.parse(cookieString)
+        cookies.map { it ->
+            Cookie.Builder().domain(it.domain ?: extractDomain(url) ?: "").path("/").name(it.name)
+                .value(it.value).build()
+        }
+    } catch (e: Exception) {
+        Log.d("CLOUDFLARE TAG ERROR", cookieString)
+        Log.d("CLOUDFLARE TAG ERROR", e.toString())
+        null
+    }
 }
 
 fun getCurrentDateString(): String {

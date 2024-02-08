@@ -53,8 +53,6 @@ fun ChapterImageView(
     aspectRatio: Float = 5f / 8f,
     screenWidthPixel: Int = 0,
 ) {
-//    var screenWidth by remember { mutableIntStateOf(screenWidthPixel) }
-//    Log.d("IMAGE RESIZE", "SIZE : $screenWidth")
     val painter = rememberAsyncImagePainter(
         imageLoader = AppSettings.imageLoader!!,
         model = ImageRequest.Builder(LocalContext.current).data(data.url)
@@ -71,6 +69,9 @@ fun ChapterImageView(
 
         val aspect =
             if (intrinsicSize != null) intrinsicSize.width / intrinsicSize.height else aspectRatio
+        if (intrinsicSize != null)
+            onImageSizeCalculated(intrinsicSize.height, intrinsicSize.width)
+
         Image(
             painter = painter,
             contentDescription = "Komik Images",
@@ -81,15 +82,7 @@ fun ChapterImageView(
                 )
         )
 
-        if (intrinsicSize != null)
-            onImageSizeCalculated(intrinsicSize.height, intrinsicSize.width)
     } else if (painter.state is AsyncImagePainter.State.Error && !data.useHardware) {
-//        if ((painter.state as AsyncImagePainter.State.Error).result.throwable.message.toString()
-//                .startsWith("Bitmap is too large") && (screenWidthPixel / screenWidth) <= 2
-//        ) {
-//            screenWidth = (screenWidth * 0.7f).toInt()
-//            Log.d("IMAGE RESIZE", screenWidth.toString())
-//        }
         Box(
             Modifier
                 .fillMaxWidth()

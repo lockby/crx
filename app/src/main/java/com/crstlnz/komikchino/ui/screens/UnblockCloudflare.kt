@@ -36,6 +36,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.apache.commons.text.StringEscapeUtils
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import java.net.HttpCookie
 import kotlin.random.Random
 
 @SuppressLint("JavascriptInterface")
@@ -43,13 +44,16 @@ import kotlin.random.Random
 @Composable
 fun UnblockCloudflare(
     navController: NavHostController,
-    url: String,
+    defaultUrl: String,
     defaultTitle: String? = null,
     onBackPressed: () -> Unit
 ) {
+    var isDestroyed = remember { false }
     var tryRedirect = remember { 0 }
     val context = LocalContext.current
     var isBack = remember { false }
+
+    val url = AppSettings.cloudflareState.value.url ?: defaultUrl
 
     fun back() {
         if (!isBack) {
@@ -59,9 +63,11 @@ fun UnblockCloudflare(
     }
 
     fun isBlocked(document: Document): Boolean {
-        return document.selectFirst("#challenge-form") != null || document.selectFirst(
-            "#challenge-error-title"
-        ) != null
+        val check1 = document.selectFirst("#challenge-form") != null
+        val check2 = document.selectFirst("#challenge-error-title") != null
+        val check3 = document.selectFirst("#challenge-stage") != null
+        val check4 = document.selectFirst("input[name=cf_challenge_response]") != null
+        return check1 || check2 || check3 || check4
     }
 
     fun getCookieString(): String? {
@@ -74,8 +80,12 @@ fun UnblockCloudflare(
     }
 
     fun hasCloudflareKey(cookies: List<Cookie>): Boolean {
-        return cookies.find { cookie -> cookie.name == "cf_clearance" } != null
+        return cookies.find { cookie ->
+            return cookie.name == "cf_clearance"
+        } != null
     }
+
+    var webView: WebView? by remember { mutableStateOf(null) }
 
     DisposableEffect(Unit) {
         AppSettings.cloudflareState.update {
@@ -85,6 +95,13 @@ fun UnblockCloudflare(
         }
 
         onDispose {
+            webView?.clearHistory()
+            webView?.onPause()
+            webView?.removeAllViews()
+            webView?.pauseTimers()
+            webView?.destroy()
+            webView = null
+            isDestroyed = true
             AppSettings.cloudflareState.update {
                 it.copy(
                     isUnblockInProgress = false
@@ -97,7 +114,6 @@ fun UnblockCloudflare(
             defaultTitle ?: context.getString(context.applicationInfo.labelRes)
         )
     }
-    var webView: WebView? by remember { mutableStateOf(null) }
     Scaffold(contentWindowInsets = WindowInsets.ime, topBar = {
         Box(contentAlignment = Alignment.BottomCenter) {
             TopAppBar(
@@ -136,74 +152,84 @@ fun UnblockCloudflare(
                         }
                     }
                     val cookieManager = CookieManager.getInstance()
-
-                    cookieManager.flush()
+                    wV.settings.domStorageEnabled = true
+                    wV.settings.databaseEnabled = true
+                    cookieManager.setAcceptThirdPartyCookies(wV, true)
+                    cookieManager.setAcceptCookie(true)
                     cookieManager.removeAllCookies(null)
                     cookieManager.removeSessionCookies(null)
-                    cookieManager.setAcceptCookie(true)
                     cookieManager.acceptCookie()
-                    cookieManager.setAcceptThirdPartyCookies(wV, true)
+                    cookieManager.flush()
                     webView = wV
                 }, onReceivedTitle = { _, t ->
                     title = t ?: ""
                 }, shouldInterceptRequest = { webView, request, next ->
-                    val cookies = getCookie()
-                    if (cookies != null && hasCloudflareKey(cookies)) {
-                        Log.d("COOKIE UNBLOCK", "CLOUDFLARE UNBLOCKED!")
-                        Log.d("COOKIES", getCookieString().toString())
-                        webView?.post {
-                            val httpURL = url.toHttpUrlOrNull()
-                            if (httpURL != null) {
-                                (AppSettings.cookieJar as CustomCookieJar).updateCookies(
-                                    httpURL, cookies
-                                )
-                            }
-                            if (AppSettings.cloudflareState.value.isBlocked) {
-                                AppSettings.cloudflareState.update { state ->
-                                    state.copy(
-                                        isBlocked = false, key = 0, autoReloadConsumed = false
+                    if (isDestroyed) {
+                        next(webView, request)
+                    } else {
+                        val cookies = getCookie()
+                        if (cookies != null && hasCloudflareKey(cookies)) {
+                            webView?.post {
+                                val httpURL = url.toHttpUrlOrNull()
+                                if (httpURL != null) {
+                                    (AppSettings.cookieJar as CustomCookieJar).updateCookies(
+                                        httpURL, cookies
                                     )
                                 }
-                                back()
-                            }
-                        }
-
-                    }
-                    next(webView, request)
-                }, onPageFinished = { wV, url ->
-                    if (AppSettings.cloudflareState.value.isBlocked && wV.progress == 100)
-                        wV.evaluateJavascript(
-                            "(function(){return window.document.body.outerHTML})();"
-                        ) { str ->
-                            val document = Jsoup.parse(StringEscapeUtils.unescapeJava(str))
-                            val isBlocked = isBlocked(document)
-                            val updatedCookies = getCookie()
-                            if (!isBlocked && updatedCookies != null) {
-                                tryRedirect += 1
-                                wV.loadUrl(url + Random.nextInt(1, 1000000).toString())
-                            } else if (!isBlocked) {
-                                if (tryRedirect >= 3) {
-                                    if (AppSettings.cloudflareState.value.isBlocked) {
-                                        AppSettings.cloudflareState.update { state ->
-                                            state.copy(
-                                                mustManualTrigger = true,
-                                                isBlocked = true,
-                                                isUnblockInProgress = false,
-                                                mustClearCache = true,
-                                                key = 0
-                                            )
-                                        }
-                                        Toast.makeText(
-                                            context, "Failed to sign cloudflare!", Toast.LENGTH_LONG
-                                        ).show()
-                                        back()
+                                if (AppSettings.cloudflareState.value.isBlocked) {
+                                    AppSettings.cloudflareState.update { state ->
+                                        state.copy(
+                                            isBlocked = false, key = 0, autoReloadConsumed = false
+                                        )
                                     }
-                                } else {
-                                    tryRedirect += 1
-                                    wV.loadUrl(url + Random.nextInt(1, 1000000).toString())
+                                    back()
                                 }
                             }
+
                         }
+                        next(webView, request)
+                    }
+
+                }, onPageFinished = { wV, _url ->
+                    if (!isDestroyed) {
+                        if (AppSettings.cloudflareState.value.isBlocked && wV.progress == 100)
+                            wV.evaluateJavascript(
+                                "(function(){return window.document.body.outerHTML})();"
+                            ) { str ->
+                                val document = Jsoup.parse(StringEscapeUtils.unescapeJava(str))
+                                val isBlocked = isBlocked(document)
+                                val updatedCookies = getCookie()
+                                if (!isBlocked && updatedCookies != null) {
+                                    tryRedirect += 1
+                                    Thread.sleep(1000L)
+                                    wV.loadUrl(url + "?_=${Random.nextInt(1, 1000000)}")
+                                } else if (!isBlocked) {
+                                    Thread.sleep(1000L)
+                                    if (tryRedirect >= 3) {
+                                        if (AppSettings.cloudflareState.value.isBlocked) {
+                                            AppSettings.cloudflareState.update { state ->
+                                                state.copy(
+                                                    mustManualTrigger = true,
+                                                    isBlocked = true,
+                                                    isUnblockInProgress = false,
+                                                    mustClearCache = true,
+                                                    key = 0
+                                                )
+                                            }
+                                            Toast.makeText(
+                                                context,
+                                                "Failed to sign cloudflare!",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                            back()
+                                        }
+                                    } else {
+                                        tryRedirect += 1
+                                        wV.loadUrl(url + "?_=${Random.nextInt(1, 1000000)}")
+                                    }
+                                }
+                            }
+                    }
                 })
             }
         }

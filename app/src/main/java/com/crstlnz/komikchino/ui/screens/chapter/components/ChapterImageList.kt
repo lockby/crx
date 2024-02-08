@@ -53,7 +53,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
@@ -61,6 +63,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.config.nunito
@@ -78,6 +83,7 @@ import com.crstlnz.komikchino.ui.util.ComposableLifecycle
 import com.crstlnz.komikchino.ui.util.Zoomable
 import com.crstlnz.komikchino.ui.util.ZoomableConsumeDirection
 import com.crstlnz.komikchino.ui.util.rememberZoomableState
+import java.util.UUID
 
 data class ChapterImage(
     val url: String, var useHardware: Boolean, val key: String,
@@ -92,11 +98,12 @@ fun ChapterImageList(
     modifier: Modifier = Modifier,
     images: List<String>,
 //    images: List<ImageBitmap?>,
-    chapterScrollPosition : ChapterScrollPostition?,
+    chapterScrollPosition: ChapterScrollPostition?,
     onNavChange: (isShow: Boolean?) -> Unit = {},
     viewModel: ChapterViewModel,
     onNextClick: () -> Unit = {}
 ) {
+    val banner = remember { AppSettings.banner() }
     val lifecycleOwner = LocalLifecycleOwner.current
     val defaultAspectRatio = remember { 5f / 8f }
     val screenWidthPixel =
@@ -107,9 +114,9 @@ fun ChapterImageList(
 
     LaunchedEffect(images) {
         chapterImages.clear()
-        chapterImages.addAll(images.mapIndexed { index, url ->
+        chapterImages.addAll(images.mapIndexed { _, url ->
             ChapterImage(
-                url, true, index.toString()
+                url, true, UUID.randomUUID().toString()
             )
         })
     }
@@ -151,13 +158,6 @@ fun ChapterImageList(
         val firstVisible = chapterScrollPosition?.initialFirstVisibleItemIndex ?: 0
         val firstVisibleOffset = chapterScrollPosition?.initialFirstVisibleItemScrollOffset ?: 0
         if (lazyColumnState.firstVisibleItemIndex != firstVisible || lazyColumnState.firstVisibleItemScrollOffset != firstVisibleOffset) {
-            Log.d("First Visible Item Index" , lazyColumnState.firstVisibleItemIndex.toString())
-            Log.d("First Visible Scroll Offset" , lazyColumnState.firstVisibleItemScrollOffset.toString())
-
-            Log.d("First Visible Item Index New" , firstVisible.toString())
-            Log.d("First Visible Scroll Offset New" , firstVisibleOffset.toString())
-
-            Log.d("SCROLL STATE", "CHANGING")
             lazyColumnState.scrollToItem(
                 chapterScrollPosition?.initialFirstVisibleItemIndex ?: 0,
                 chapterScrollPosition?.initialFirstVisibleItemScrollOffset ?: 0
@@ -319,13 +319,12 @@ fun ChapterImageList(
                     }
                 }
 
-
                 items(
                     chapterImages.size,
                     key = { chapterImages[it].key },
                     contentType = { ChapterImage::class.java }
                 ) { idx ->
-                    val imageSize = chapterScrollPosition?.imageSize?.getOrNull(idx)
+                    val imageSize = calculatedImageSize.getOrNull(idx)
                     var aspectRatio =
                         if (imageSize != null && imageSize.calculated && imageSize.height > 0f && imageSize.width > 0f) {
                             imageSize.width / imageSize.height
@@ -333,7 +332,7 @@ fun ChapterImageList(
                             defaultAspectRatio
                         }
 
-                    if(aspectRatio == 0f || aspectRatio.isNaN()) aspectRatio = defaultAspectRatio
+                    if (aspectRatio <= 0f || aspectRatio.isNaN()) aspectRatio = defaultAspectRatio
                     ChapterImageView(chapterImages[idx], onDisableHardware = {
                         val data = chapterImages[idx]
                         data.useHardware = false
@@ -350,9 +349,16 @@ fun ChapterImageList(
                 }
 
                 item(key = "last") {
-                    ImageView(
-                        url = AppSettings.banner,
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(banner)
+                            .crossfade(true)
+                            .networkCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.DISABLED)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .build(),
                         contentDescription = "Banner",
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .background(color = White)
                             .fillMaxWidth()
