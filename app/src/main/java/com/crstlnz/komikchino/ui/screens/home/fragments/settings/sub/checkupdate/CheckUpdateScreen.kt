@@ -76,7 +76,8 @@ fun CheckUpdateScreen(navController: NavController) {
     val dataState by v.state.collectAsState()
     val appVersion = getAppVersion(context)
     val isUpdateAvailable = versionCheck(
-        dataState.getDataOrNull()?.tagName ?: "",
+//        dataState.getDataOrNull()?.tagName ?: ""
+        "v0.3.15-beta",
         appVersion
 //    ""
     )
@@ -168,7 +169,7 @@ fun CheckUpdateScreen(navController: NavController) {
                                     markdown =
                                     "#### `${appVersion}` &rarr;  `${updatesVersion}`\n\n" +
                                             changeLog + "\n\n**[Download on Github](${htmlUrl})**",
-                                    modifier = Modifier.padding(15.dp),
+                                    modifier = Modifier.padding(15.dp).fillMaxWidth(1f),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     style = MaterialTheme.typography.labelLarge,
                                     onLinkClicked = { url ->

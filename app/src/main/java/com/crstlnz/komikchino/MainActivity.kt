@@ -172,11 +172,7 @@ class MainActivity : ComponentActivity(), ProviderInstaller.ProviderInstallListe
     }
 
     override fun onProviderInstalled() {
-        Toast.makeText(
-            this,
-            "Provider installed!",
-            Toast.LENGTH_LONG
-        ).show()
+        // on provider installed
     }
 
     private fun onProviderInstallerNotAvailable() {
@@ -191,7 +187,6 @@ class MainActivity : ComponentActivity(), ProviderInstaller.ProviderInstallListe
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainApp() {
     val systemUiController = rememberSystemUiController()
