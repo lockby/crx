@@ -1,6 +1,5 @@
 package com.crstlnz.komikchino.services
 
-import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -11,38 +10,13 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.os.Environment
 import android.os.IBinder
 import android.util.Log
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Observer
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.config.AppSettings
-import com.crstlnz.komikchino.data.api.KomikServer
-import com.crstlnz.komikchino.data.database.model.MangaChapterDownload
 import com.crstlnz.komikchino.data.util.MangaDownloadManager
-import com.crstlnz.komikchino.ui.screens.latestupdate.LatestUpdateViewModel
-import com.crstlnz.komikchino.ui.util.downloadManager
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.internal.notify
-import java.io.File
-import java.io.FileNotFoundException
-import java.io.FileOutputStream
-import java.net.URL
-import javax.inject.Inject
 import kotlin.random.Random.Default.nextInt
 
 

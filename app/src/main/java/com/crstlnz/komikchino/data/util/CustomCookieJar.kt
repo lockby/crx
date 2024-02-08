@@ -3,7 +3,6 @@ package com.crstlnz.komikchino.data.util
 import android.content.Context
 import android.content.SharedPreferences
 import com.crstlnz.komikchino.config.AppSettings
-import com.crstlnz.komikchino.data.api.KomikServer
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl

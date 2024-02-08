@@ -3,7 +3,6 @@ package com.crstlnz.komikchino.ui.util
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import com.crstlnz.komikchino.services.DownloadManagerService
 import com.crstlnz.komikchino.services.INTENT_COMMAND
 

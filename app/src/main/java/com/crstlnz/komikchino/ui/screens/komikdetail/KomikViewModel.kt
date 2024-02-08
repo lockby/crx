@@ -1,23 +1,19 @@
 package com.crstlnz.komikchino.ui.screens.komikdetail
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.crstlnz.komikchino.data.api.ScraperBase
+import com.crstlnz.komikchino.data.datastore.Settings
 import com.crstlnz.komikchino.data.firebase.model.ChapterHistoryItem
 import com.crstlnz.komikchino.data.firebase.model.FavoriteKomikItem
 import com.crstlnz.komikchino.data.firebase.repository.ChapterHistoryRepository
 import com.crstlnz.komikchino.data.firebase.repository.FavoriteKomikRepository
-import com.crstlnz.komikchino.data.datastore.Settings
 import com.crstlnz.komikchino.data.model.DataState.Idle.getDataOrNull
 import com.crstlnz.komikchino.data.model.KomikDetail
 import com.crstlnz.komikchino.data.util.StorageHelper
 import com.crstlnz.komikchino.ui.util.ScraperViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.net.URLDecoder
 import javax.inject.Inject

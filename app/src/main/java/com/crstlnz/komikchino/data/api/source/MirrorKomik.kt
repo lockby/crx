@@ -1,8 +1,6 @@
 package com.crstlnz.komikchino.data.api.source
 
 import android.content.Context
-import android.util.Log
-import androidx.compose.ui.text.toLowerCase
 import com.crstlnz.komikchino.data.api.KomikClient
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.Chapter
@@ -27,17 +25,12 @@ import com.crstlnz.komikchino.data.util.StorageHelper
 import com.crstlnz.komikchino.data.util.extractIdsFromOnClick
 import com.crstlnz.komikchino.data.util.getBackgroundImage
 import com.crstlnz.komikchino.data.util.getLastPathSegment
-import com.crstlnz.komikchino.data.util.getVoidScansDisqus
-import com.crstlnz.komikchino.data.util.parseDateString
-import com.crstlnz.komikchino.data.util.parseRelativeTime
 import com.crstlnz.komikchino.data.util.parseRelativeTimeIndonesia
 import com.fasterxml.jackson.databind.type.TypeFactory
 import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import retrofit2.Response
-import java.util.Locale
-import java.util.regex.Pattern
 
 
 class MirrorKomik(context: Context) : ScraperBase {

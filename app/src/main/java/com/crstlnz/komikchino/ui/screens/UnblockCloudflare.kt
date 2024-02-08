@@ -1,7 +1,6 @@
 package com.crstlnz.komikchino.ui.screens
 
 import android.annotation.SuppressLint
-import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.WebView
 import android.widget.Toast
@@ -26,7 +25,6 @@ import androidx.navigation.NavHostController
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.util.CustomCookieJar
-import com.crstlnz.komikchino.data.util.extractDomain
 import com.crstlnz.komikchino.data.util.parseCookieString
 import com.crstlnz.komikchino.ui.components.WebViewComponent
 import com.crstlnz.komikchino.ui.theme.Black1
@@ -36,7 +34,6 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.apache.commons.text.StringEscapeUtils
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
-import java.net.HttpCookie
 import kotlin.random.Random
 
 @SuppressLint("JavascriptInterface")

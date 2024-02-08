@@ -10,11 +10,8 @@ import com.crstlnz.komikchino.UrlLoggingInterceptor
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.config.IMAGE_CACHE_PATH
 import com.crstlnz.komikchino.data.api.KomikServer
-import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
-import okhttp3.TlsVersion
-import java.util.Collections
 
 fun getCustomHttpClient(): OkHttpClient {
 //        AppSettings.downloadDir =

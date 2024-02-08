@@ -27,7 +27,6 @@ import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.net.URLDecoder
-import java.net.URLEncoder
 import java.util.Locale
 import java.util.regex.Pattern
 

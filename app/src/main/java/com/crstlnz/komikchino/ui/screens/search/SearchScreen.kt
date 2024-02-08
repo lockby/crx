@@ -74,7 +74,6 @@ import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.SearchResult
 import com.crstlnz.komikchino.data.model.State
-import com.crstlnz.komikchino.data.util.getLastPathSegment
 import com.crstlnz.komikchino.ui.components.ErrorView
 import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.navigations.MainNavigation

@@ -1,20 +1,13 @@
 package com.crstlnz.komikchino.ui.screens.chapter.components
 
-import android.app.Activity
 import android.content.res.Resources
-import android.graphics.Insets
-import android.os.Build
 import android.os.Build.VERSION.SDK_INT
-import android.util.DisplayMetrics
-import android.util.Log
 import android.widget.Toast
-import androidx.annotation.NonNull
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding

@@ -1,25 +1,7 @@
 package com.crstlnz.komikchino
 
-import android.content.Context
-import android.util.Log
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.crstlnz.komikchino.config.AppSettings
-import com.crstlnz.komikchino.data.api.KomikServer
-import com.crstlnz.komikchino.data.api.getScraper
-import com.crstlnz.komikchino.data.model.HomeData
-import com.crstlnz.komikchino.data.util.CustomCookieJar
-import com.crstlnz.komikchino.data.util.HttpErrorInterceptor
-import com.crstlnz.komikchino.data.util.RequestHeaderInterceptor
-import com.crstlnz.komikchino.data.util.parseCookieString
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.test.runTest
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.OkHttpClient
-import org.junit.Assert.assertEquals
-import org.junit.Test
 import org.junit.runner.RunWith
-import javax.inject.Inject
 
 @RunWith(AndroidJUnit4::class)
 class ScraperTest {

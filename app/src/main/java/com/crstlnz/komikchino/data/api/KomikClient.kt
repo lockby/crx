@@ -10,11 +10,6 @@ import com.crstlnz.komikchino.data.api.client.MangaKatanaScrapeAPI
 import com.crstlnz.komikchino.data.api.client.ManhwalistScrapeAPI
 import com.crstlnz.komikchino.data.api.client.MirrorKomikScrapeAPI
 import com.crstlnz.komikchino.data.api.client.VoidScansScrapeAPI
-import com.crstlnz.komikchino.data.api.source.CosmicScansIndonesia
-import okhttp3.CipherSuite
-import okhttp3.ConnectionSpec
-import okhttp3.OkHttpClient
-import okhttp3.TlsVersion
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 

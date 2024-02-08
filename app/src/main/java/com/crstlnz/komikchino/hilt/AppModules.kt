@@ -1,17 +1,16 @@
 package com.crstlnz.komikchino.hilt
 
 import android.content.Context
-import android.util.Log
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.api.getScraper
 import com.crstlnz.komikchino.data.database.KomikDatabase
 import com.crstlnz.komikchino.data.database.repository.MangaDownloadRepository
+import com.crstlnz.komikchino.data.datastore.Settings
 import com.crstlnz.komikchino.data.firebase.repository.ChapterHistoryRepository
 import com.crstlnz.komikchino.data.firebase.repository.FavoriteKomikRepository
 import com.crstlnz.komikchino.data.firebase.repository.KomikHistoryRepository
-import com.crstlnz.komikchino.data.datastore.Settings
 import com.crstlnz.komikchino.ui.navigations.HomeSections
 import dagger.Module
 import dagger.Provides

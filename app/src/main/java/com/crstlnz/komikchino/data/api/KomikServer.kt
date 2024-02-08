@@ -11,7 +11,6 @@ import com.crstlnz.komikchino.data.api.source.Mangakatana
 import com.crstlnz.komikchino.data.api.source.Manhwalist
 import com.crstlnz.komikchino.data.api.source.MirrorKomik
 import com.crstlnz.komikchino.data.api.source.VoidScans
-import dagger.hilt.android.qualifiers.ApplicationContext
 
 enum class Bahasa(@DrawableRes val icon: Int, val title: String) {
     ENGLISH(R.drawable.english, "English"), INDONESIA(R.drawable.indonesia, "Indonesia")

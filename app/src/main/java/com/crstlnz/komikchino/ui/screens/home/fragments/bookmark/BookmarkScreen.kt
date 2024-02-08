@@ -1,6 +1,5 @@
 package com.crstlnz.komikchino.ui.screens.home.fragments.bookmark
 
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -53,7 +52,6 @@ import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.data.model.TabRowItem
 import com.crstlnz.komikchino.ui.navigations.HomeSections
 import com.crstlnz.komikchino.ui.navigations.MainNavigation
-import com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.fragments.DownloadView
 import com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.fragments.FavoriteView
 import com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.fragments.RecentView
 import com.crstlnz.komikchino.ui.theme.Red

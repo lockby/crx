@@ -42,17 +42,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.LocalStatusBarPadding
 import com.crstlnz.komikchino.R
-import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.util.logout
-import com.crstlnz.komikchino.services.DownloadViewModel
 import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.navigations.HomeSections
 import com.crstlnz.komikchino.ui.navigations.MainNavigation
-import com.crstlnz.komikchino.ui.util.DOWNLOAD_MANAGER_START
-import com.crstlnz.komikchino.ui.util.downloadManager
 import com.google.firebase.auth.FirebaseAuth
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

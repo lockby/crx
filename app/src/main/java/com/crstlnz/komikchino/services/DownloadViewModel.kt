@@ -1,8 +1,6 @@
 package com.crstlnz.komikchino.services
 
 import android.app.Application
-import android.util.Log
-import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.Observer
 import androidx.lifecycle.viewModelScope

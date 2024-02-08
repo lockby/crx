@@ -14,9 +14,6 @@ import com.crstlnz.komikchino.data.model.KomikDetail
 import com.crstlnz.komikchino.data.util.StorageHelper
 import com.crstlnz.komikchino.ui.util.ScraperViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.net.URLDecoder
 import javax.inject.Inject

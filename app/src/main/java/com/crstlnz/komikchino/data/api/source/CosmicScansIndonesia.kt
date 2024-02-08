@@ -25,7 +25,6 @@ import com.crstlnz.komikchino.data.util.parseRelativeTime
 import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
-import java.net.URLDecoder
 import java.util.Locale
 import java.util.regex.Pattern
 

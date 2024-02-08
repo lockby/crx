@@ -1,7 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.checkupdate
 
 import android.content.BroadcastReceiver
-import android.widget.Space
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
@@ -25,13 +24,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,7 +45,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavController
@@ -60,10 +55,7 @@ import com.crstlnz.komikchino.data.model.State
 import com.crstlnz.komikchino.data.util.downloadApk
 import com.crstlnz.komikchino.data.util.getAppVersion
 import com.crstlnz.komikchino.data.util.versionCheck
-import com.crstlnz.komikchino.ui.navigations.MainNavigation
 import com.crstlnz.komikchino.ui.util.ComposableLifecycle
-import com.crstlnz.komikchino.ui.util.checkWriteExternalPermission
-import com.crstlnz.komikchino.ui.util.convertHTML
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import java.text.DecimalFormat
 

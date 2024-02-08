@@ -1,7 +1,6 @@
 package com.crstlnz.komikchino.ui.util
 
 import android.app.Activity
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -16,13 +15,11 @@ import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.util.StorageHelper
 import com.crstlnz.komikchino.ui.theme.Blue
 import com.crstlnz.komikchino.ui.theme.Green
-import com.crstlnz.komikchino.ui.theme.Purple
 import com.crstlnz.komikchino.ui.theme.Red
 import com.crstlnz.komikchino.ui.theme.Yellow
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
-import com.google.android.gms.common.GooglePlayServicesUtil
 import com.google.android.gms.security.ProviderInstaller
 import kotlinx.coroutines.delay
 import java.util.Locale

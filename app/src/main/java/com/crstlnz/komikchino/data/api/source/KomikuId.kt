@@ -1,6 +1,5 @@
 package com.crstlnz.komikchino.data.api.source
 
-import android.util.Log
 import com.crstlnz.komikchino.data.api.KomikClient
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.Chapter
@@ -22,12 +21,10 @@ import com.crstlnz.komikchino.data.model.SimilarTitle
 import com.crstlnz.komikchino.data.util.getLastPathSegment
 import com.crstlnz.komikchino.data.util.getVoidScansDisqus
 import com.crstlnz.komikchino.data.util.parseDateString
-import com.crstlnz.komikchino.data.util.parseRelativeTime
 import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.util.Locale
-import java.util.regex.Pattern
 
 class KomikuId : ScraperBase {
     private val api = KomikClient.getKomikuIdClient()

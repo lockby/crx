@@ -14,12 +14,12 @@ import com.crstlnz.komikchino.data.firebase.model.KomikHistoryItem
 import com.crstlnz.komikchino.data.util.convertToStringURL
 import com.crstlnz.komikchino.data.util.decodeBase64
 import com.crstlnz.komikchino.ui.screens.CommentScreen
-import com.crstlnz.komikchino.ui.screens.download.DownloadScreen
-import com.crstlnz.komikchino.ui.screens.download.DownloadSelectScreen
 import com.crstlnz.komikchino.ui.screens.LoginScreen
 import com.crstlnz.komikchino.ui.screens.UnblockCloudflare
 import com.crstlnz.komikchino.ui.screens.chapter.ChapterScreen
 import com.crstlnz.komikchino.ui.screens.download.DownloadDetailScreen
+import com.crstlnz.komikchino.ui.screens.download.DownloadScreen
+import com.crstlnz.komikchino.ui.screens.download.DownloadSelectScreen
 import com.crstlnz.komikchino.ui.screens.home.HomeScreen
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.AppInfoScreen
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.CacheScreen

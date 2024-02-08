@@ -1,8 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub
 
 import android.content.Context
-import android.os.Environment
-import android.preference.PreferenceManager
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,7 +35,6 @@ import com.crstlnz.komikchino.data.util.getCacheFolderSize
 import com.crstlnz.komikchino.hilt.Cache
 import com.crstlnz.komikchino.ui.navigations.HomeSections
 import kotlinx.coroutines.launch
-import java.io.File
 
 
 @OptIn(ExperimentalMaterial3Api::class)

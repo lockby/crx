@@ -3,7 +3,6 @@ package com.crstlnz.komikchino
 //import org.conscrypt.Conscrypt
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -35,11 +34,7 @@ import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import coil.ImageLoader
-import coil.disk.DiskCache
-import coil.request.ErrorResult
 import com.crstlnz.komikchino.config.AppSettings
-import com.crstlnz.komikchino.config.IMAGE_CACHE_PATH
 import com.crstlnz.komikchino.config.USER_DATA
 import com.crstlnz.komikchino.data.api.ApiClient
 import com.crstlnz.komikchino.data.api.KomikServer
@@ -48,8 +43,6 @@ import com.crstlnz.komikchino.data.firebase.model.User
 import com.crstlnz.komikchino.data.model.UpdateState
 import com.crstlnz.komikchino.data.util.CustomCookieJar
 import com.crstlnz.komikchino.data.util.FirebaseInitializer
-import com.crstlnz.komikchino.data.util.HttpErrorInterceptor
-import com.crstlnz.komikchino.data.util.RequestHeaderInterceptor
 import com.crstlnz.komikchino.data.util.getAppVersion
 import com.crstlnz.komikchino.data.util.getCurrentDateString
 import com.crstlnz.komikchino.data.util.getCustomHttpClient
@@ -72,16 +65,11 @@ import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import okhttp3.CipherSuite
-import okhttp3.ConnectionSpec
 import okhttp3.Interceptor
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.TlsVersion
 import org.conscrypt.Conscrypt
 import java.security.Security
-import java.util.Collections
 import javax.inject.Inject
 
 
