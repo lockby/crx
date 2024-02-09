@@ -45,6 +45,7 @@ fun ChapterImageView(
     defaultAspectRatio: Float = 5f / 8f,
     aspectRatio: Float = 5f / 8f,
     screenWidthPixel: Int = 0,
+    pageNumber: Int = 1,
 ) {
     val painter = rememberAsyncImagePainter(
         imageLoader = AppSettings.imageLoader!!,
@@ -138,7 +139,7 @@ fun ChapterImageView(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    "Page ${((data.key.toIntOrNull() ?: 0) + 1).toString().padStart(2, '0')}",
+                    "Page ${pageNumber.toString().padStart(2, '0')}",
                     style = MaterialTheme.typography.titleMedium.copy(color = Black1.copy(alpha = 0.5f))
                 )
             }

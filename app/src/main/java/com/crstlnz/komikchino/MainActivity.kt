@@ -1,6 +1,5 @@
 package com.crstlnz.komikchino
 
-//import org.conscrypt.Conscrypt
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
@@ -11,6 +10,7 @@ import android.view.WindowInsetsController
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
@@ -18,7 +18,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
@@ -30,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -54,7 +52,6 @@ import com.crstlnz.komikchino.ui.navigations.MainNavigation
 import com.crstlnz.komikchino.ui.navigations.addMainNavigation
 import com.crstlnz.komikchino.ui.theme.KomikChinoTheme
 import com.crstlnz.komikchino.ui.util.NotificationPermission
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.security.ProviderInstaller
 import com.google.firebase.analytics.FirebaseAnalytics
@@ -124,7 +121,8 @@ class MainActivity : ComponentActivity(), ProviderInstaller.ProviderInstallListe
 
         actionBar?.show()
 
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+//        WindowCompat.setDecorFitsSystemWindows(window, false) // change to enableEdgeToEdge
+        enableEdgeToEdge()
         // Calculating Status Bar and SystemBar or Navigation bar on bottom
         val statusBarHeightId = resources.getIdentifier("status_bar_height", "dimen", "android")
         val systemBarHeightId = resources.getIdentifier("navigation_bar_height", "dimen", "android")
@@ -150,7 +148,7 @@ class MainActivity : ComponentActivity(), ProviderInstaller.ProviderInstallListe
         }
 
         setContent {
-            KomikChinoTheme {
+            KomikChinoTheme(this) {
                 MainApp()
             }
         }
@@ -189,15 +187,8 @@ class MainActivity : ComponentActivity(), ProviderInstaller.ProviderInstallListe
 
 @Composable
 fun MainApp() {
-    val systemUiController = rememberSystemUiController()
-    LaunchedEffect(Unit) {
-        systemUiController.isSystemBarsVisible = true
-    }
-
     NotificationPermission()
-
     val navController = rememberNavController()
-
     LaunchedEffect(Unit) {
         AppSettings.cloudflareState.collect {
             if (it.isBlocked && !it.isUnblockInProgress && !it.mustManualTrigger) {

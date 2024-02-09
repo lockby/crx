@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.chapter.components
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalOverscrollConfiguration
@@ -27,7 +28,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -64,30 +67,55 @@ data class ChapterImage(
     val url: String, var useHardware: Boolean, val key: String,
 )
 
-@OptIn(
-    ExperimentalFoundationApi::class, ExperimentalLayoutApi::class,
-    ExperimentalComposeUiApi::class
-)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChapterImageList(
     modifier: Modifier = Modifier,
     images: List<String>,
-//    images: List<ImageBitmap?>,
-    chapterScrollPosition: ChapterScrollPostition?,
     onNavChange: (isShow: Boolean?) -> Unit = {},
     viewModel: ChapterViewModel,
     onNextClick: () -> Unit = {}
 ) {
-    val banner = remember { AppSettings.banner() }
+    var banner by remember { mutableStateOf("") }
     val lifecycleOwner = LocalLifecycleOwner.current
     val defaultAspectRatio = remember { 5f / 8f }
     val screenWidthPixel =
         with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }.toInt()
-    val chapterImages = remember {
-        mutableStateListOf<ChapterImage>()
+    val chapterImages = remember { mutableStateListOf<ChapterImage>() }
+
+
+    var chapterScrollPosition = remember { viewModel.getChapterScrollPosition() }
+
+    fun getCalculatedImageSize(): List<ImageSize> {
+        return if ((chapterScrollPosition?.imageSize != null) && (chapterScrollPosition!!.imageSize.size == images.size)) {
+            chapterScrollPosition!!.imageSize
+        } else {
+            images.map {
+                ImageSize(
+                    false, 0f, 0f
+                )
+            }
+        }
+    }
+
+    val calculatedImageSize = remember { mutableListOf<ImageSize>() }
+    val dataState by viewModel.state.collectAsState()
+    val chapterKey by viewModel.chapterKey.collectAsState()
+    val lazyColumnState = rememberLazyListState(
+        chapterScrollPosition?.initialFirstVisibleItemIndex ?: 0,
+        chapterScrollPosition?.initialFirstVisibleItemScrollOffset ?: 0
+    )
+
+    LaunchedEffect(chapterKey) {
+        if (chapterKey > 0) {
+            lazyColumnState.scrollToItem(0, 0)
+            chapterScrollPosition = viewModel.getChapterScrollPosition()
+        }
     }
 
     LaunchedEffect(images) {
+        calculatedImageSize.clear()
+        calculatedImageSize.addAll(getCalculatedImageSize())
         chapterImages.clear()
         chapterImages.addAll(images.mapIndexed { _, url ->
             ChapterImage(
@@ -96,47 +124,23 @@ fun ChapterImageList(
         })
     }
 
-    val lazyColumnState = rememberLazyListState(
-        chapterScrollPosition?.initialFirstVisibleItemIndex ?: 0,
-        chapterScrollPosition?.initialFirstVisibleItemScrollOffset ?: 0
-    )
-
-    val dataState by viewModel.state.collectAsState()
-    val chapterKey by viewModel.chapterKey.collectAsState()
-
-    val calculatedImageSize =
-        remember {
-            if (chapterScrollPosition?.imageSize != null && chapterScrollPosition.imageSize.size == images.size) {
-                chapterScrollPosition.imageSize
-            } else {
-                images.map {
-                    ImageSize(
-                        false, 0f, 0f
-                    )
-                }
-            }.toMutableList()
-        }
-
-    LaunchedEffect(chapterKey) {
-        if (chapterKey > 0) {
-            lazyColumnState.scrollToItem(0, 0)
-        }
-    }
-
     LaunchedEffect(dataState) {
         if (dataState.state == State.DATA) {
+            banner = AppSettings.banner()
             viewModel.saveHistory()
         }
     }
 
     LaunchedEffect(Unit) {
-        val firstVisible = chapterScrollPosition?.initialFirstVisibleItemIndex ?: 0
-        val firstVisibleOffset = chapterScrollPosition?.initialFirstVisibleItemScrollOffset ?: 0
-        if (lazyColumnState.firstVisibleItemIndex != firstVisible || lazyColumnState.firstVisibleItemScrollOffset != firstVisibleOffset) {
-            lazyColumnState.scrollToItem(
-                chapterScrollPosition?.initialFirstVisibleItemIndex ?: 0,
-                chapterScrollPosition?.initialFirstVisibleItemScrollOffset ?: 0
-            )
+        if (chapterKey == 0) {
+            val firstVisible = chapterScrollPosition?.initialFirstVisibleItemIndex ?: 0
+            val firstVisibleOffset = chapterScrollPosition?.initialFirstVisibleItemScrollOffset ?: 0
+            if (lazyColumnState.firstVisibleItemIndex != firstVisible || lazyColumnState.firstVisibleItemScrollOffset != firstVisibleOffset) {
+                lazyColumnState.scrollToItem(
+                    chapterScrollPosition?.initialFirstVisibleItemIndex ?: 0,
+                    chapterScrollPosition?.initialFirstVisibleItemScrollOffset ?: 0
+                )
+            }
         }
     }
 
@@ -308,22 +312,25 @@ fun ChapterImageList(
                         }
 
                     if (aspectRatio <= 0f || aspectRatio.isNaN()) aspectRatio = defaultAspectRatio
-                    ChapterImageView(chapterImages[idx], onDisableHardware = {
-                        val data = chapterImages[idx]
-                        data.useHardware = false
-                        chapterImages[idx] = data
-                    }, onImageSizeCalculated = { h, w ->
-                        calculatedImageSize[idx] = ImageSize(
-                            true, h, w
-                        )
-                    },
+                    ChapterImageView(
+                        chapterImages[idx], onDisableHardware = {
+                            val data = chapterImages[idx]
+                            data.useHardware = false
+                            chapterImages[idx] = data
+                        },
+                        pageNumber = idx + 1,
+                        onImageSizeCalculated = { h, w ->
+                            calculatedImageSize[idx] = ImageSize(
+                                true, h, w
+                            )
+                        },
                         defaultAspectRatio = defaultAspectRatio,
                         aspectRatio = aspectRatio,
                         screenWidthPixel = screenWidthPixel
                     )
                 }
 
-                item(key = "last") {
+                item(key = "banner") {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(banner)

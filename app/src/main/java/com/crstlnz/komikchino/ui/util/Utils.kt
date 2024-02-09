@@ -1,7 +1,10 @@
 package com.crstlnz.komikchino.ui.util
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -10,6 +13,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.graphics.Color
 import androidx.core.text.HtmlCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.util.StorageHelper
@@ -163,4 +169,30 @@ fun providerInstallerCheck(context: Activity) {
         dialog!!.setCancelable(false)
         dialog.show()
     }
+}
+
+fun hideSystemUI(context: Activity) {
+    WindowInsetsControllerCompat(context.window, context.window.decorView).let { controller ->
+        controller.hide(WindowInsetsCompat.Type.systemBars())
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    }
+}
+
+fun showSystemUI(context: Activity) {
+    WindowInsetsControllerCompat(
+        context.window,
+        context.window.decorView
+    ).show(WindowInsetsCompat.Type.systemBars())
+}
+
+fun Context.getActivity(): ComponentActivity? {
+    var currentContext = this
+    while (currentContext is ContextWrapper) {
+        if (currentContext is ComponentActivity) {
+            return currentContext
+        }
+        currentContext = currentContext.baseContext
+    }
+    return null
 }

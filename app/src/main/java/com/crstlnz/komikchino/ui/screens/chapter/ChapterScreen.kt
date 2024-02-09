@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.chapter
 
+import android.app.Activity
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
@@ -13,12 +14,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Refresh
@@ -58,6 +61,7 @@ import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.R
@@ -75,18 +79,22 @@ import com.crstlnz.komikchino.ui.screens.chapter.components.BottomAppBar
 import com.crstlnz.komikchino.ui.screens.chapter.components.ChapterImageList
 import com.crstlnz.komikchino.ui.theme.Blue
 import com.crstlnz.komikchino.ui.theme.WhiteGray
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.crstlnz.komikchino.ui.util.getActivity
+import com.crstlnz.komikchino.ui.util.hideSystemUI
+import com.crstlnz.komikchino.ui.util.showSystemUI
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChapterScreen(navController: NavController, chapterTitle: String) {
     val v: ChapterViewModel = hiltViewModel()
-    val systemUiController = rememberSystemUiController()
+    val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     DisposableEffect(Unit) {
         onDispose {
-            systemUiController.isSystemBarsVisible = true
+            ctx.getActivity()?.let {
+                showSystemUI(it)
+            }
         }
     }
 
@@ -109,8 +117,13 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
         var nestedScroll by remember { mutableStateOf<NestedScrollConnection>(activeNested) }
         val nonActiveNested = rememberNestedScrollInteropConnection()
         LaunchedEffect(navShow) {
-            if (systemUiController.isSystemBarsVisible != navShow) systemUiController.isSystemBarsVisible =
-                navShow
+            ctx.getActivity()?.let {
+                if (navShow) {
+                    showSystemUI(it)
+                } else {
+                    hideSystemUI(it)
+                }
+            }
             nestedScroll = if (navShow) activeNested else nonActiveNested
         }
 
@@ -120,14 +133,12 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
         }
 
         val chapterPosition by v.currentPosition.collectAsState()
-        val lazyListState = rememberLazyListState()
+        val drawerLazyListState = rememberLazyListState()
         var isFirst by remember { mutableStateOf(true) }
-
-
 
         LaunchedEffect(chapterKey) {
             if (chapterKey > 0) {
-                lazyListState.scrollToItem(chapterPosition)
+                drawerLazyListState.scrollToItem(chapterPosition)
             }
         }
 
@@ -140,7 +151,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                 LaunchedEffect(chapterList) {
                     if (chapterList.state == State.DATA) {
                         if (isFirst && chapterPosition >= 0) {
-                            lazyListState.scrollToItem(chapterPosition)
+                            drawerLazyListState.scrollToItem(chapterPosition)
                         }
                         isFirst = false
                     }
@@ -165,7 +176,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                         .fillMaxSize()
                                         .weight(1f)
                                         .statusBarsPadding(),
-                                    state = lazyListState
+                                    state = drawerLazyListState
                                 ) {
                                     items(chapters.size) {
                                         ListItem(modifier = Modifier.clickable {
@@ -227,7 +238,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                     .fillMaxSize()
             ) {
                 val dataState by v.state.collectAsState()
-                val chapterScrollPosition = remember { v.getChapterScrollPosition() }
+
                 LaunchedEffect(dataState) {
                     if (dataState is DataState.Success) {
                         title = dataState.getDataOrNull()?.title ?: ""
@@ -267,7 +278,6 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                         }
                                     }
                                 },
-                                chapterScrollPosition = chapterScrollPosition,
                                 viewModel = v
                             )
                         } else {
@@ -361,7 +371,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                         },
                         navigationIcon = {
                             IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(Icons.Filled.ArrowBack, "backIcon")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, "backIcon")
                             }
                         },
                         actions = {

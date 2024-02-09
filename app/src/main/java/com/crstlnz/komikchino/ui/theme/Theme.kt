@@ -1,13 +1,14 @@
 package com.crstlnz.komikchino.ui.theme
 
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 
 private val LightColors = lightColorScheme(
@@ -77,7 +78,7 @@ private val DarkColors = darkColorScheme(
 
 @Composable
 fun KomikChinoTheme(
-//    useDarkTheme: Boolean = isSystemInDarkTheme(),
+    context: ComponentActivity,
     useDarkTheme: Boolean = true,
     content: @Composable() () -> Unit
 ) {
@@ -89,12 +90,16 @@ fun KomikChinoTheme(
 
     val view = LocalView.current
     if (!view.isInEditMode) {
-        val systemUiController = rememberSystemUiController()
         SideEffect {
-            systemUiController.setSystemBarsColor(
-                color = Color(android.graphics.Color.TRANSPARENT),
-//                darkIcons = !useDarkTheme
-                darkIcons = false
+            context.enableEdgeToEdge(
+                statusBarStyle = SystemBarStyle.auto(
+                    android.graphics.Color.TRANSPARENT,
+                    android.graphics.Color.TRANSPARENT,
+                ) { true },
+                navigationBarStyle = SystemBarStyle.auto(
+                    android.graphics.Color.TRANSPARENT,
+                    android.graphics.Color.TRANSPARENT,
+                ) { true },
             )
         }
     }
