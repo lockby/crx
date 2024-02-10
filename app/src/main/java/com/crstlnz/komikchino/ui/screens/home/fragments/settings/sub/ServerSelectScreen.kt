@@ -3,6 +3,7 @@ package com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,9 +43,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.crstlnz.komikchino.data.api.KomikServer
+import com.crstlnz.komikchino.data.datastore.Settings
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.SettingViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -51,8 +59,17 @@ fun ServerSelectScreen(navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val serverState = v.settings.komikServer
-    val server by serverState.collectAsState(initial = KomikServer.KIRYUU)
+    val server by serverState.collectAsState(initial = null)
     var selected by remember { mutableStateOf(server) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            CoroutineScope(Dispatchers.IO).launch {
+                Settings(context).setTempHomepage(null)
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         serverState.collectLatest {
             selected = it
@@ -62,7 +79,7 @@ fun ServerSelectScreen(navController: NavController) {
         TopAppBar(
             navigationIcon = {
                 IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
             },
             title = {
@@ -71,7 +88,7 @@ fun ServerSelectScreen(navController: NavController) {
             actions = {
                 TextButton(onClick = {
                     scope.launch {
-                        v.settings.setServer(selected)
+                        selected?.let { v.settings.setServer(it) }
                         Toast.makeText(
                             context,
                             "Merestart aplikasi",
@@ -86,7 +103,7 @@ fun ServerSelectScreen(navController: NavController) {
                         Runtime.getRuntime().exit(0)
                     }
 
-                }, enabled = server != selected) {
+                }, enabled = selected != null && server != selected) {
                     Text("SAVE")
                 }
             }
@@ -95,7 +112,7 @@ fun ServerSelectScreen(navController: NavController) {
         val uriHandler = LocalUriHandler.current
         Surface(Modifier.padding(it)) {
             val serverList =
-                remember { KomikServer.values().sortedBy { server -> server.title } }
+                remember { KomikServer.entries.sortedBy { server -> server.title } }
             LazyColumn(Modifier.fillMaxSize()) {
                 items(serverList.size, key = { idx -> serverList[idx].value }) {
                     ListItem(

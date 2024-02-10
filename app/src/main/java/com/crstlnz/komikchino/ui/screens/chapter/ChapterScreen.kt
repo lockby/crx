@@ -57,7 +57,9 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -393,6 +395,17 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                 }
                             }) {
                                 Icon(Icons.Outlined.Info, "backIcon")
+                            }
+                            val uriHandler = LocalUriHandler.current
+                            IconButton(modifier = Modifier.padding(end = 5.dp), onClick = {
+                                v.getChapterURL()?.let {
+                                    uriHandler.openUri(it)
+                                }
+                            }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.open_in_browser),
+                                    "Open in browser"
+                                )
                             }
                         }
                     )

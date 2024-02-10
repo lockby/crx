@@ -1,12 +1,14 @@
 package com.crstlnz.komikchino.ui.screens
 
 import android.annotation.SuppressLint
+import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.WebView
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,7 +43,7 @@ import kotlin.random.Random
 @Composable
 fun UnblockCloudflare(
     navController: NavHostController,
-    defaultUrl: String,
+    url: String,
     defaultTitle: String? = null,
     onBackPressed: () -> Unit
 ) {
@@ -50,8 +52,9 @@ fun UnblockCloudflare(
     val context = LocalContext.current
     var isBack = remember { false }
 
-    val url = AppSettings.cloudflareState.value.url ?: defaultUrl
+//    val url = AppSettings.cloudflareState.value.url ?: defaultUrl
 
+    Log.d("UNBLOCK CLOUDFLARE", url)
     fun back() {
         if (!isBack) {
             isBack = true
@@ -125,7 +128,7 @@ fun UnblockCloudflare(
                 navigationIcon = {
                     IconButton(onClick = { onBackPressed() }) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.go_back)
                         )
                     }

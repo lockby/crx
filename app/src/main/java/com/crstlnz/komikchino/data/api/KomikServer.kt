@@ -30,7 +30,7 @@ enum class KomikServer(
     VOIDSCANS("Void Scans", "voidscans", "https://void-scans.com/", true, Bahasa.ENGLISH),
     MANHWALIST("Manhwalist", "manhwalist", "https://manhwalist.com/", true),
     MIRRORKOMIK("MirrorKomik", "mirrorkomik", "https://mirrorkomik.net/", false, Bahasa.INDONESIA),
-    COSMICSCANS("Cosmic Scans", "cosmicscans", "https://cosmic-scans.com/", true, Bahasa.ENGLISH),
+    COSMICSCANS("Cosmic Scans", "cosmicscans", "https://cosmicscans.com/", true, Bahasa.ENGLISH),
     COSMICSCANSINDO("Cosmic Scans Indo", "cosmicscansindo", "https://cosmicscans.id/", true, Bahasa.INDONESIA),
     KOMIKUID("Komiku Id", "komikuid", "https://komiku.id/", false, Bahasa.INDONESIA, false)
 }

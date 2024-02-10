@@ -2,6 +2,7 @@ package com.crstlnz.komikchino.data.api.source
 
 import android.content.Context
 import com.crstlnz.komikchino.data.api.KomikClient
+import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterApi
@@ -35,7 +36,7 @@ import retrofit2.Response
 
 class MirrorKomik(context: Context) : ScraperBase {
     private val api = KomikClient.getMirrorKomikClient()
-    private val DIVIDER = ";"
+    private val DIVIDER = "@!*!@"
     private val CACHE_KEY = "mirrorkomik-genres"
     private val USERNAME = "cocotmu"
     private val PASSWORD = "caricolor123"
@@ -46,6 +47,17 @@ class MirrorKomik(context: Context) : ScraperBase {
             .constructParametricType(List::class.java, Genre::class.java),
         86400000L
     )
+
+    override fun getChapterUrl(slug: String): String {
+        return "${KomikServer.MIRRORKOMIK.url}chapter/$slug"
+    }
+
+    override fun getChapterUrlById(id: String): String {
+        return getChapterUrl(id)
+    }
+    override fun getDetailKomikUrl(slug: String): String {
+        return "${KomikServer.MIRRORKOMIK.url}${slug.replace(DIVIDER, "/")}"
+    }
 
     private fun generateSlug(url: String): String {
         return url.trim("/".single()).replace("/", DIVIDER)

@@ -7,6 +7,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
+import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
@@ -29,7 +30,6 @@ import com.crstlnz.komikchino.ui.screens.home.fragments.settings.sub.checkupdate
 import com.crstlnz.komikchino.ui.screens.komikdetail.KomikScreen
 import com.crstlnz.komikchino.ui.screens.permissions.WriteExternalStorageScreen
 import com.crstlnz.komikchino.ui.screens.search.SearchScreen
-import com.google.accompanist.navigation.animation.composable
 import java.net.URLDecoder
 import java.net.URLEncoder
 
@@ -241,7 +241,6 @@ object MainNavigation {
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
     composable(
         MainNavigation.HOME,
@@ -298,7 +297,6 @@ fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
     composable(
         "${MainNavigation.WEBVIEW}/{title}/{url}"
     ) {
-        val context = LocalContext.current
         CommentScreen(
             URLDecoder.decode(it.arguments?.getString("url") ?: "", "UTF-8"),
             it.arguments?.getString("title") ?: "",

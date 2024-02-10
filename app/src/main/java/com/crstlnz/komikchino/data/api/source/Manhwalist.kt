@@ -2,6 +2,7 @@ package com.crstlnz.komikchino.data.api.source
 
 import android.util.Log
 import com.crstlnz.komikchino.data.api.KomikClient
+import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterApi
@@ -32,6 +33,18 @@ import java.util.regex.Pattern
 
 class Manhwalist : ScraperBase {
     private val api = KomikClient.getManhwalistClient()
+
+    override fun getChapterUrl(slug: String): String {
+        return "${KomikServer.MANHWALIST.url}$slug"
+    }
+
+    override fun getChapterUrlById(id: String): String {
+        return getChapterUrl(id)
+    }
+
+    override fun getDetailKomikUrl(slug: String): String {
+        return "${KomikServer.MANHWALIST.url}manga/$slug"
+    }
 
     private fun extractNumericValue(title: String): Int {
         val numericRegex = Regex("\\d+")
@@ -84,7 +97,8 @@ class Manhwalist : ScraperBase {
                     url = url,
                     description = "Tak ade deskripsi budak ni",
                     genreLink = genreLinkList,
-                    type = featured.selectFirst(".limit .type")?.classNames()?.toList()?.getOrNull(1)
+                    type = featured.selectFirst(".limit .type")?.classNames()?.toList()
+                        ?.getOrNull(1)
                         ?.toString() ?: "",
                     img = featured.selectFirst(".limit img")?.attr("src") ?: "",
                     slug = getLastPathSegment(url) ?: "",
@@ -365,7 +379,7 @@ class Manhwalist : ScraperBase {
             mangaId = matcher.group(1)?.toString() ?: ""
         }
 
-        Log.d("MANGA ID", mangaId )
+        Log.d("MANGA ID", mangaId)
         val mangaSlug =
             getLastPathSegment(document.selectFirst(".allc a")?.attr("href") ?: "") ?: ""
         return ChapterApi(

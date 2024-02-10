@@ -1,6 +1,8 @@
 package com.crstlnz.komikchino.data.api.source
 
+import android.util.Log
 import com.crstlnz.komikchino.data.api.KomikClient
+import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterApi
@@ -30,6 +32,19 @@ import java.util.regex.Pattern
 
 class CosmicScans : ScraperBase {
     private val api = KomikClient.getCosmicScansClient()
+
+    override fun getChapterUrl(slug: String): String {
+        return "${KomikServer.COSMICSCANS.url}$slug"
+    }
+
+    override fun getChapterUrlById(id: String): String {
+        return getChapterUrl(id)
+    }
+
+    override fun getDetailKomikUrl(slug: String): String {
+        return "${KomikServer.COSMICSCANS.url}manga/$slug"
+    }
+
     override suspend fun getHome(): HomeData {
         val body = api.getHome()
         val document = Jsoup.parse(body.string())

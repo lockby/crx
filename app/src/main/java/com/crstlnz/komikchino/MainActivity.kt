@@ -80,17 +80,7 @@ var LocalSystemBarPadding = compositionLocalOf {
 
 private lateinit var firebaseAnalytics: FirebaseAnalytics
 
-class UrlLoggingInterceptor : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val request: Request = chain.request()
-        val url = request.url.toString()
-        println("Request URL: $url")
-        return chain.proceed(request)
-    }
-}
-
 private const val ERROR_DIALOG_REQUEST_CODE = 1
-const val MAX_BITMAP_SIZE = 100 * 1024 * 1024 // 100 MB
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity(), ProviderInstaller.ProviderInstallListener {
@@ -103,8 +93,8 @@ class MainActivity : ComponentActivity(), ProviderInstaller.ProviderInstallListe
 
     @SuppressLint("InternalInsetResource", "DiscouragedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
+//        ProviderInstaller.installIfNeededAsync(this, this)
         Security.insertProviderAt(Conscrypt.newProvider(), 1);
-        ProviderInstaller.installIfNeededAsync(this, this)
         super.onCreate(savedInstanceState)
         AppSettings.homepage = homepage
         // Cookie -> HttpClient -> ImageLoader

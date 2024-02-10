@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.komikdetail
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -68,6 +69,13 @@ class KomikViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun getKomikUrl(): String? {
+        if (slug.isNotEmpty()) {
+            return api.getDetailKomikUrl(slug)
+        }
+        return null
     }
 
     override suspend fun fetchData(): KomikDetail {

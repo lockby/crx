@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.home.fragments.home
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,6 +21,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
@@ -32,6 +35,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -78,8 +82,6 @@ import com.crstlnz.komikchino.ui.theme.Yellow
 import com.crstlnz.komikchino.ui.util.defaultPlaceholder
 import com.crstlnz.komikchino.ui.util.getComicTypeColor
 import com.crstlnz.komikchino.ui.util.lightenColor
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
@@ -123,6 +125,7 @@ fun HomeFragment(navController: NavController) {
                 Spacer(modifier = Modifier.width(5.dp))
             },
         )
+
         Box(
             Modifier
                 .weight(1f)
@@ -137,15 +140,11 @@ fun HomeFragment(navController: NavController) {
                                 MainNavigation.toKomik(navController, title, slug)
                             }, 4
                         )
-                        sectionView(
-                            data.sections,
-                            { title, slug ->
-                                MainNavigation.toKomik(navController, title, slug)
-                            },
-                            { title, slug ->
-                                MainNavigation.toChapter(navController, slug, title)
-                            }
-                        )
+                        sectionView(data.sections, { title, slug ->
+                            MainNavigation.toKomik(navController, title, slug)
+                        }, { title, slug ->
+                            MainNavigation.toChapter(navController, slug, title)
+                        })
                     }
 
                     State.ERROR -> {
@@ -302,42 +301,31 @@ fun LazyListScope.komikLoading() {
 
 }
 
-
 fun LazyListScope.featuredView(
     featureds: List<FeaturedComic>,
     onKomikClick: (title: String, slug: String) -> Unit = { _, _ -> },
     autoScrollSecond: Long = 0
 ) {
     item {
-        val pagerState = rememberPagerState(initialPage = Int.MAX_VALUE / 2)
+        val pagerState =
+            rememberPagerState(initialPage = Int.MAX_VALUE / 2, pageCount = { Int.MAX_VALUE })
         var elapsedTime by remember { mutableIntStateOf(0) }
-        LaunchedEffect(true) {
-            if (autoScrollSecond > 0) {
-                while (true) {
-                    delay(1000)
-                    elapsedTime += 1000
-                    if (elapsedTime / 1000 > autoScrollSecond) {
-                        elapsedTime = 0
-                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
+
+        if (featureds.isNotEmpty()) {
+            LaunchedEffect(true) {
+                if (autoScrollSecond > 0) {
+                    while (true) {
+                        delay(1000)
+                        elapsedTime += 1000
+                        if (elapsedTime / 1000 > autoScrollSecond) {
+                            elapsedTime = 0
+                            pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                        }
                     }
                 }
             }
-        }
-        if (featureds.isNotEmpty()) {
-            Modifier.nestedScroll(remember {
-                object : NestedScrollConnection {
-                    override fun onPostScroll(
-                        consumed: Offset, available: Offset, source: NestedScrollSource
-                    ): Offset {
-                        elapsedTime = 0
-                        return Offset.Zero
-                    }
-                }
-            })
             HorizontalPager(
-                count = Int.MAX_VALUE,
-                state = pagerState,
-                modifier = Modifier.nestedScroll(remember {
+                state = pagerState, modifier = Modifier.nestedScroll(remember {
                     object : NestedScrollConnection {
                         override fun onPostScroll(
                             consumed: Offset, available: Offset, source: NestedScrollSource
@@ -381,7 +369,8 @@ fun LazyListScope.featuredView(
                     Column(
                         Modifier
                             .padding(15.dp)
-                            .fillMaxSize(), verticalArrangement = Arrangement.Bottom
+                            .fillMaxSize(),
+                        verticalArrangement = Arrangement.Bottom
                     ) {
                         Text(
                             featureds[it].title,
@@ -503,7 +492,7 @@ fun LazyListScope.sectionView(
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    if (section.title.isEmpty()) "Data not found!" else section.title,
+                    section.title.ifEmpty { "Data not found!" },
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
             }

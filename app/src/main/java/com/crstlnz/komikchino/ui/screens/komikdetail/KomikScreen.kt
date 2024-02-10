@@ -16,11 +16,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -60,6 +62,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -106,7 +109,6 @@ fun KomikScreen(
     val imageHeight = screenWidth * 7f / 16f + 64.px
     val overscroll = LocalOverscrollConfiguration.current
     val context = LocalContext.current
-
     var progress: Float by remember { mutableFloatStateOf(0f) }
     val scrollState = rememberScrollState()
     LaunchedEffect(scrollState) {
@@ -125,7 +127,7 @@ fun KomikScreen(
         Surface(
             Modifier.padding(it)
         ) {
-            val pagerState = com.google.accompanist.pager.rememberPagerState(initialPage = 0)
+
             val tabItems: List<TabRowItem> = arrayListOf(TabRowItem(title = "Informasi", screen = {
                 DetailScreen(komikDetail = (dataState as DataState.Success).data,
                     onKomikClick = { title, slug ->
@@ -165,6 +167,10 @@ fun KomikScreen(
                 }
             })
             )
+
+            val pagerState =
+                rememberPagerState(initialPage = 0, pageCount = { tabItems.size })
+
             CompositionLocalProvider(
                 LocalOverscrollConfiguration provides null
             ) {
@@ -182,28 +188,26 @@ fun KomikScreen(
                             modifier = Modifier
                                 .padding(top = LocalStatusBarPadding.current)
                                 .fillMaxWidth(),
-//                            .height(60.dp),
-//                        backgroundColor = Color.Transparent,
                             navigationIcon = {
                                 IconButton(onClick = { navController.popBackStack() }) {
-                                    Icon(Icons.Filled.ArrowBack, "backIcon")
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "backIcon")
                                 }
                             },
                             actions = {
                                 IconButton(
                                     enabled = AppSettings.komikServer!!.haveComment,
                                     onClick = {
-                                    val komik = dataState.getDataOrNull()
-                                    if (komik != null) {
-                                        MainNavigation.toCommentView(
-                                            navController,
-                                            slug = komik.disqusConfig?.identifier ?: komik.slug,
-                                            title = komik.title,
-                                            url = komik.disqusConfig?.url ?: komik.url,
-                                            type = ContentType.MANGA
-                                        )
-                                    }
-                                }) {
+                                        val komik = dataState.getDataOrNull()
+                                        if (komik != null) {
+                                            MainNavigation.toCommentView(
+                                                navController,
+                                                slug = komik.disqusConfig?.identifier ?: komik.slug,
+                                                title = komik.title,
+                                                url = komik.disqusConfig?.url ?: komik.url,
+                                                type = ContentType.MANGA
+                                            )
+                                        }
+                                    }) {
                                     Icon(
                                         painter = painterResource(id = R.drawable.chat),
                                         contentDescription = "Comments",
@@ -222,6 +226,18 @@ fun KomikScreen(
                                             contentDescription = "Favorite"
                                         )
                                     }
+                                }
+
+                                val uriHandler = LocalUriHandler.current
+                                IconButton(modifier = Modifier.padding(end = 5.dp), onClick = {
+                                    v.getKomikUrl()?.let { url ->
+                                        uriHandler.openUri(url)
+                                    }
+                                }) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.open_in_browser),
+                                        "Open in browser"
+                                    )
                                 }
                             },
                         )
@@ -286,6 +302,7 @@ fun KomikScreen(
                             )
                         }
                         Spacer(modifier = Modifier.height(1.dp))
+
                         Column(Modifier.height(screenHeight.dp)) {
                             TabRow(
                                 selectedTabIndex = pagerState.currentPage
@@ -304,13 +321,10 @@ fun KomikScreen(
                                 }
                             }
 
-
-
                             CompositionLocalProvider(
                                 LocalOverscrollConfiguration provides overscroll,
                             ) {
-                                com.google.accompanist.pager.HorizontalPager(
-                                    count = tabItems.size,
+                                HorizontalPager(
                                     verticalAlignment = Alignment.Top,
                                     state = pagerState,
                                     modifier = Modifier

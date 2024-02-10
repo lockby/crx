@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.chapter
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -242,6 +243,16 @@ class ChapterViewModel @Inject constructor(
             )
         }
 
+    }
+
+    fun getChapterURL(): String? {
+        return if (id.isNotEmpty()) {
+            api.getChapterUrlById(id)
+        } else if (slug.isNotEmpty()) {
+            api.getChapterUrl(slug)
+        } else {
+            null
+        }
     }
 
     override suspend fun fetchData(): ChapterData {

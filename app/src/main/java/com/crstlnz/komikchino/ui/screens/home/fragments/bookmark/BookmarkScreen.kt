@@ -14,8 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,8 +59,6 @@ import com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.fragments.Favor
 import com.crstlnz.komikchino.ui.screens.home.fragments.bookmark.fragments.RecentView
 import com.crstlnz.komikchino.ui.theme.Red
 import com.crstlnz.komikchino.ui.theme.WhiteGray
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
@@ -66,25 +67,27 @@ import kotlinx.coroutines.launch
 fun BookmarkScreen(navController: NavController) {
     val viewModel = hiltViewModel<BookmarkViewModel>()
 
-    val tabItems: List<TabRowItem> = arrayListOf(TabRowItem(title = "Recent", screen = { id ->
-        RecentView(viewModel, onKomikClick = {
-            MainNavigation.toKomik(navController, it.title, it.slug)
-        }, onChapterClick = { komik, chapter ->
-            MainNavigation.toChapter(
-                navController,
-                chapterId = chapter.id,
-                chapter.title,
-                komik,
-            )
-        }, pageId = id
-        )
-    }), TabRowItem(title = "Favorites", screen = { id ->
-        FavoriteView(
-            viewModel, onKomikClick = {
+    val tabItems: List<TabRowItem> = arrayListOf(
+        TabRowItem(title = "Recent", screen = { id ->
+            RecentView(viewModel, onKomikClick = {
                 MainNavigation.toKomik(navController, it.title, it.slug)
+            }, onChapterClick = { komik, chapter ->
+                MainNavigation.toChapter(
+                    navController,
+                    chapterId = chapter.id,
+                    chapter.title,
+                    komik,
+                )
             }, pageId = id
-        )
-    }),
+            )
+        }),
+        TabRowItem(title = "Favorites", screen = { id ->
+            FavoriteView(
+                viewModel, onKomikClick = {
+                    MainNavigation.toKomik(navController, it.title, it.slug)
+                }, pageId = id
+            )
+        }),
 //        TabRowItem(title = "Download", screen = { id ->
 //        DownloadView(
 //            viewModel,
@@ -99,7 +102,7 @@ fun BookmarkScreen(navController: NavController) {
 //    })
     )
 
-    val pagerState = rememberPagerState()
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { tabItems.size })
     var pageId by remember { mutableStateOf("0") }
 
     LaunchedEffect(pagerState) {
@@ -219,7 +222,6 @@ fun BookmarkScreen(navController: NavController) {
             }
         }
         HorizontalPager(
-            count = tabItems.size,
             modifier = Modifier.weight(1f),
             state = pagerState,
             verticalAlignment = Alignment.Top,
@@ -233,7 +235,7 @@ fun BookmarkScreen(navController: NavController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeleteDialog(viewModel: BookmarkViewModel, pageId: String, onDismiss: () -> Unit) {
-    AlertDialog(onDismissRequest = {
+    BasicAlertDialog(onDismissRequest = {
         // Dismiss the dialog when the user clicks outside the dialog or on the back
         // button. If you want to disable that functionality, simply use an empty
         // onDismissRequest.

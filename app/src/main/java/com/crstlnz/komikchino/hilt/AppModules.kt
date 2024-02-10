@@ -27,7 +27,13 @@ class AppModules() {
     fun provideHomepage(settings: Settings): HomeSections {
         val server = AppSettings.homepage
         return server ?: runBlocking {
-            settings.getHomepage()
+            val temp = settings.getTempHomepage()
+            if (temp != null) {
+                settings.setTempHomepage(null)
+                temp
+            } else {
+                settings.getHomepage()
+            }
         }
     }
 

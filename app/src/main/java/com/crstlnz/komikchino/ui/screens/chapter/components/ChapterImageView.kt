@@ -40,6 +40,7 @@ import kotlin.math.ceil
 @Composable
 fun ChapterImageView(
     data: ChapterImage,
+    imageRequest: ImageRequest,
     onDisableHardware: () -> Unit = {},
     onImageSizeCalculated: (height: Float, width: Float) -> Unit = { _, _ -> },
     defaultAspectRatio: Float = 5f / 8f,
@@ -49,13 +50,15 @@ fun ChapterImageView(
 ) {
     val painter = rememberAsyncImagePainter(
         imageLoader = AppSettings.imageLoader!!,
-        model = ImageRequest.Builder(LocalContext.current).data(data.url)
-            .crossfade(true)
-            .allowHardware(data.useHardware)
-            .size(Size(screenWidthPixel, Dimension.Undefined))
-            .decoderFactory(if (SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
-            .build()
+        model = imageRequest
     )
+//    ImageRequest.Builder(LocalContext.current)
+//        .data(data.url)
+//        .crossfade(true)
+//        .allowHardware(data.useHardware)
+//        .size(Size(screenWidthPixel, Dimension.Undefined))
+//        .decoderFactory(if (SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
+//        .build()
 
     if (painter.state is AsyncImagePainter.State.Success) {
         val intrinsicSize =

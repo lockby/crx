@@ -14,6 +14,9 @@ import org.jsoup.nodes.Document
 
 interface ScraperBase {
     suspend fun getHome(): HomeData
+    fun getDetailKomikUrl(slug: String): String
+    fun getChapterUrl(slug: String): String
+    fun getChapterUrlById(id: String): String
     suspend fun search(query: String, page: Int = 1): SearchResult
     suspend fun getLatestUpdate(page: Int = 1): LatestUpdatePage
     suspend fun getDetailKomik(slug: String): KomikDetail

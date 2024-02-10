@@ -1,6 +1,7 @@
 package com.crstlnz.komikchino.data.api.source
 
 import com.crstlnz.komikchino.data.api.KomikClient
+import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterApi
@@ -28,6 +29,19 @@ import java.util.Locale
 
 class KomikuId : ScraperBase {
     private val api = KomikClient.getKomikuIdClient()
+
+    override fun getChapterUrl(slug: String): String {
+        return "${KomikServer.KOMIKUID.url}$slug"
+    }
+
+    override fun getChapterUrlById(id: String): String {
+        return getChapterUrl(id)
+    }
+
+    override fun getDetailKomikUrl(slug: String): String {
+        return "${KomikServer.KOMIKUID.url}manga/$slug"
+    }
+
     override suspend fun getHome(): HomeData {
         val body = api.getHome()
         val document = Jsoup.parse(body.string())
@@ -255,7 +269,7 @@ class KomikuId : ScraperBase {
         val body = api.search(page, query)
         val document = Jsoup.parse(body.string())
         val searchItems = arrayListOf<SearchResult.ExactMatch>()
-        val searchList = document.select(".daftar>div")
+        val searchList = document.select(".daftar > div.bge")
         for (search in searchList) {
             val url = search.selectFirst("a")?.attr("href") ?: ""
             searchItems.add(
@@ -300,7 +314,7 @@ class KomikuId : ScraperBase {
         }
 
         val searchItems = arrayListOf<KomikSearchResult>()
-        val searchList = document.select(".daftar > div")
+        val searchList = document.select(".daftar > div.bge")
         for (search in searchList) {
             val url = search.selectFirst("a")?.attr("href") ?: ""
             searchItems.add(
@@ -330,7 +344,7 @@ class KomikuId : ScraperBase {
     override suspend fun getLatestUpdate(page: Int): LatestUpdatePage {
         val body = api.getLatestKomik(page)
         val document = Jsoup.parse(body.string())
-        val latestUpdateElemets = document.select(".daftar > div")
+        val latestUpdateElemets = document.select(".daftar > div.bge")
         val latestUpdate = arrayListOf<LatestUpdate>()
 
         for (latest in latestUpdateElemets) {

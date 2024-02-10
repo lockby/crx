@@ -1,10 +1,19 @@
 package com.crstlnz.komikchino.data.model
 
+import coil.request.ImageRequest
+
 
 data class ImageSize(
     val calculated: Boolean,
     val height: Float,
     val width: Float,
+)
+
+data class ImageSizeRequest(
+    var calculated: Boolean,
+    var height: Float,
+    var width: Float,
+    var imageRequest: ImageRequest? = null
 )
 
 data class ScrollImagePosition(

@@ -23,6 +23,7 @@ class Settings @Inject constructor(
     private val SERVER = stringPreferencesKey("komik_server")
     private val HOMEPAGE = stringPreferencesKey("homepage")
     private val UPDATE_AVAILABLE = stringPreferencesKey("update_availables")
+    private val TEMP_HOMEPAGE = stringPreferencesKey("temp_homepage")
 
     val isChapterSortAscending: Flow<Boolean> = context.settings.data.map { preferences ->
         preferences[CHAPTER_SORT] ?: false
@@ -72,12 +73,10 @@ class Settings @Inject constructor(
 
     suspend fun getHomepage(): HomeSections {
         return try {
-            Log.d("ISINYA", context.settings.data.first()[HOMEPAGE].toString())
             HomeSections.getByRoute(
                 context.settings.data.first()[HOMEPAGE] ?: HomeSections.HOME.route
             ) ?: HomeSections.HOME
         } catch (e: Exception) {
-            Log.d("GET HOMEPAGE", e.stackTraceToString())
             HomeSections.HOME
         }
     }
@@ -88,7 +87,29 @@ class Settings @Inject constructor(
         }
     }
 
-    suspend fun setUpdate(state : UpdateState){
+    suspend fun getTempHomepage(): HomeSections? {
+        return try {
+            context.settings.data.first()[TEMP_HOMEPAGE]?.let {
+                HomeSections.getByRoute(
+                    it
+                )
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun setTempHomepage(homepage: HomeSections?) {
+        context.settings.edit { settings ->
+            if (homepage != null) {
+                settings[TEMP_HOMEPAGE] = homepage.route
+            } else {
+                settings.clear()
+            }
+        }
+    }
+
+    suspend fun setUpdate(state: UpdateState) {
         val mapper = jacksonObjectMapper()
         context.settings.edit { settings ->
             settings[UPDATE_AVAILABLE] = mapper.writeValueAsString(state)

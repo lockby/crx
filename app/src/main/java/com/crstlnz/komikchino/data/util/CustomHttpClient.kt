@@ -2,16 +2,40 @@ package com.crstlnz.komikchino.data.util
 
 import android.content.Context
 import android.graphics.drawable.BitmapDrawable
+import android.util.Log
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.request.ErrorResult
-import com.crstlnz.komikchino.MAX_BITMAP_SIZE
-import com.crstlnz.komikchino.UrlLoggingInterceptor
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.config.IMAGE_CACHE_PATH
 import com.crstlnz.komikchino.data.api.KomikServer
 import okhttp3.ConnectionSpec
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+
+const val MAX_BITMAP_SIZE = 100 * 1024 * 1024 // 100 MB
+
+class UrlLoggingInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request: Request = chain.request()
+        val url = request.url.toString()
+        println("Request URL: $url")
+        return chain.proceed(request)
+    }
+}
+
+//const val requests = Map<>
+
+class SameUrlBlocker : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request: Request = chain.request()
+        val url = request.url.toString()
+        println("Request URL: $url")
+        return chain.proceed(request)
+    }
+}
 
 fun getCustomHttpClient(): OkHttpClient {
 //        AppSettings.downloadDir =
@@ -35,9 +59,9 @@ fun getCustomHttpClient(): OkHttpClient {
         .followRedirects(true) // Enable automatic following of redirects
         .followSslRedirects(true)
         .cookieJar(AppSettings.cookieJar)
-        .addInterceptor(HttpErrorInterceptor())
+        .addNetworkInterceptor(UrlLoggingInterceptor())
         .addInterceptor(RequestHeaderInterceptor())
-        .addInterceptor(UrlLoggingInterceptor())
+        .addInterceptor(HttpErrorInterceptor())
         .build()
 }
 

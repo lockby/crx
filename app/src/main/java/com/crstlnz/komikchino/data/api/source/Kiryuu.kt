@@ -2,6 +2,7 @@ package com.crstlnz.komikchino.data.api.source
 
 import android.util.Log
 import com.crstlnz.komikchino.data.api.KomikClient
+import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterApi
@@ -33,14 +34,26 @@ import java.util.regex.Pattern
 
 class Kiryuu : ScraperBase {
     private val api = KomikClient.getKiryuuClient()
+    override fun getChapterUrl(slug: String): String {
+        return "${KomikServer.KIRYUU.url}$slug"
+    }
 
-    private fun getDynamicSRC(img : Element?) : String{
-        if(img !== null){
+    override fun getChapterUrlById(id: String): String {
+        return "${KomikServer.KIRYUU.url}?p=$id"
+    }
+
+    override fun getDetailKomikUrl(slug: String): String {
+        return "${KomikServer.KIRYUU.url}manga/$slug"
+    }
+
+    private fun getDynamicSRC(img: Element?): String {
+        if (img !== null) {
             val src = img.attr("src")
-            return if(!src.isNullOrEmpty()) src else img.attr("data-cfsrc")
+            return if (!src.isNullOrEmpty()) src else img.attr("data-cfsrc")
         }
         return ""
     }
+
     override suspend fun getHome(): HomeData {
         val document = fetch {
             api.getHome()
