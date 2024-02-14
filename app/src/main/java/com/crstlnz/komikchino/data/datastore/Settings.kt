@@ -104,7 +104,7 @@ class Settings @Inject constructor(
             if (homepage != null) {
                 settings[TEMP_HOMEPAGE] = homepage.route
             } else {
-                settings.clear()
+                settings.remove(TEMP_HOMEPAGE)
             }
         }
     }

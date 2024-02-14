@@ -11,14 +11,17 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -36,11 +39,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -49,6 +58,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import coil.compose.AsyncImage
@@ -76,6 +86,9 @@ import com.crstlnz.komikchino.ui.components.customswipe.rememberCustomSwipeRefre
 import com.crstlnz.komikchino.ui.screens.chapter.ChapterViewModel
 import com.crstlnz.komikchino.ui.theme.Black1
 import com.crstlnz.komikchino.ui.util.ComposableLifecycle
+import com.crstlnz.komikchino.ui.util.customZoomable
+import com.crstlnz.komikchino.ui.util.tapToZoomVertical
+import kotlinx.coroutines.launch
 import net.engawapg.lib.zoomable.ScrollGesturePropagation
 import net.engawapg.lib.zoomable.rememberZoomState
 import net.engawapg.lib.zoomable.toggleScale
@@ -196,7 +209,6 @@ fun ChapterImageList(
             onRefresh = {
                 onNextClick()
             }) {
-            val interactionSource = remember { MutableInteractionSource() }
 //            var isMultipleTouch by remember { mutableStateOf(false) }
 //            var scale by remember { mutableStateOf(1f) }
 //            var rotation by remember { mutableStateOf(0f) }
@@ -221,181 +233,236 @@ fun ChapterImageList(
             val localConfig = LocalConfiguration.current
             val height = remember { with(density) { localConfig.screenHeightDp.dp.toPx() } }
             val width = remember { with(density) { localConfig.screenWidthDp.dp.toPx() } }
+//            val zoomState = rememberZoomState(
+//                contentSize = androidx.compose.ui.geometry.Size(
+//                    width,
+//                    height
+//                )
+//            )
+
+//            Box(
+//                Modifier
+//                    .weight(1f)
+//                    .zoomable(
+//                        zoomState,
+//                        scrollGesturePropagation = ScrollGesturePropagation.ContentEdge,
+////                        onTap = {
+////                            onNavChange(null)
+////                        }
+//                    )
+//            ) {
+//            val lazyState = rememberLazyListState()
+            val VerticalScrollConsumer = object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource) =
+                    available.copy(x = 0f)
+
+                override suspend fun onPreFling(available: Velocity) = available.copy(x = 0f)
+            }
+//            BoxWithConstraints(
+//                Modifier
+//                    .weight(1f)
+//                    .fillMaxSize(),
+//                contentAlignment = Alignment.TopCenter
+//            ) {
+
             val zoomState = rememberZoomState(
                 contentSize = androidx.compose.ui.geometry.Size(
                     width,
                     height
                 )
             )
+            val interactionSource = remember { MutableInteractionSource() }
+            val scope = rememberCoroutineScope()
+            LazyColumn(
+                modifier
+//                        .fillMaxWidth()
+                    .fillMaxSize()
+//                    .nestedScroll(VerticalScrollConsumer)
+                    .zoomable(zoomState)
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = {
+                                onNavChange(null)
+                            },
+                            onDoubleTap = { tapOffset ->
+                                scope.launch {
+                                    zoomState.toggleScale(2f, tapOffset)
+                                }
+                            }
+                        )
+                    },
+//                        .tapToZoomVertical(constraints, lazyColumnState),
+                state = lazyColumnState,
+//                    .clickable(
+//                        interactionSource = interactionSource,
+//                        indication = null
+//                    ) {
+//                        onNavChange(null)
+//                    }
+//                        .fillMaxHeight()
 
-            Box(
-                Modifier
-                    .weight(1f)
-                    .zoomable(
-                        zoomState,
-                        scrollGesturePropagation = ScrollGesturePropagation.ContentEdge,
-                        onTap = {
-                            onNavChange(null)
-                        }
-                    )
-            ) {
-                LazyColumn(
-                    modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight(),
-//                        .clickable(
-//                            interactionSource = interactionSource,
-//                            indication = null
-//                        ) {
-//                            onNavChange(null)
-//                        },
+//                        .customZoomable(),
+//                    .zoomable(
+//                        zoomState,
+//                        scrollGesturePropagation = ScrollGesturePropagation.ContentEdge,
+////                        onTap = {
+////                            onNavChange(null)
+////                        }
+//                    ),
 //                    .combinedClickable(
 //                        interactionSource = interactionSource,
 //                        indication = null
 //                    ) {
 //                        onNavChange(null)
 //                    },
-                    state = lazyColumnState,
 //                userScrollEnabled = !isMultipleTouch
-                ) {
-                    item(key = "first") {
-                        Box(
-                            Modifier
-                                .aspectRatio(4f / 3f)
-                                .fillMaxWidth()
-                                .background(White),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.app_icon),
-                                        contentDescription = "App Icon",
-                                        modifier = Modifier.size(38.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        "Komik Chino",
-                                        color = Black1,
-                                        fontFamily = nunito,
-                                        style = MaterialTheme.typography.headlineMedium.copy(
-                                            fontWeight = FontWeight.Black
-                                        )
-                                    )
-                                    Spacer(Modifier.width(5.dp))
-                                }
-                                Spacer(Modifier.height(25.dp))
+            ) {
+                item(key = "first") {
+                    Box(
+                        Modifier
+                            .aspectRatio(4f / 3f)
+                            .fillMaxWidth()
+                            .background(White),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.app_icon),
+                                    contentDescription = "App Icon",
+                                    modifier = Modifier.size(38.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
-                                    "${viewModel.komikData?.title ?: dataState.getDataOrNull()?.komik?.title}",
+                                    "Komik Chino",
+                                    color = Black1,
                                     fontFamily = nunito,
-                                    textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        color = Black1.copy(alpha = 0.7f),
-                                        fontWeight = FontWeight.Bold
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontWeight = FontWeight.Black
                                     )
                                 )
-                                Spacer(Modifier.height(8.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .height(2.2.dp)
-                                        .width(6.dp)
-                                        .background(
-                                            color = Black1.copy(alpha = 0.3f),
-                                            shape = RoundedCornerShape(8.dp)
-                                        )
-                                )
-                                Spacer(Modifier.height(6.5.dp))
-                                Text(
-                                    dataState.getDataOrNull()?.title ?: "",
-                                    fontFamily = nunito,
-                                    textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Black1.copy(alpha = 0.55f),
-                                    )
-                                )
+                                Spacer(Modifier.width(5.dp))
                             }
+                            Spacer(Modifier.height(25.dp))
+                            Text(
+                                "${viewModel.komikData?.title ?: dataState.getDataOrNull()?.komik?.title}",
+                                fontFamily = nunito,
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    color = Black1.copy(alpha = 0.7f),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .height(2.2.dp)
+                                    .width(6.dp)
+                                    .background(
+                                        color = Black1.copy(alpha = 0.3f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                            )
+                            Spacer(Modifier.height(6.5.dp))
+                            Text(
+                                dataState.getDataOrNull()?.title ?: "",
+                                fontFamily = nunito,
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Black1.copy(alpha = 0.55f),
+                                )
+                            )
                         }
                     }
+                }
 
-                    items(
-                        chapterImages.size,
-                        key = { chapterImages[it].key },
-                        contentType = { ChapterImage::class.java }
-                    ) { idx ->
-                        for (i in 0..PRELOAD_COUNT) {
-                            val index = idx + i
-                            val image = chapterImages.getOrNull(index)
-                            if (image != null) {
-                                val imgReq = ImageRequest.Builder(LocalContext.current)
-                                    .data(image.url)
-                                    .crossfade(true)
-                                    .allowHardware(image.useHardware)
-                                    .size(Size(screenWidthPixel, Dimension.Undefined))
-                                    .decoderFactory(if (SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
-                                    .build()
-                                calculatedImageSize.getOrNull(index)?.let {
-                                    it.imageRequest = imgReq
+                items(
+                    chapterImages.size,
+                    key = { chapterImages[it].key },
+                    contentType = { ChapterImage::class.java }
+                ) { idx ->
+                    for (i in 0..PRELOAD_COUNT) {
+                        val index = idx + i
+                        val image = chapterImages.getOrNull(index)
+                        if (image != null) {
+                            val imgSizeReq = calculatedImageSize.getOrNull(index)
+                            if (imgSizeReq?.imageRequest != null) continue
+                            val imgReq = ImageRequest.Builder(LocalContext.current)
+                                .data(image.url)
+                                // Disable reading from/writing to the memory cache.
+                                .memoryCachePolicy(CachePolicy.DISABLED)
+                                // Set a custom `Decoder.Factory` that skips the decoding step.
+                                .decoderFactory { _, _, _ ->
+                                    Decoder { DecodeResult(ColorDrawable(Color.BLACK), false) }
                                 }
+                                .build()
 
-                                AppSettings.imageLoader?.enqueue(
-                                    imgReq
-                                )
+                            imgSizeReq?.let {
+                                it.imageRequest = imgReq
                             }
-                        }
 
-                        val imageSizeRequest = calculatedImageSize.getOrNull(idx)
-                        if (imageSizeRequest != null) {
-                            var aspectRatio =
-                                if (imageSizeRequest.calculated && imageSizeRequest.height > 0f && imageSizeRequest.width > 0f) {
-                                    imageSizeRequest.width / imageSizeRequest.height
-                                } else {
-                                    defaultAspectRatio
-                                }
+                            imgReq.lifecycle
 
-                            if (aspectRatio <= 0f || aspectRatio.isNaN()) aspectRatio =
-                                defaultAspectRatio
-                            ChapterImageView(
-                                chapterImages[idx], onDisableHardware = {
-                                    val data = chapterImages[idx]
-                                    data.useHardware = false
-                                    chapterImages[idx] = data
-                                },
-                                pageNumber = idx + 1,
-                                onImageSizeCalculated = { h, w ->
-                                    calculatedImageSize.getOrNull(idx)?.let {
-                                        it.height = h
-                                        it.width = w
-                                    }
-                                },
-                                defaultAspectRatio = defaultAspectRatio,
-                                aspectRatio = aspectRatio,
-                                screenWidthPixel = screenWidthPixel,
-                                imageRequest = imageSizeRequest.imageRequest!!
+                            AppSettings.imageLoader?.enqueue(
+                                imgReq
                             )
                         }
                     }
 
-                    item(key = "banner") {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(banner)
-                                .crossfade(true)
-                                .networkCachePolicy(CachePolicy.ENABLED)
-                                .diskCachePolicy(CachePolicy.DISABLED)
-                                .memoryCachePolicy(CachePolicy.ENABLED)
-                                .build(),
-                            contentDescription = "Banner",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .background(color = White)
-                                .fillMaxWidth()
-                                .aspectRatio(16f / 25f)
+                    val imageSizeRequest = calculatedImageSize.getOrNull(idx)
+                    if (imageSizeRequest != null) {
+                        var aspectRatio =
+                            if (imageSizeRequest.calculated && imageSizeRequest.height > 0f && imageSizeRequest.width > 0f) {
+                                imageSizeRequest.width / imageSizeRequest.height
+                            } else {
+                                defaultAspectRatio
+                            }
+
+                        if (aspectRatio <= 0f || aspectRatio.isNaN()) aspectRatio =
+                            defaultAspectRatio
+                        ChapterImageView(
+                            chapterImages[idx],
+                            onDisableHardware = {
+                                val data = chapterImages[idx]
+                                data.useHardware = false
+                                chapterImages[idx] = data
+                            },
+                            pageNumber = idx + 1,
+                            onImageSizeCalculated = { h, w ->
+                                calculatedImageSize.getOrNull(idx)?.let {
+                                    it.height = h
+                                    it.width = w
+                                }
+                            },
+                            defaultAspectRatio = defaultAspectRatio,
+                            aspectRatio = aspectRatio,
+                            screenWidthPixel = screenWidthPixel,
                         )
                     }
                 }
-            }
 
+                item(key = "banner") {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(banner)
+                            .crossfade(true)
+                            .networkCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.DISABLED)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .build(),
+                        contentDescription = "Banner",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .background(color = White)
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 25f)
+                    )
+                }
+//                }
+            }
         }
+
+//        }
     }
 }

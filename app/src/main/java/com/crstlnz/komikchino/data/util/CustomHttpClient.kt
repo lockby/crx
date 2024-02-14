@@ -2,10 +2,16 @@ package com.crstlnz.komikchino.data.util
 
 import android.content.Context
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.util.Log
+import android.util.LruCache
 import coil.ImageLoader
+import coil.decode.DataSource
 import coil.disk.DiskCache
+import coil.memory.MemoryCache
 import coil.request.ErrorResult
+import coil.request.ImageResult
+import coil.request.SuccessResult
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.config.IMAGE_CACHE_PATH
 import com.crstlnz.komikchino.data.api.KomikServer
@@ -59,15 +65,36 @@ fun getCustomHttpClient(): OkHttpClient {
         .followRedirects(true) // Enable automatic following of redirects
         .followSslRedirects(true)
         .cookieJar(AppSettings.cookieJar)
-        .addNetworkInterceptor(UrlLoggingInterceptor())
+        .addInterceptor(UrlLoggingInterceptor())
         .addInterceptor(RequestHeaderInterceptor())
         .addInterceptor(HttpErrorInterceptor())
         .build()
 }
 
+class CustomCacheCoil(
+    private val cache: LruCache<String, Drawable>
+) : coil.intercept.Interceptor {
+
+    override suspend fun intercept(chain: coil.intercept.Interceptor.Chain): ImageResult {
+        val value = cache.get(chain.request.data.toString())
+        if (value != null) {
+            return SuccessResult(
+                drawable = value,
+                request = chain.request,
+                dataSource = DataSource.MEMORY_CACHE
+            )
+        }
+        return chain.proceed(chain.request)
+    }
+}
+
+val cache = LruCache<String, Drawable>(100)
 fun getImageLoader(context: Context): ImageLoader {
     return ImageLoader
         .Builder(context)
+        .components {
+            add(CustomCacheCoil(cache))
+        }
         .okHttpClient(getImageClient(AppSettings.komikServer!!))
         .components {
             add { chain ->
@@ -83,15 +110,20 @@ fun getImageLoader(context: Context): ImageLoader {
                 } else {
                     result
                 }
-
             }
+        }
+        .memoryCache {
+            MemoryCache.Builder(context)
+                .maxSizePercent(0.4)
+                .build()
         }
         .diskCache {
             DiskCache.Builder()
                 .directory(context.cacheDir.resolve(IMAGE_CACHE_PATH))
-                .maxSizePercent(0.05)
+                .maxSizePercent(0.1)
                 .build()
         }
+        .respectCacheHeaders(false)
         .build()
 }
 
