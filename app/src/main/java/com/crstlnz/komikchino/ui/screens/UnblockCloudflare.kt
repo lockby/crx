@@ -42,7 +42,7 @@ import kotlin.random.Random
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UnblockCloudflare(
-    navController: NavHostController,
+    onBack: () -> Unit,
     url: String,
     defaultTitle: String? = null,
     onBackPressed: () -> Unit
@@ -58,7 +58,7 @@ fun UnblockCloudflare(
     fun back() {
         if (!isBack) {
             isBack = true
-            navController.popBackStack()
+            onBack
         }
     }
 

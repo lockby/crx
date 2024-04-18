@@ -65,11 +65,12 @@ import com.crstlnz.komikchino.ui.util.OnBottomReached
 import com.crstlnz.komikchino.ui.util.noRippleClickable
 
 @OptIn(
-    ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class,
+    ExperimentalMaterialApi::class,
+    ExperimentalMaterial3Api::class,
     ExperimentalFoundationApi::class
 )
 @Composable
-fun LatestUpdateScreen(navController: NavController) {
+fun LatestUpdateScreen(navigateTo: (to: String) -> Unit) {
     val v = hiltViewModel<LatestUpdateViewModel>()
     val scrollState = rememberLazyListState()
     scrollState.OnBottomReached(2) {
@@ -103,7 +104,7 @@ fun LatestUpdateScreen(navController: NavController) {
             actions = {
                 IconButton(
                     onClick = {
-                        navController.navigate(MainNavigation.SEARCH)
+                        navigateTo(MainNavigation.SEARCH)
                     },
                 ) {
                     Icon(
@@ -135,8 +136,7 @@ fun LatestUpdateScreen(navController: NavController) {
                     val latestUpdates = filteredUpdate.result
                     if (latestUpdates.isEmpty() && dataState.getDataOrNull()?.isEmpty() == true) {
                         ErrorView(
-                            resId = R.drawable.error,
-                            message = "Tidak ada latest update!"
+                            resId = R.drawable.error, message = "Tidak ada latest update!"
                         ) {
                             v.load()
                         }
@@ -161,8 +161,7 @@ fun LatestUpdateScreen(navController: NavController) {
                                         Row(
                                             verticalAlignment = CenterVertically,
                                             modifier = Modifier.padding(
-                                                horizontal = 15.dp,
-                                                vertical = 10.dp
+                                                horizontal = 15.dp, vertical = 10.dp
                                             )
                                         ) {
                                             Image(
@@ -180,7 +179,7 @@ fun LatestUpdateScreen(navController: NavController) {
                                     }
                                 }
                                 items(highlight.size) {
-                                    LatestUpdateView(highlight[it], navController)
+                                    LatestUpdateView(highlight[it], navigateTo)
                                 }
                             }
 
@@ -194,8 +193,7 @@ fun LatestUpdateScreen(navController: NavController) {
                                         Row(
                                             verticalAlignment = CenterVertically,
                                             modifier = Modifier.padding(
-                                                horizontal = 15.dp,
-                                                vertical = 10.dp
+                                                horizontal = 15.dp, vertical = 10.dp
                                             )
                                         ) {
                                             Image(
@@ -215,7 +213,7 @@ fun LatestUpdateScreen(navController: NavController) {
                             }
 
                             items(latestUpdates.size) {
-                                LatestUpdateView(latestUpdates[it], navController)
+                                LatestUpdateView(latestUpdates[it], navigateTo)
                             }
 
                             item {
@@ -223,8 +221,7 @@ fun LatestUpdateScreen(navController: NavController) {
                                     modifier = Modifier
                                         .padding(40.dp)
                                         .fillMaxWidth()
-                                        .animateContentSize(),
-                                    contentAlignment = Center
+                                        .animateContentSize(), contentAlignment = Center
                                 ) {
                                     if (infiniteState == InfiniteState.LOADING) {
                                         CircularProgressIndicator(
@@ -260,37 +257,33 @@ fun LatestUpdateScreen(navController: NavController) {
 }
 
 @Composable
-fun LatestUpdateView(data: LatestUpdate, navController: NavController) {
+fun LatestUpdateView(data: LatestUpdate, navigateTo: (to: String) -> Unit) {
     Box {
         Row(Modifier.padding(horizontal = 15.dp, vertical = 8.dp)) {
-            ImageView(
-                url = data.img,
+            ImageView(url = data.img,
                 contentDescription = data.title,
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .width(100.dp)
                     .noRippleClickable {
-                        MainNavigation.toKomik(navController, data.title, data.slug)
+                        navigateTo(MainNavigation.toKomik(data.title, data.slug))
                     }
-                    .aspectRatio(5f / 7f)
-            )
+                    .aspectRatio(5f / 7f))
             Spacer(Modifier.width(13.dp))
             Column {
-                Text(
-                    text = data.title,
+                Text(text = data.title,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     modifier = Modifier.noRippleClickable {
-                        MainNavigation.toKomik(navController, data.title, data.slug)
-                    }
-                )
+                        navigateTo(MainNavigation.toKomik(data.title, data.slug))
+                    })
                 data.chapters.forEach { chapter ->
                     Spacer(Modifier.height(15.dp))
-                    Row(
-                        verticalAlignment = CenterVertically,
+                    Row(verticalAlignment = CenterVertically,
                         modifier = Modifier.noRippleClickable {
-                            MainNavigation.toChapter(navController, chapter.slug, chapter.title)
+                            navigateTo(MainNavigation.toChapter(chapter.slug, chapter.title))
+
                         }) {
                         Box(
                             Modifier
@@ -312,16 +305,14 @@ fun LatestUpdateView(data: LatestUpdate, navController: NavController) {
                         )
                         chapter.date?.let {
                             Spacer(
-                                modifier = Modifier
-                                    .width(10.dp)
+                                modifier = Modifier.width(10.dp)
                             )
                             Text(
                                 formatRelativeDate(it),
                                 modifier = Modifier.weight(1f),
                                 textAlign = TextAlign.Right,
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    color =
-                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                                 )
                             )
                         }

@@ -85,7 +85,7 @@ import com.crstlnz.komikchino.ui.util.noRippleClickable
 import kotlinx.coroutines.launch
 
 @Composable
-fun SearchScreen(navController: NavController) {
+fun SearchScreen(navigateTo: (to: String) -> Unit, onBack: () -> Unit) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     var isFocused by remember { mutableStateOf(false) }
@@ -98,8 +98,10 @@ fun SearchScreen(navController: NavController) {
         v.exactMatch.collect {
             if (it != null) {
                 v.consumeExactMatch()
-                MainNavigation.toKomik(
-                    navController, it.title, it.slug
+                navigateTo(
+                    MainNavigation.toKomik(
+                        it.title, it.slug
+                    )
                 )
             }
         }
@@ -130,7 +132,7 @@ fun SearchScreen(navController: NavController) {
                 ) {
                     Spacer(Modifier.width(8.dp))
                     IconButton(
-                        onClick = { navController.popBackStack() },
+                        onClick = onBack,
                     ) {
                         Icon(Icons.Filled.ArrowBack, "backIcon")
                     }
@@ -189,7 +191,7 @@ fun SearchScreen(navController: NavController) {
                 ) {
                     when (dataState.state) {
                         State.DATA -> {
-                            SearchView(navController, (dataState as DataState.Success).data, v)
+                            SearchView(navigateTo, (dataState as DataState.Success).data, v)
                         }
 
                         State.ERROR -> {
@@ -288,7 +290,7 @@ fun HistoryView(viewModel: SearchViewModel, onQueryClick: (String) -> Unit = {})
 
 @Composable
 fun SearchView(
-    navController: NavController,
+    navigateTo: (to: String) -> Unit,
     searchData: List<SearchResult.ExactMatch>,
     viewModel: SearchViewModel
 ) {
@@ -303,7 +305,7 @@ fun SearchView(
         items(count = searchData.size, key = {
             searchData[it].url.ifEmpty { it }
         }) {
-            SearchItemView(navController, searchData[it])
+            SearchItemView(navigateTo = navigateTo, searchData[it])
             Divider(
                 modifier = Modifier.padding(horizontal = 10.dp), thickness = Dp.Hairline
             )
@@ -334,12 +336,14 @@ fun SearchView(
 }
 
 @Composable
-fun SearchItemView(navController: NavController, data: SearchResult.ExactMatch) {
+fun SearchItemView(navigateTo: (to: String) -> Unit, data: SearchResult.ExactMatch) {
     val scope = rememberCoroutineScope()
     Box(Modifier.clickable {
         scope.launch {
-            MainNavigation.toKomik(
-                navController, data.title, data.slug
+            navigateTo(
+                MainNavigation.toKomik(
+                    data.title, data.slug
+                )
             )
         }
     }) {
@@ -375,7 +379,7 @@ fun SearchItemView(navController: NavController, data: SearchResult.ExactMatch) 
                         )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        if(data.score != null) {
+                        if (data.score != null) {
                             Icon(
                                 Icons.Filled.Star,
                                 contentDescription = "Star",

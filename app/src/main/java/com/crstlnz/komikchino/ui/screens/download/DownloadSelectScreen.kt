@@ -71,7 +71,7 @@ import com.crstlnz.komikchino.ui.theme.Red
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
-fun DownloadSelectScreen(navController: NavController, title: String) {
+fun DownloadSelectScreen(onBack: ()-> Unit, title: String) {
     val v: DownloadSelectViewModel = hiltViewModel()
     val selected = v.downloadSelect.size
     val downloadData by v.downloadData.observeAsState()
@@ -92,7 +92,7 @@ fun DownloadSelectScreen(navController: NavController, title: String) {
                 if (selected > 0) {
                     v.clear()
                 } else {
-                    navController.popBackStack()
+                    onBack()
                 }
             }) {
                 Icon(

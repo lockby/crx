@@ -27,7 +27,7 @@ enum class KomikServer(
 ) {
     KIRYUU("Kiryuu", "kiryuu", "https://kiryuu.id/", true),
     MANGAKATANA("MangaKatana", "mangakatana", "https://mangakatana.com/", true, Bahasa.ENGLISH),
-    VOIDSCANS("Void Scans", "voidscans", "https://void-scans.com/", true, Bahasa.ENGLISH),
+    VOIDSCANS("Void Scans", "voidscans", "https://hivescans.com/", true, Bahasa.ENGLISH),
     MANHWALIST("Manhwalist", "manhwalist", "https://manhwalist.com/", true),
     MIRRORKOMIK("MirrorKomik", "mirrorkomik", "https://mirrorkomik.net/", false, Bahasa.INDONESIA),
     COSMICSCANS("Cosmic Scans", "cosmicscans", "https://cosmic-scans.com/", true, Bahasa.ENGLISH),

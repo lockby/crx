@@ -63,15 +63,16 @@ import com.google.firebase.auth.GoogleAuthProvider
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(navigateTo: (to: String) -> Unit) {
     val context = LocalContext.current
 
     val googleSignInClient = remember { getGoogleSignInClient(context) }
     var loginProgress by remember { mutableStateOf(false) }
     fun signAnonymously() {
-        if (FirebaseAuth.getInstance().currentUser?.isAnonymous == true) return MainNavigation.toHome(
-            navController
+        if (FirebaseAuth.getInstance().currentUser?.isAnonymous == true) return navigateTo(
+            MainNavigation.HOME
         )
+
         FirebaseAuth.getInstance().signInAnonymously()
             .addOnSuccessListener {
                 val user = FirebaseAuth.getInstance().currentUser
@@ -205,10 +206,7 @@ fun LoginScreen(navController: NavController) {
                             style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.primary),
                             textAlign = TextAlign.Center,
                             modifier = Modifier.noRippleClickable {
-                                MainNavigation.toWebView(
-                                    navController,
-                                    "file:///android_asset/term.html"
-                                )
+                                navigateTo(MainNavigation.toWebView("file:///android_asset/term.html"))
                             }
                         )
                         Text(
@@ -221,10 +219,7 @@ fun LoginScreen(navController: NavController) {
                             style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.primary),
                             textAlign = TextAlign.Center,
                             modifier = Modifier.noRippleClickable {
-                                MainNavigation.toWebView(
-                                    navController,
-                                    "file:///android_asset/policy.html"
-                                )
+                                navigateTo(MainNavigation.toWebView("file:///android_asset/policy.html"))
                             }
                         )
                     }

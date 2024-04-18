@@ -64,19 +64,20 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BookmarkScreen(navController: NavController) {
+fun BookmarkScreen(navigateTo: (to: String) -> Unit) {
     val viewModel = hiltViewModel<BookmarkViewModel>()
 
     val tabItems: List<TabRowItem> = arrayListOf(
         TabRowItem(title = "Recent", screen = { id ->
             RecentView(viewModel, onKomikClick = {
-                MainNavigation.toKomik(navController, it.title, it.slug)
+                navigateTo(MainNavigation.toKomik(it.title, it.slug))
             }, onChapterClick = { komik, chapter ->
-                MainNavigation.toChapter(
-                    navController,
-                    chapterId = chapter.id,
-                    chapter.title,
-                    komik,
+                navigateTo(
+                    MainNavigation.toChapter(
+                        chapterId = chapter.id,
+                        chapter.title,
+                        komik,
+                    )
                 )
             }, pageId = id
             )
@@ -84,7 +85,7 @@ fun BookmarkScreen(navController: NavController) {
         TabRowItem(title = "Favorites", screen = { id ->
             FavoriteView(
                 viewModel, onKomikClick = {
-                    MainNavigation.toKomik(navController, it.title, it.slug)
+                    navigateTo(MainNavigation.toKomik(it.title, it.slug))
                 }, pageId = id
             )
         }),

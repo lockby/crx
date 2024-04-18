@@ -99,7 +99,7 @@ import kotlinx.coroutines.launch
 )
 @Composable
 fun KomikScreen(
-    navController: NavController, title: String = "Solo Leveling"
+    navigateTo: (to: String) -> Unit, onBack: () -> Unit, title: String = "Komik Page"
 ) {
     val v: KomikViewModel = hiltViewModel()
     val scope = rememberCoroutineScope()
@@ -131,18 +131,20 @@ fun KomikScreen(
             val tabItems: List<TabRowItem> = arrayListOf(TabRowItem(title = "Informasi", screen = {
                 DetailScreen(komikDetail = (dataState as DataState.Success).data,
                     onKomikClick = { title, slug ->
-                        MainNavigation.toKomik(navController, title, slug)
+                        navigateTo(MainNavigation.toKomik(title, slug))
                     },
                     onChapterClick = { title, id ->
                         val data = (dataState as DataState.Success).data
-                        MainNavigation.toChapter(
-                            navController, chapterId = id, title, KomikHistoryItem(
-                                title = data.title,
-                                id = data.id,
-                                slug = data.slug,
-                                description = data.description,
-                                type = data.type,
-                                img = data.img,
+                        navigateTo(
+                            MainNavigation.toChapter(
+                                chapterId = id, title, KomikHistoryItem(
+                                    title = data.title,
+                                    id = data.id,
+                                    slug = data.slug,
+                                    description = data.description,
+                                    type = data.type,
+                                    img = data.img,
+                                )
                             )
                         )
                     })
@@ -154,14 +156,16 @@ fun KomikScreen(
                         v.load()
                     }) { title, id ->
                     val data = (dataState as DataState.Success).data
-                    MainNavigation.toChapter(
-                        navController, chapterId = id, title, KomikHistoryItem(
-                            title = data.title,
-                            id = data.id,
-                            slug = data.slug,
-                            description = data.description,
-                            type = data.type,
-                            img = data.img,
+                    navigateTo(
+                        MainNavigation.toChapter(
+                            chapterId = id, title, KomikHistoryItem(
+                                title = data.title,
+                                id = data.id,
+                                slug = data.slug,
+                                description = data.description,
+                                type = data.type,
+                                img = data.img,
+                            )
                         )
                     )
                 }
@@ -189,7 +193,7 @@ fun KomikScreen(
                                 .padding(top = LocalStatusBarPadding.current)
                                 .fillMaxWidth(),
                             navigationIcon = {
-                                IconButton(onClick = { navController.popBackStack() }) {
+                                IconButton(onClick = onBack) {
                                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "backIcon")
                                 }
                             },
@@ -199,12 +203,14 @@ fun KomikScreen(
                                     onClick = {
                                         val komik = dataState.getDataOrNull()
                                         if (komik != null) {
-                                            MainNavigation.toCommentView(
-                                                navController,
-                                                slug = komik.disqusConfig?.identifier ?: komik.slug,
-                                                title = komik.title,
-                                                url = komik.disqusConfig?.url ?: komik.url,
-                                                type = ContentType.MANGA
+                                            navigateTo(
+                                                MainNavigation.toCommentView(
+                                                    slug = komik.disqusConfig?.identifier
+                                                        ?: komik.slug,
+                                                    title = komik.title,
+                                                    url = komik.disqusConfig?.url ?: komik.url,
+                                                    type = ContentType.MANGA
+                                                )
                                             )
                                         }
                                     }) {

@@ -39,7 +39,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CacheScreen(navController: NavController) {
+fun CacheScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     var imageCacheSize by remember {
         mutableStateOf(
@@ -61,7 +61,7 @@ fun CacheScreen(navController: NavController) {
 
     Scaffold(topBar = {
         TopAppBar(navigationIcon = {
-            IconButton(onClick = { navController.popBackStack() }) {
+            IconButton(onClick = onBack) {
                 Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
             }
         }, title = {

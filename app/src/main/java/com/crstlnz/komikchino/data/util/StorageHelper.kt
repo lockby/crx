@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.type.TypeFactory
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import java.io.IOException
 
 class StorageHelper<T>(
     private val context: Context,
@@ -38,7 +37,7 @@ class StorageHelper<T>(
                         )
                     )
                 }
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
@@ -74,7 +73,7 @@ class StorageHelper<T>(
                         type.let { type } ?: objectType
                     ), isValid = data.isValid()
                 )
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 sharedPreferences.edit().remove(key).apply()
                 e.printStackTrace()
             }
@@ -92,7 +91,7 @@ class StorageHelper<T>(
                         storageItems.getValue().toString(),
                         type.let { type } ?: objectType)
                 }
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 sharedPreferences.edit().remove(key).apply()
                 e.printStackTrace()
             }

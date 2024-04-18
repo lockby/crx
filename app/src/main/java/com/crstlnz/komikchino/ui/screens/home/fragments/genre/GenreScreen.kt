@@ -88,7 +88,7 @@ import kotlinx.coroutines.launch
     ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class, ExperimentalLayoutApi::class
 )
 @Composable
-fun GenreScreen(navController: NavController) {
+fun GenreScreen(navigateTo: (to: String) -> Unit) {
     var openBottomSheet by rememberSaveable { mutableStateOf(false) }
     val bottomSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = false
@@ -211,7 +211,7 @@ fun GenreScreen(navController: NavController) {
             actions = {
                 IconButton(
                     onClick = {
-                        navController.navigate(MainNavigation.SEARCH)
+                        navigateTo(MainNavigation.SEARCH)
                     },
                 ) {
                     Icon(
@@ -346,7 +346,7 @@ fun GenreScreen(navController: NavController) {
                         ) {
                             items(searchResult.size) {
                                 GenreResultView(searchResult[it], onKomikClick = { komik ->
-                                    MainNavigation.toKomik(navController, komik.title, komik.slug)
+                                    navigateTo(MainNavigation.toKomik(komik.title, komik.slug))
                                 })
                             }
                             item {

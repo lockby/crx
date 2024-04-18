@@ -188,13 +188,16 @@ fun MainApp() {
                         mustManualTrigger = true,
                     )
                 }
-                MainNavigation.unblockCloudflare(
-                    navController = navController, AppSettings.komikServer!!.url
+                navController.navigate(
+                    MainNavigation.unblockCloudflare(
+                        AppSettings.komikServer!!.url
+                    )
                 )
             }
         }
     }
 
+    val context = LocalContext.current
 
     val currentUser = FirebaseAuth.getInstance().currentUser
     NavHost(
@@ -236,9 +239,24 @@ fun MainApp() {
             fadeOut(tween((AppSettings.animationDuration / 2f).toInt()), 0f)
         },
     ) {
-        addMainNavigation(navController)
+        addMainNavigation(onBack = {
+            navController.popBackStack()
+        }, navigateTo = {
+            try {
+                if (it === MainNavigation.HOME || it === MainNavigation.LOGIN) {
+                    navController.navigate(it) {
+                        popUpTo(it) {
+                            inclusive = true
+                        }
+                    }
+                } else {
+                    navController.navigate(it)
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error while navigating!", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
-    val context = LocalContext.current
 
 
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
@@ -254,14 +272,17 @@ fun MainApp() {
         if (currentRoute == null) return@LaunchedEffect
         if (!isLogin) {
             if (currentRoute != MainNavigation.LOGIN) {
-                MainNavigation.toLogin(navController)
+                navController.navigate(MainNavigation.LOGIN) {
+                    popUpTo(MainNavigation.LOGIN) {
+                        inclusive = true
+                    }
+                }
             }
         } else {
             val user = FirebaseAuth.getInstance().currentUser
             if (user != null) {
-                val userDocument = FirebaseFirestore.getInstance()
-                    .collection(USER_DATA)
-                    .document(user.uid)
+                val userDocument =
+                    FirebaseFirestore.getInstance().collection(USER_DATA).document(user.uid)
 
                 userDocument.get().addOnCompleteListener { task ->
                     if (task.isSuccessful) {
@@ -306,9 +327,6 @@ fun MainApp() {
                 }
 
             }
-            if (currentRoute != MainNavigation.HOME) {
-                MainNavigation.toHome(navController)
-            }
         }
     }
 
@@ -317,8 +335,7 @@ fun MainApp() {
     LaunchedEffect(Unit) {
         val updateState = settings.getUpdate()
         if (updateState != null && updateState.reminder && versionCheck(
-                updateState.version,
-                getAppVersion(context)
+                updateState.version, getAppVersion(context)
             )
         ) {
             openDialog = true
@@ -330,10 +347,10 @@ fun MainApp() {
                 if (versionCheck(releases.tagName ?: "", getAppVersion(context))) {
                     settings.setUpdate(
                         UpdateState(
-                            version = releases.tagName ?: "",
-                            reminder = true
+                            version = releases.tagName ?: "", reminder = true
                         )
                     )
+                    openDialog = true
                 }
             }
         } catch (e: Exception) {

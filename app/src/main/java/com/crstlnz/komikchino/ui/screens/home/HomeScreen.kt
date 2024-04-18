@@ -66,7 +66,7 @@ object HomeState {
 )
 @Composable
 fun HomeScreen(
-    navController: NavHostController,
+    navigateTo: (to: String) -> Unit
 ) {
     val bottomNav = rememberNavController()
     LaunchedEffect(Unit) {
@@ -85,17 +85,18 @@ fun HomeScreen(
     CompositionLocalProvider(LocalSnackbarHostState provides snackBarHost) {
         Scaffold(floatingActionButton = {
             if (selectedRoute !== HomeSections.SETTINGS) {
-                ExtendedFloatingActionButton(
-                    backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
+                ExtendedFloatingActionButton(backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.secondary,
                     onClick = {
                         scope.launch {
                             Settings(context).setTempHomepage(selectedRoute)
-                            navController.navigate(MainNavigation.SERVER_SELECTION)
+                            navigateTo(MainNavigation.SERVER_SELECTION)
                         }
-                    }, text = {
+                    },
+                    text = {
                         Text(AppSettings.komikServer?.title ?: "Server")
-                    }, icon = {
+                    },
+                    icon = {
                         Icon(
                             painter = painterResource(id = R.drawable.web),
                             contentDescription = "Server Icon"
@@ -170,7 +171,9 @@ fun HomeScreen(
                         fadeOut(tween(AppSettings.animationDuration, easing = EaseOutQuart))
                     },
                 ) {
-                    addBottomNav(navController)
+                    addBottomNav {
+                        navigateTo(it)
+                    }
                 }
             }
         }

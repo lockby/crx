@@ -23,7 +23,7 @@ import androidx.navigation.NavController
 import com.crstlnz.komikchino.R
 
 @Composable
-fun AppInfoScreen(navController: NavController) {
+fun AppInfoScreen() {
     val context = LocalContext.current
     val packageName = context.packageName
     val packageManager = context.packageManager
@@ -35,7 +35,10 @@ fun AppInfoScreen(navController: NavController) {
         Surface(Modifier.padding(it)) {
             LazyColumn(Modifier.fillMaxSize()) {
                 item {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Image(
                             painterResource(id = R.mipmap.ic_launcher),
                             null,

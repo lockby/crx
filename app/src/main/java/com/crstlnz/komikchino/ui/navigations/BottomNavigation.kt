@@ -19,6 +19,7 @@ import com.crstlnz.komikchino.ui.screens.home.fragments.genre.GenreScreen
 import com.crstlnz.komikchino.ui.screens.home.fragments.home.HomeFragment
 import com.crstlnz.komikchino.ui.screens.home.fragments.settings.SettingScreen
 import com.crstlnz.komikchino.ui.screens.latestupdate.LatestUpdateScreen
+import kotlin.enums.EnumEntries
 
 enum class HomeSections(
     @StringRes val title: Int,
@@ -67,28 +68,38 @@ private fun IconView(iconData: Any, name: Int) {
 }
 
 fun NavGraphBuilder.addBottomNav(
-    navController: NavHostController,
+    navigateTo: (to: String) -> Unit,
 ) {
 //    navigation(startDestination = HomeSections.HOME.route, route = "home") {
     composable(HomeSections.HOME.route) {
-        HomeFragment(navController)
+        HomeFragment {
+            navigateTo(it)
+        }
     }
 
 
     composable(HomeSections.GENRE.route) {
-        GenreScreen(navController)
+        GenreScreen {
+            navigateTo(it)
+        }
     }
 
     composable(HomeSections.LATEST_UPDATE.route) {
-        LatestUpdateScreen(navController)
+        LatestUpdateScreen {
+            navigateTo(it)
+        }
     }
 
     composable(HomeSections.SETTINGS.route) {
-        SettingScreen(navController)
+        SettingScreen {
+            navigateTo(it)
+        }
     }
 
     composable(HomeSections.BOOKMARK.route) {
-        BookmarkScreen(navController)
+        BookmarkScreen {
+            navigateTo(it)
+        }
     }
 //    }
 //    composable(HomeSections.MEMBERS.route) {

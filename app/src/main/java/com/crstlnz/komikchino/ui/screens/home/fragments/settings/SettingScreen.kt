@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavOptionsBuilder
 import com.crstlnz.komikchino.LocalStatusBarPadding
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.data.api.KomikServer
@@ -51,7 +52,7 @@ import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingScreen(navController: NavController) {
+fun SettingScreen(navigateTo: (to: String) -> Unit) {
     val v = hiltViewModel<SettingViewModel>()
     val context = LocalContext.current
 
@@ -82,7 +83,7 @@ fun SettingScreen(navController: NavController) {
             actions = {
                 IconButton(
                     onClick = {
-                        navController.navigate(MainNavigation.SEARCH)
+                        navigateTo(MainNavigation.SEARCH)
                     },
                 ) {
                     Icon(
@@ -104,7 +105,7 @@ fun SettingScreen(navController: NavController) {
                         .background(color = MaterialTheme.colorScheme.surface)
                         .clickable {
                             if (FirebaseAuth.getInstance().currentUser?.isAnonymous == true)
-                                MainNavigation.toLogin(navController)
+                                navigateTo(MainNavigation.LOGIN)
                         }) {
 
                     if (FirebaseAuth.getInstance().currentUser?.isAnonymous == false) {
@@ -179,7 +180,7 @@ fun SettingScreen(navController: NavController) {
             item {
                 ListItem(
                     modifier = Modifier.clickable {
-                        navController.navigate(MainNavigation.SERVER_SELECTION)
+                        navigateTo(MainNavigation.SERVER_SELECTION)
                     },
                     headlineContent = {
                         Text("Server")
@@ -199,7 +200,7 @@ fun SettingScreen(navController: NavController) {
             item {
                 ListItem(
                     modifier = Modifier.clickable {
-                        navController.navigate(MainNavigation.HOME_SELECTION)
+                        navigateTo(MainNavigation.HOME_SELECTION)
                     },
                     headlineContent = {
                         Text("Homepage")
@@ -223,7 +224,7 @@ fun SettingScreen(navController: NavController) {
             item {
                 ListItem(
                     modifier = Modifier.clickable {
-                        navController.navigate(MainNavigation.CACHE_SCREEN)
+                        navigateTo(MainNavigation.CACHE_SCREEN)
                     },
                     headlineContent = {
                         Text("Cache")
@@ -240,7 +241,7 @@ fun SettingScreen(navController: NavController) {
             item {
                 ListItem(
                     modifier = Modifier.clickable {
-                        navController.navigate(MainNavigation.CHECK_UPDATE)
+                        navigateTo(MainNavigation.CHECK_UPDATE)
                     },
                     headlineContent = {
                         Text("Check for updates")
@@ -293,7 +294,7 @@ fun SettingScreen(navController: NavController) {
                 } else {
                     ListItem(
                         modifier = Modifier.clickable {
-                            MainNavigation.toLogin(navController)
+                            navigateTo(MainNavigation.LOGIN)
                         },
                         headlineContent = {
                             Text("Login")

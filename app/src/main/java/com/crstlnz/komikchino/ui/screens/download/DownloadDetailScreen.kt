@@ -38,7 +38,7 @@ import com.crstlnz.komikchino.data.model.State
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
-fun DownloadDetailScreen(navController: NavController, title: String) {
+fun DownloadDetailScreen(onBack: () -> Unit, title: String) {
     val v: DownloadSelectViewModel = hiltViewModel()
     val selected = v.downloadSelect.size
     val downloadData by v.downloadData.observeAsState()
@@ -59,7 +59,7 @@ fun DownloadDetailScreen(navController: NavController, title: String) {
                 if (selected > 0) {
                     v.clear()
                 } else {
-                    navController.popBackStack()
+                    onBack()
                 }
             }) {
                 Icon(
@@ -115,9 +115,9 @@ fun DownloadDetailScreen(navController: NavController, title: String) {
         })
     }) {
         val dataState by v.state.collectAsState()
-        val pullRefreshState =
-            rememberPullRefreshState(dataState.state == State.LOADING && !v.isFirstLaunch,
-                { v.load() })
+        val pullRefreshState = rememberPullRefreshState(
+            dataState.state == State.LOADING && !v.isFirstLaunch,
+            { v.load() })
         Surface(Modifier.padding(it)) {
             Box(
                 modifier = Modifier

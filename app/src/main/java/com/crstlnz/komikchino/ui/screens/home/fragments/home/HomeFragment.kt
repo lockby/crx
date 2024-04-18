@@ -86,7 +86,7 @@ import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun HomeFragment(navController: NavController) {
+fun HomeFragment(navigateTo: (to: String) -> Unit) {
     val v: HomeFragmenViewModel = hiltViewModel()
     val dataState by v.state.collectAsState()
 
@@ -114,7 +114,7 @@ fun HomeFragment(navController: NavController) {
             actions = {
                 IconButton(
                     onClick = {
-                        navController.navigate(MainNavigation.SEARCH)
+                        navigateTo(MainNavigation.SEARCH)
                     },
                 ) {
                     Icon(
@@ -137,13 +137,13 @@ fun HomeFragment(navController: NavController) {
                         val data = (dataState as DataState.Success).data
                         featuredView(
                             data.featured, onKomikClick = { title, slug ->
-                                MainNavigation.toKomik(navController, title, slug)
+                                navigateTo(MainNavigation.toKomik(title, slug))
                             }, 4
                         )
                         sectionView(data.sections, { title, slug ->
-                            MainNavigation.toKomik(navController, title, slug)
+                            navigateTo(MainNavigation.toKomik(title, slug))
                         }, { title, slug ->
-                            MainNavigation.toChapter(navController, slug, title)
+                            navigateTo(MainNavigation.toChapter(slug, title))
                         })
                     }
 

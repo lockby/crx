@@ -2,25 +2,16 @@ package com.crstlnz.komikchino.ui.screens.chapter.components
 
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.os.Build
-import android.os.Build.VERSION.SDK_INT
-import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -42,13 +33,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color.Companion.White
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -58,24 +44,16 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter.State.Empty.painter
 import coil.decode.DecodeResult
 import coil.decode.Decoder
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import coil.size.Dimension
-import coil.size.Size
-import coil.size.ViewSizeResolver
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.config.nunito
-import com.crstlnz.komikchino.data.model.ChapterScrollPostition
 import com.crstlnz.komikchino.data.model.DataState.Loading.getDataOrNull
 import com.crstlnz.komikchino.data.model.ImageSize
 import com.crstlnz.komikchino.data.model.ImageSizeRequest
@@ -86,14 +64,10 @@ import com.crstlnz.komikchino.ui.components.customswipe.rememberCustomSwipeRefre
 import com.crstlnz.komikchino.ui.screens.chapter.ChapterViewModel
 import com.crstlnz.komikchino.ui.theme.Black1
 import com.crstlnz.komikchino.ui.util.ComposableLifecycle
-import com.crstlnz.komikchino.ui.util.customZoomable
-import com.crstlnz.komikchino.ui.util.tapToZoomVertical
 import kotlinx.coroutines.launch
-import net.engawapg.lib.zoomable.ScrollGesturePropagation
 import net.engawapg.lib.zoomable.rememberZoomState
 import net.engawapg.lib.zoomable.toggleScale
 import net.engawapg.lib.zoomable.zoomable
-import java.util.Base64
 import java.util.UUID
 
 data class ChapterImage(
@@ -102,7 +76,6 @@ data class ChapterImage(
 
 const val PRELOAD_COUNT = 2
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChapterImageList(
@@ -208,76 +181,22 @@ fun ChapterImageList(
             indicatorBackground = White,
             onRefresh = {
                 onNextClick()
-            }) {
-//            var isMultipleTouch by remember { mutableStateOf(false) }
-//            var scale by remember { mutableStateOf(1f) }
-//            var rotation by remember { mutableStateOf(0f) }
-//            var offset by remember { mutableStateOf(Offset.Zero) }
-//            val state = rememberTransformableState { zoomChange, offsetChange, rotationChange ->
-//                scale *= zoomChange
-//                rotation += rotationChange
-//                offset += offsetChange
-//            }
-//
-//            val state = rememberZoomableState(
-//                minScale = 1f
-//            )
-//            Zoomable(
-//                modifier = Modifier.weight(1f),
-//                state = state,
-//                finishDragNotConsumeDirection = ZoomableConsumeDirection.Vertical
-//                ) {
-//
-//                }
+            }
+        ) {
             val density = LocalDensity.current
             val localConfig = LocalConfiguration.current
             val height = remember { with(density) { localConfig.screenHeightDp.dp.toPx() } }
             val width = remember { with(density) { localConfig.screenWidthDp.dp.toPx() } }
-//            val zoomState = rememberZoomState(
-//                contentSize = androidx.compose.ui.geometry.Size(
-//                    width,
-//                    height
-//                )
-//            )
-
-//            Box(
-//                Modifier
-//                    .weight(1f)
-//                    .zoomable(
-//                        zoomState,
-//                        scrollGesturePropagation = ScrollGesturePropagation.ContentEdge,
-////                        onTap = {
-////                            onNavChange(null)
-////                        }
-//                    )
-//            ) {
-//            val lazyState = rememberLazyListState()
-            val VerticalScrollConsumer = object : NestedScrollConnection {
-                override fun onPreScroll(available: Offset, source: NestedScrollSource) =
-                    available.copy(x = 0f)
-
-                override suspend fun onPreFling(available: Velocity) = available.copy(x = 0f)
-            }
-//            BoxWithConstraints(
-//                Modifier
-//                    .weight(1f)
-//                    .fillMaxSize(),
-//                contentAlignment = Alignment.TopCenter
-//            ) {
-
             val zoomState = rememberZoomState(
                 contentSize = androidx.compose.ui.geometry.Size(
                     width,
                     height
                 )
             )
-            val interactionSource = remember { MutableInteractionSource() }
             val scope = rememberCoroutineScope()
             LazyColumn(
                 modifier
-//                        .fillMaxWidth()
-                    .fillMaxSize()
-//                    .nestedScroll(VerticalScrollConsumer)
+                    .weight(1f)
                     .zoomable(zoomState)
                     .pointerInput(Unit) {
                         detectTapGestures(
@@ -291,31 +210,7 @@ fun ChapterImageList(
                             }
                         )
                     },
-//                        .tapToZoomVertical(constraints, lazyColumnState),
                 state = lazyColumnState,
-//                    .clickable(
-//                        interactionSource = interactionSource,
-//                        indication = null
-//                    ) {
-//                        onNavChange(null)
-//                    }
-//                        .fillMaxHeight()
-
-//                        .customZoomable(),
-//                    .zoomable(
-//                        zoomState,
-//                        scrollGesturePropagation = ScrollGesturePropagation.ContentEdge,
-////                        onTap = {
-////                            onNavChange(null)
-////                        }
-//                    ),
-//                    .combinedClickable(
-//                        interactionSource = interactionSource,
-//                        indication = null
-//                    ) {
-//                        onNavChange(null)
-//                    },
-//                userScrollEnabled = !isMultipleTouch
             ) {
                 item(key = "first") {
                     Box(
@@ -459,10 +354,7 @@ fun ChapterImageList(
                             .aspectRatio(16f / 25f)
                     )
                 }
-//                }
             }
         }
-
-//        }
     }
 }

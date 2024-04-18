@@ -1,11 +1,10 @@
 package com.crstlnz.komikchino.ui.navigations
 
 import android.util.Log
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
@@ -32,6 +31,7 @@ import com.crstlnz.komikchino.ui.screens.permissions.WriteExternalStorageScreen
 import com.crstlnz.komikchino.ui.screens.search.SearchScreen
 import java.net.URLDecoder
 import java.net.URLEncoder
+import java.util.ArrayList
 
 enum class ContentType(private val value: String) {
     CHAPTER("chapter"), MANGA("manga");
@@ -62,30 +62,19 @@ object MainNavigation {
 
     const val STORAGE_REQUEST = "storage_request"
     fun toChapter(
-        navController: NavController,
         chapterId: String,
         chapterTitle: String,
         komikData: KomikHistoryItem,
-    ) {
-        navController.navigate(
-            "${CHAPTER}/id/${convertToStringURL(chapterId).ifEmpty { "0" }}/${chapterTitle.ifEmpty { "0" }}/${
-                convertToStringURL(
-                    komikData
-                ).ifEmpty { "0" }
-            }",
-        )
+    ): String {
+        return "${CHAPTER}/id/${convertToStringURL(chapterId).ifEmpty { "0" }}/${chapterTitle.ifEmpty { "0" }}/${
+            convertToStringURL(
+                komikData
+            ).ifEmpty { "0" }
+        }"
     }
 
-    fun toHome(navController: NavController) {
-        navController.navigate(HOME) {
-            popUpTo(HOME) {
-                inclusive = true
-            }
-        }
-    }
-
-    fun toLogin(navController: NavController) {
-        navController.navigate(LOGIN) {
+    fun toLogin(navigateTo: (to: String, builder: NavOptionsBuilder.() -> Unit) -> Unit) {
+        navigateTo(LOGIN) {
             popUpTo(LOGIN) {
                 inclusive = true
             }
@@ -93,39 +82,30 @@ object MainNavigation {
     }
 
     fun toChapter(
-        navController: NavController,
         chapterSlug: String,
         chapterTitle: String,
-    ) {
-        navController.navigate(
-            "${CHAPTER}/slug/${convertToStringURL(chapterSlug).ifEmpty { "0" }}/${chapterTitle.ifEmpty { "0" }}",
-        )
+    ): String {
+        return "${CHAPTER}/slug/${convertToStringURL(chapterSlug).ifEmpty { "0" }}/${chapterTitle.ifEmpty { "0" }}"
     }
 
-    fun unblockCloudflare(navController: NavController, url: String) {
-        navController.navigate("${CLOUDFLARE_UNBLOCK}/${URLEncoder.encode(url, "utf-8")}")
+    fun unblockCloudflare(url: String): String {
+        return "${CLOUDFLARE_UNBLOCK}/${URLEncoder.encode(url, "utf-8")}"
     }
 
-    fun toWebView(navController: NavController, url: String, title: String? = null) {
-        val route = if (title.isNullOrEmpty()) {
+    fun toWebView(url: String, title: String? = null): String {
+        return if (title.isNullOrEmpty()) {
             "${WEBVIEW}/${URLEncoder.encode(url, "UTF-8")}"
         } else {
             "${WEBVIEW}/${title}/${URLEncoder.encode(url, "UTF-8")}"
         }
-        navController.navigate(route)
     }
 
     fun toCommentView(
-        navController: NavController,
-        slug: String,
-        title: String,
-        url: String = "",
-        type: ContentType = ContentType.MANGA
-    ) {
+        slug: String, title: String, url: String = "", type: ContentType = ContentType.MANGA
+    ): String {
         when (AppSettings.komikServer) {
             KomikServer.KIRYUU -> {
-                toWebView(
-                    navController,
+                return toWebView(
                     "file:///android_asset/kiryuudisqus.html?id=${slug}&title=${title}&type=${type}",
                     title
                 )
@@ -136,135 +116,115 @@ object MainNavigation {
                 val mangaSlug = split.getOrNull(0)?.split(".")?.getOrNull(0) ?: ""
                 val chapterId = split.getOrNull(1)
                 val id = if (chapterId != null) "$mangaSlug/$chapterId" else mangaSlug
-                toWebView(
-                    navController,
+                return toWebView(
                     "file:///android_asset/mangakatanadisqus.html?url=https://mangakatana.com/manga/${slug}&id=${id}&title=${title}",
                     title
                 )
             }
 
             KomikServer.VOIDSCANS -> {
-                toWebView(
-                    navController,
+                return toWebView(
                     "file:///android_asset/voidscansdisqus.html?id=${
                         decodeBase64(slug)
                     }&title=${title.ifEmpty { "Empty Title" }}&url=${
                         decodeBase64(url)
-                    }",
-                    title
+                    }", title
                 )
             }
 
             KomikServer.MANHWALIST -> {
-                toWebView(
-                    navController,
+                return toWebView(
                     "file:///android_asset/manhwalistdisqus.html?id=${
                         decodeBase64(slug)
                     }&title=${title.ifEmpty { "Empty Title" }}&url=${
                         decodeBase64(url)
-                    }",
-                    title
+                    }", title
                 )
             }
 
             KomikServer.COSMICSCANS -> {
-                toWebView(
-                    navController,
+                return toWebView(
                     "file:///android_asset/cosmicscansdisqus.html?id=${
                         decodeBase64(slug)
                     }&title=${title.ifEmpty { "Empty Title" }}&url=${
                         decodeBase64(url)
-                    }",
-                    title
+                    }", title
                 )
             }
 
             KomikServer.COSMICSCANSINDO -> {
-                toWebView(
-                    navController,
+                return toWebView(
                     "file:///android_asset/cosmicscansindonesiadisqus.html?id=${
                         decodeBase64(slug)
                     }&title=${title.ifEmpty { "Empty Title" }}&url=${
                         decodeBase64(url)
-                    }",
-                    title
+                    }", title
                 )
             }
 
 
             KomikServer.MIRRORKOMIK -> {
-                Log.d("SLUG DISQUS", slug)
-                Log.d("ID DISQUS", url)
-                toWebView(
-                    navController,
+                return toWebView(
                     "file:///android_asset/mirrorkomik.html?id=${
                         decodeBase64(slug)
                     }&title=${title.ifEmpty { "Empty Title" }}&url=${
                         decodeBase64(url)
-                    }",
-                    title
+                    }", title
                 )
             }
 
-            else -> {}
+            else -> {
+                return HOME
+            }
         }
     }
 
     fun toKomik(
-        navController: NavController,
         title: String,
         slug: String,
-    ) {
-        navController.navigate(
-            "${KOMIKDETAIL}/${title}/${URLEncoder.encode(slug, "UTF-8")}",
-        )
+    ): String {
+        return "${KOMIKDETAIL}/${title}/${URLEncoder.encode(slug, "UTF-8")}"
     }
 
     fun toDownloadSelect(
-        navController: NavController,
         title: String,
         slug: String,
-    ) {
-        navController.navigate(
-            "${DOWNLOAD_SELECT_SCREEN}/${title}/${URLEncoder.encode(slug, "UTF-8")}",
-        )
+    ): String {
+        return "${DOWNLOAD_SELECT_SCREEN}/${title}/${URLEncoder.encode(slug, "UTF-8")}"
     }
 
     fun toDownloadDetail(
-        navController: NavController,
         title: String,
         slug: String,
-    ) {
-        navController.navigate(
-            "${DOWNLOAD_DETAIL}/${title}/${URLEncoder.encode(slug, "UTF-8")}",
-        )
+    ): String {
+        return "${DOWNLOAD_DETAIL}/${title}/${URLEncoder.encode(slug, "UTF-8")}"
     }
 }
 
-fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
+fun NavGraphBuilder.addMainNavigation(navigateTo: (to: String) -> Unit, onBack: () -> Unit) {
     composable(
         MainNavigation.HOME,
     ) {
-        HomeScreen(navController)
+        HomeScreen(navigateTo)
     }
 
     composable(
         MainNavigation.LOGIN,
     ) {
-        LoginScreen(navController)
+        LoginScreen(navigateTo)
     }
 
     composable(
         MainNavigation.SEARCH,
     ) {
-        SearchScreen(navController)
+        SearchScreen(navigateTo, onBack)
     }
 
     composable(
         "${MainNavigation.KOMIKDETAIL}/{title}/{slug}",
     ) {
         val title = it.arguments?.getString("title")
-        KomikScreen(navController, title ?: "")
+        KomikScreen(navigateTo, onBack, title ?: "")
     }
 
     composable(
@@ -276,7 +236,7 @@ fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
         }),
     ) {
         val title = it.arguments?.getString("title")
-        ChapterScreen(navController, title ?: "")
+        ChapterScreen(navigateTo, onBack, title ?: "")
     }
 
     composable(
@@ -290,29 +250,25 @@ fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
         }),
     ) {
         val title = it.arguments?.getString("title")
-        ChapterScreen(navController, title ?: "")
+        ChapterScreen(navigateTo, onBack, title ?: "")
     }
 
 
     composable(
         "${MainNavigation.WEBVIEW}/{title}/{url}"
     ) {
-        CommentScreen(
-            URLDecoder.decode(it.arguments?.getString("url") ?: "", "UTF-8"),
+        CommentScreen(URLDecoder.decode(it.arguments?.getString("url") ?: "", "UTF-8"),
             it.arguments?.getString("title") ?: "",
             onBackPressed = {
-                navController.popBackStack()
-            }
-        )
+                onBack()
+            })
     }
 
     composable(
         "${MainNavigation.WEBVIEW}/{url}"
     ) {
         CommentScreen(
-            URLDecoder.decode(it.arguments?.getString("url") ?: "", "UTF-8"), onBackPressed = {
-                navController.popBackStack()
-            }
+            URLDecoder.decode(it.arguments?.getString("url") ?: "", "UTF-8"), onBackPressed = onBack
         )
     }
 
@@ -320,54 +276,51 @@ fun NavGraphBuilder.addMainNavigation(navController: NavHostController) {
         "${MainNavigation.CLOUDFLARE_UNBLOCK}/{url}"
     ) {
         UnblockCloudflare(
-            navController,
-            URLDecoder.decode(it.arguments?.getString("url") ?: "", "UTF-8"), onBackPressed = {
-                navController.popBackStack()
-            }
+            onBack,
+            URLDecoder.decode(it.arguments?.getString("url") ?: "", "UTF-8"),
+            onBackPressed = onBack
         )
     }
 
     composable(MainNavigation.CHECK_UPDATE) {
-        CheckUpdateScreen(navController)
+        CheckUpdateScreen(onBack)
     }
 
     composable(MainNavigation.STORAGE_REQUEST) {
-        WriteExternalStorageScreen(onDismiss = {
-            navController.popBackStack()
-        })
+        WriteExternalStorageScreen(onDismiss = onBack)
     }
 
     composable(MainNavigation.SERVER_SELECTION) {
-        ServerSelectScreen(navController)
+        ServerSelectScreen(onBack)
     }
 
     composable(MainNavigation.HOME_SELECTION) {
-        HomeSelection(navController)
+        HomeSelection(onBack)
     }
 
     composable(MainNavigation.CACHE_SCREEN) {
-        CacheScreen(navController)
+        CacheScreen(onBack)
     }
 
     composable(MainNavigation.APP_INFO) {
-        AppInfoScreen(navController)
+        AppInfoScreen()
     }
 
     composable(MainNavigation.DOWNLOAD_SCREEN) {
-        DownloadScreen(navController)
+        DownloadScreen()
     }
 
     composable(
         "${MainNavigation.DOWNLOAD_SELECT_SCREEN}/{title}/{slug}",
     ) {
         val title = it.arguments?.getString("title")
-        DownloadSelectScreen(navController, title ?: "")
+        DownloadSelectScreen(onBack, title ?: "")
     }
 
     composable(
         "${MainNavigation.DOWNLOAD_DETAIL}/{title}/{id}",
     ) {
         val title = it.arguments?.getString("title")
-        DownloadDetailScreen(navController, title ?: "")
+        DownloadDetailScreen(onBack, title ?: "")
     }
 }

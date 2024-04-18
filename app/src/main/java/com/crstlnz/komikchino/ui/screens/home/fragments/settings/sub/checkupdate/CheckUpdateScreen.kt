@@ -60,7 +60,7 @@ import dev.jeziellago.compose.markdowntext.MarkdownText
 import java.text.DecimalFormat
 
 @Composable
-fun CheckUpdateScreen(navController: NavController) {
+fun CheckUpdateScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     var receiver: BroadcastReceiver? = remember { null }
     ComposableLifecycle { _, event ->
@@ -113,9 +113,6 @@ fun CheckUpdateScreen(navController: NavController) {
             onReceiverCreated = {
                 receiver = it
             })
-//        } else {
-//            navController.navigate(MainNavigation.STORAGE_REQUEST)
-//        }
     }
 
     Scaffold(contentWindowInsets = WindowInsets.ime) {
@@ -319,7 +316,7 @@ fun CheckUpdateScreen(navController: NavController) {
                     .statusBarsPadding(), contentAlignment = Alignment.TopEnd
             ) {
                 FilledTonalButton(
-                    onClick = { navController.popBackStack() },
+                    onClick = onBack,
                     contentPadding = PaddingValues(18.dp, 0.dp)
                 ) {
                     Text(

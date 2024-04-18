@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -53,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -88,7 +91,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChapterScreen(navController: NavController, chapterTitle: String) {
+fun ChapterScreen(navigateTo: (to: String) -> Unit, onBack: () -> Unit, chapterTitle: String) {
     val v: ChapterViewModel = hiltViewModel()
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -159,15 +162,16 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                     }
                 }
 
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth(0.65f)
-                        .fillMaxSize()
+                ModalDrawerSheet(
+                    drawerShape = RectangleShape,
+                    drawerContainerColor =  MaterialTheme.colorScheme.surface,
                 ) {
                     when (chapterList) {
                         is DataState.Success -> {
                             val chapters = (chapterList as DataState.Success<List<Chapter>>).data
-                            CustomSwipeRefresh(state = rememberCustomSwipeRefresh(isRefreshing = false),
+                            CustomSwipeRefresh(
+                                indicatorBackground = MaterialTheme.colorScheme.surface,
+                                state = rememberCustomSwipeRefresh(isRefreshing = false),
                                 refreshTriggerDistance = 100.dp,
                                 onRefresh = {
                                     v.loadChapterList(true)
@@ -177,6 +181,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                                     Modifier
                                         .fillMaxSize()
                                         .weight(1f)
+                                        .background(MaterialTheme.colorScheme.surface)
                                         .statusBarsPadding(),
                                     state = drawerLazyListState
                                 ) {
@@ -325,29 +330,28 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                     }, onCommentClick = {
                         if (dataState is DataState.Success) {
                             val data = (dataState as DataState.Success<ChapterData>).data
-                            MainNavigation.toCommentView(
-                                navController,
-                                slug = data.disqusConfig?.identifier ?: data.slug,
-                                title = data.title,
-                                url = data.disqusConfig?.url ?: data.slug,
-                                ContentType.CHAPTER
+                            navigateTo(
+                                MainNavigation.toCommentView(
+                                    slug = data.disqusConfig?.identifier ?: data.slug,
+                                    title = data.title,
+                                    url = data.disqusConfig?.url ?: data.slug,
+                                    ContentType.CHAPTER
+                                )
                             )
                         }
                     }, onMangaClick = {
                         val data = dataState.getDataOrNull()
                         if (data != null) {
-                            MainNavigation.toKomik(
-                                navController = navController, data.komik.title, data.komik.slug
-                            )
-
+                            navigateTo(MainNavigation.toKomik(data.komik.title, data.komik.slug))
                         }
                     }, onDownloadClick = {
                         val data = dataState.getDataOrNull()
                         if (data != null) {
-                            MainNavigation.toDownloadSelect(
-                                navController,
-                                data.komik.title,
-                                data.komik.slug
+                            navigateTo(
+                                MainNavigation.toDownloadSelect(
+                                    data.komik.title,
+                                    data.komik.slug
+                                )
                             )
                         }
                     })
@@ -372,7 +376,7 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                             )
                         },
                         navigationIcon = {
-                            IconButton(onClick = { navController.popBackStack() }) {
+                            IconButton(onClick = { onBack() }) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "backIcon")
                             }
                         },
@@ -386,12 +390,12 @@ fun ChapterScreen(navController: NavController, chapterTitle: String) {
                             IconButton(modifier = Modifier.padding(end = 5.dp), onClick = {
                                 val data = dataState.getDataOrNull()
                                 if (data != null) {
-                                    MainNavigation.toKomik(
-                                        navController = navController,
-                                        data.komik.title,
-                                        data.komik.slug
+                                    navigateTo(
+                                        MainNavigation.toKomik(
+                                            data.komik.title,
+                                            data.komik.slug
+                                        )
                                     )
-
                                 }
                             }) {
                                 Icon(Icons.Outlined.Info, "backIcon")

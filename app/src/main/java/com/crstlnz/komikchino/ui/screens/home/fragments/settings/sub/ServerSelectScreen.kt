@@ -54,7 +54,7 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun ServerSelectScreen(navController: NavController) {
+fun ServerSelectScreen(onBack: () -> Unit) {
     val v = hiltViewModel<SettingViewModel>()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -78,7 +78,7 @@ fun ServerSelectScreen(navController: NavController) {
     Scaffold(topBar = {
         TopAppBar(
             navigationIcon = {
-                IconButton(onClick = { navController.popBackStack() }) {
+                IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
             },

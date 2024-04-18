@@ -40,7 +40,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeSelection(navController: NavController) {
+fun HomeSelection(onBack: () -> Unit) {
     val v = hiltViewModel<SettingViewModel>()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -55,7 +55,7 @@ fun HomeSelection(navController: NavController) {
     Scaffold(topBar = {
         TopAppBar(
             navigationIcon = {
-                IconButton(onClick = { navController.popBackStack() }) {
+                IconButton(onClick = onBack) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                 }
             },
