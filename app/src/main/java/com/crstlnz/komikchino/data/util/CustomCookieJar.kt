@@ -2,6 +2,7 @@ package com.crstlnz.komikchino.data.util
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.crstlnz.komikchino.config.AppSettings
 import okhttp3.Cookie
 import okhttp3.CookieJar
@@ -26,6 +27,10 @@ class EmptyCookieJar : CookieJar {
 class CustomCookieJar(context: Context) : CookieJar {
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("CookiePrefs", Context.MODE_PRIVATE)
+
+    fun clearCookies() {
+        sharedPreferences.edit().clear().apply()
+    }
 
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
         val cookieValue = cookies.joinToString(",") { it.toString() }

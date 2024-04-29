@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.data.api.source
 
+import android.util.Log
 import com.crstlnz.komikchino.data.api.KomikClient
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
@@ -29,6 +30,7 @@ import java.util.Locale
 
 class KomikuId : ScraperBase {
     private val api = KomikClient.getKomikuIdClient()
+    private val searchApi = KomikClient.getKomikuIdSearchClient()
 
     override fun getChapterUrl(slug: String): String {
         return "${KomikServer.KOMIKUID.url}$slug"
@@ -64,14 +66,32 @@ class KomikuId : ScraperBase {
             )
         }
 
-        val sectionList = arrayListOf<SectionComic>()
-        val comics = document.select("#Komik_Hot article")
+        val hotKomikSection = getSections("#Komik_Hot", document)
+        val hotKomikMangaSection = getSections("#Komik_Hot_Manga", document)
+        val hotKomikManhwaSection = getSections("#Komik_Hot_Manhwa", document)
 
+        val homeSections = arrayListOf<Section>()
+
+        if (hotKomikSection.list.isNotEmpty()) homeSections.add(hotKomikSection)
+        if (hotKomikMangaSection.list.isNotEmpty()) homeSections.add(hotKomikMangaSection)
+        if (hotKomikManhwaSection.list.isNotEmpty()) homeSections.add(hotKomikManhwaSection)
+
+        return HomeData(
+            featured = featuredList,
+            sections = homeSections
+        )
+    }
+
+    private fun getSections(selector: String, document: Document): Section {
+        val hotKomikSectionList = arrayListOf<SectionComic>()
+        val comics = document.select("$selector article")
         for (comic in comics) {
             val url = comic.selectFirst("a")?.attr("href") ?: ""
-            sectionList.add(
+            hotKomikSectionList.add(
                 SectionComic(
-                    title = comic.selectFirst("h4 a")?.text()?.trim() ?: "",
+                    title = comic.selectFirst("h3 a")?.text()?.trim()
+                        ?: comic.selectFirst(".ls2j a")
+                            ?.text()?.trim() ?: "Error",
                     url = url,
                     type = "",
                     img = comic.selectFirst("img")?.attr("data-src") ?: "",
@@ -80,10 +100,12 @@ class KomikuId : ScraperBase {
                     chapterString = comic.selectFirst(".ls2l")?.text()?.trim() ?: ""
                 )
             )
+            Log.d("SECTION ITEM TITLE", getLastPathSegment(url) ?: "")
         }
 
-        val section = Section(
-            title = document.selectFirst("#Komik_Hot h3")?.text()?.trim()
+
+        return Section(
+            title = document.selectFirst("$selector .lsh3")?.text()?.trim()
                 ?.split(" ")?.joinToString(" ") {
                     it.replaceFirstChar {
                         if (it.isLowerCase()) it.titlecase(
@@ -91,11 +113,7 @@ class KomikuId : ScraperBase {
                         ) else it.toString()
                     }
                 } ?: "",
-            list = sectionList
-        )
-
-        return HomeData(
-            featured = featuredList, sections = listOf(section)
+            list = hotKomikSectionList
         )
     }
 
@@ -266,16 +284,16 @@ class KomikuId : ScraperBase {
     }
 
     override suspend fun search(query: String, page: Int): SearchResult {
-        val body = api.search(page, query)
+        val body = searchApi.search(page, query)
         val document = Jsoup.parse(body.string())
         val searchItems = arrayListOf<SearchResult.ExactMatch>()
-        val searchList = document.select(".daftar > div.bge")
+        val searchList = document.select("div.bge")
         for (search in searchList) {
             val url = search.selectFirst("a")?.attr("href") ?: ""
             searchItems.add(
                 SearchResult.ExactMatch(
                     title = search.selectFirst("h3")?.text()?.trim() ?: "",
-                    img = search.selectFirst("img")?.attr("data-src") ?: "",
+                    img = search.selectFirst("img")?.attr("src") ?: "",
                     score = null,
                     type = search.selectFirst(".tpe1_inf b")?.text() ?: "",
                     isColored = search.selectFirst(".berwarna") != null,
@@ -290,7 +308,8 @@ class KomikuId : ScraperBase {
         return SearchResult.SearchList(
             page = page,
             result = searchItems,
-            hasNext = document.selectFirst(".pag-nav .next") != null
+            hasNext = searchItems.size == 20
+//            hasNext = document.selectFirst(".pag-nav .next") != null
         )
     }
 

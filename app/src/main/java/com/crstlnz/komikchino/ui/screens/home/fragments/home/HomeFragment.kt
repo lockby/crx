@@ -32,6 +32,7 @@ import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -71,6 +72,7 @@ import com.crstlnz.komikchino.data.model.DataState
 import com.crstlnz.komikchino.data.model.FeaturedComic
 import com.crstlnz.komikchino.data.model.OpenType
 import com.crstlnz.komikchino.data.model.Section
+import com.crstlnz.komikchino.data.model.SectionComic
 import com.crstlnz.komikchino.data.model.State
 import com.crstlnz.komikchino.ui.components.ErrorView
 import com.crstlnz.komikchino.ui.components.ImageView
@@ -468,108 +470,118 @@ fun LazyListScope.sectionView(
     onKomikClick: (title: String, slug: String) -> Unit = { _, _ -> },
     onChapterClick: (title: String, slug: String) -> Unit = { _, _ -> }
 ) {
-    val section = sections.getOrNull(0)
-    if (section == null) {
-        item { }
-    } else {
-        val komikList = section.list
-        item {
-            Row(
-                Modifier.padding(start = 15.dp, end = 15.dp, top = 20.dp, bottom = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(modifier = Modifier.background(color = Red, shape = CircleShape)) {
-                    Icon(
-                        tint = Color.White,
-                        painter = painterResource(id = R.drawable.fire),
-                        contentDescription = "Popular Icon",
-                        modifier = Modifier
-                            .padding(
-                                start = 3.5.dp, end = 2.5.dp, top = 3.dp, bottom = 3.dp
-                            )
-                            .width(18.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    section.title.ifEmpty { "Data not found!" },
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+    for (section in sections) {
+        sectionComicView(section, onKomikClick, onChapterClick)
+    }
+
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+fun LazyListScope.sectionComicView(
+    section: Section,
+    onKomikClick: (title: String, slug: String) -> Unit = { _, _ -> },
+    onChapterClick: (title: String, slug: String) -> Unit = { _, _ -> }
+) {
+    val komikList = section.list
+    item {
+        Row(
+            Modifier.padding(start = 15.dp, end = 15.dp, top = 20.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.background(color = Red, shape = CircleShape)) {
+                Icon(
+                    tint = Color.White,
+                    painter = painterResource(id = R.drawable.fire),
+                    contentDescription = "Popular Icon",
+                    modifier = Modifier
+                        .padding(
+                            start = 3.5.dp, end = 2.5.dp, top = 3.dp, bottom = 3.dp
+                        )
+                        .width(18.dp)
                 )
             }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                section.title.ifEmpty { "Data not found!" },
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
         }
-        items(count = komikList.size, key = {
-            komikList[it].slug.ifEmpty {
-                it
-            }
-        }) {
-            Box(modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    if (komikList[it].openType === OpenType.KOMIK) {
-                        onKomikClick(
-                            komikList[it].title, komikList[it].slug
-                        )
-                    } else {
-                        onChapterClick(
-                            komikList[it].title, komikList[it].slug
-                        )
-                    }
-                }) {
-                Row(Modifier.padding(15.dp)) {
-                    ImageView(
-                        url = komikList[it].img,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .width(120.dp)
-                            .aspectRatio(11f / 16f),
-                        contentDescription = "Thumbnail"
+    }
+    items(count = komikList.size, key = {
+        komikList[it].slug.ifEmpty {
+            it
+        }
+    }) {
+        Box(modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                if (komikList[it].openType === OpenType.KOMIK) {
+                    onKomikClick(
+                        komikList[it].title, komikList[it].slug
                     )
-                    Spacer(Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            komikList[it].title, style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ), maxLines = 2, overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        FlowRow(verticalArrangement = Arrangement.Center) {
-                            if (komikList[it].type.isNotEmpty()) {
-                                Text(
-                                    komikList[it].type,
-                                    style = MaterialTheme.typography.labelLarge.copy(
-                                        color = getComicTypeColor(komikList[it].type),
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                )
-                                Spacer(Modifier.width(6.dp))
-                            }
-
-                            if (komikList[it].score != null) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Filled.Star,
-                                        contentDescription = "Star",
-                                        modifier = Modifier.height(14.dp),
-                                        tint = Yellow
-                                    )
-                                    Spacer(Modifier.width(2.dp))
-                                    Text(
-                                        komikList[it].score.toString(),
-                                        style = MaterialTheme.typography.labelLarge
-                                    )
-                                }
-                                Spacer(Modifier.width(6.dp))
-                            }
-
+                } else {
+                    onChapterClick(
+                        komikList[it].title, komikList[it].slug
+                    )
+                }
+            }) {
+            Row(Modifier.padding(15.dp)) {
+                ImageView(
+                    url = komikList[it].img,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .width(120.dp)
+                        .aspectRatio(11f / 16f),
+                    contentDescription = "Thumbnail"
+                )
+                Spacer(Modifier.width(10.dp))
+                Column {
+                    Text(
+                        komikList[it].title, style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ), maxLines = 2, overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    FlowRow(verticalArrangement = Arrangement.Center) {
+                        if (komikList[it].type.isNotEmpty()) {
                             Text(
-                                komikList[it].chapterString,
-                                style = MaterialTheme.typography.labelLarge
+                                komikList[it].type,
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    color = getComicTypeColor(komikList[it].type),
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             )
+                            Spacer(Modifier.width(6.dp))
                         }
+
+                        if (komikList[it].score != null) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Filled.Star,
+                                    contentDescription = "Star",
+                                    modifier = Modifier.height(14.dp),
+                                    tint = Yellow
+                                )
+                                Spacer(Modifier.width(2.dp))
+                                Text(
+                                    komikList[it].score.toString(),
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
+                            Spacer(Modifier.width(6.dp))
+                        }
+
+                        Text(
+                            komikList[it].chapterString,
+                            style = MaterialTheme.typography.labelLarge
+                        )
                     }
                 }
             }
         }
     }
 
+    item {
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+    }
 }

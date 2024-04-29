@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.data.util
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
@@ -20,6 +21,14 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.security.SecureRandom
+import java.security.cert.CertificateException
+import java.security.cert.X509Certificate
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 const val MAX_BITMAP_SIZE = 100 * 1024 * 1024 // 100 MB
 
@@ -44,6 +53,66 @@ class SameUrlBlocker : Interceptor {
 }
 
 fun getCustomHttpClient(): OkHttpClient {
+    return try {
+        // Create a trust manager that does not validate certificate chains
+        val trustAllCerts =
+            arrayOf<TrustManager>(
+                @SuppressLint("CustomX509TrustManager")
+                object : X509TrustManager {
+                    @SuppressLint("TrustAllX509TrustManager")
+                    @Throws(CertificateException::class)
+                    override fun checkClientTrusted(
+                        chain: Array<X509Certificate>,
+                        authType: String
+                    ) {
+                    }
+
+                    @SuppressLint("TrustAllX509TrustManager")
+                    @Throws(CertificateException::class)
+                    override fun checkServerTrusted(
+                        chain: Array<X509Certificate>,
+                        authType: String
+                    ) {
+                    }
+
+                    override fun getAcceptedIssuers(): Array<X509Certificate> {
+                        return arrayOf()
+                    }
+                }
+            )
+
+        // Install the all-trusting trust manager
+        val sslContext = SSLContext.getInstance("SSL")
+        sslContext.init(null, trustAllCerts, SecureRandom())
+        // Create an ssl socket factory with our all-trusting manager
+        val sslSocketFactory: SSLSocketFactory = sslContext.socketFactory
+        val builder = OkHttpClient.Builder()
+        builder.sslSocketFactory(
+            sslSocketFactory,
+            trustAllCerts[0] as X509TrustManager
+        )
+        builder.hostnameVerifier(HostnameVerifier { hostname, session -> true })
+        builder.followRedirects(true)
+            .connectionSpecs(
+                listOf(
+                    ConnectionSpec.COMPATIBLE_TLS,
+                    ConnectionSpec.CLEARTEXT,
+                    ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                        .allEnabledTlsVersions()
+                        .allEnabledCipherSuites()
+                        .build()
+                )
+            )
+            .followSslRedirects(true)
+            .followRedirects(true) // Enable automatic following of redirects
+            .cookieJar(AppSettings.cookieJar)
+            .addInterceptor(UrlLoggingInterceptor())
+            .addInterceptor(RequestHeaderInterceptor())
+            .addInterceptor(HttpErrorInterceptor())
+        builder.build()
+    } catch (e: Exception) {
+        throw RuntimeException(e)
+    }
 //        AppSettings.downloadDir =
 //            File(
 //                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
@@ -51,24 +120,24 @@ fun getCustomHttpClient(): OkHttpClient {
 //            ).path
 //        val dlViewModel: DownloadViewModel by viewModels()
 //        AppSettings.downloadViewModel = dlViewModel
-    return OkHttpClient.Builder()
-        .connectionSpecs(
-            listOf(
-                ConnectionSpec.COMPATIBLE_TLS,
-                ConnectionSpec.CLEARTEXT,
-                ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                    .allEnabledTlsVersions()
-                    .allEnabledCipherSuites()
-                    .build()
-            )
-        )
-        .followRedirects(true) // Enable automatic following of redirects
-        .followSslRedirects(true)
-        .cookieJar(AppSettings.cookieJar)
-        .addInterceptor(UrlLoggingInterceptor())
-        .addInterceptor(RequestHeaderInterceptor())
-        .addInterceptor(HttpErrorInterceptor())
-        .build()
+//    return OkHttpClient.Builder()
+//        .connectionSpecs(
+//            listOf(
+//                ConnectionSpec.COMPATIBLE_TLS,
+//                ConnectionSpec.CLEARTEXT,
+//                ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+//                    .allEnabledTlsVersions()
+//                    .allEnabledCipherSuites()
+//                    .build()
+//            )
+//        )
+//        .followRedirects(true) // Enable automatic following of redirects
+//        .followSslRedirects(true)
+//        .cookieJar(AppSettings.cookieJar)
+//        .addInterceptor(UrlLoggingInterceptor())
+//        .addInterceptor(RequestHeaderInterceptor())
+//        .addInterceptor(HttpErrorInterceptor())
+//        .build()
 }
 
 class CustomCacheCoil(

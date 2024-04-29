@@ -1,5 +1,6 @@
 package com.crstlnz.komikchino.ui.screens.home.fragments.settings
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,7 +44,9 @@ import androidx.navigation.NavController
 import androidx.navigation.NavOptionsBuilder
 import com.crstlnz.komikchino.LocalStatusBarPadding
 import com.crstlnz.komikchino.R
+import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.data.api.KomikServer
+import com.crstlnz.komikchino.data.util.CustomCookieJar
 import com.crstlnz.komikchino.data.util.logout
 import com.crstlnz.komikchino.ui.components.ImageView
 import com.crstlnz.komikchino.ui.navigations.HomeSections
@@ -249,6 +252,27 @@ fun SettingScreen(navigateTo: (to: String) -> Unit) {
                     leadingContent = {
                         Icon(
                             painter = painterResource(id = R.drawable.sync),
+                            contentDescription = "Update icon"
+                        )
+                    }
+                )
+            }
+
+            item {
+                ListItem(
+                    modifier = Modifier.clickable {
+                        if (AppSettings.cookieJar is CustomCookieJar) {
+                            (AppSettings.cookieJar as CustomCookieJar).clearCookies()
+                            Toast.makeText(context, "Cookies cleared!", Toast.LENGTH_SHORT).show()
+                        }
+
+                    },
+                    headlineContent = {
+                        Text("Clear Cookies")
+                    },
+                    leadingContent = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.cookie_outline),
                             contentDescription = "Update icon"
                         )
                     }

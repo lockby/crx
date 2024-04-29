@@ -38,7 +38,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import kotlin.random.Random
 
-@SuppressLint("JavascriptInterface")
+@SuppressLint("JavascriptInterface", "SetJavaScriptEnabled")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UnblockCloudflare(
@@ -70,12 +70,13 @@ fun UnblockCloudflare(
         return check1 || check2 || check3 || check4
     }
 
-    fun getCookieString(): String? {
-        return CookieManager.getInstance().getCookie(url) ?: return null
+    var webView: WebView? by remember { mutableStateOf(null) }
+    fun getCookieString(_url: String? = null): String? {
+        return CookieManager.getInstance().getCookie(_url ?: url) ?: return null
     }
 
-    fun getCookie(): List<Cookie>? {
-        val cookieString = getCookieString() ?: return null
+    fun getCookie(_url: String? = null): List<Cookie>? {
+        val cookieString = getCookieString(_url) ?: return null
         return parseCookieString(cookieString, url)
     }
 
@@ -84,8 +85,6 @@ fun UnblockCloudflare(
             return cookie.name == "cf_clearance"
         } != null
     }
-
-    var webView: WebView? by remember { mutableStateOf(null) }
 
     DisposableEffect(Unit) {
         AppSettings.cloudflareState.update {
@@ -154,7 +153,10 @@ fun UnblockCloudflare(
                     val cookieManager = CookieManager.getInstance()
                     wV.settings.domStorageEnabled = true
                     wV.settings.databaseEnabled = true
+                    wV.settings.javaScriptEnabled = true
+                    wV.settings.userAgentString = AppSettings.userAgent
                     cookieManager.setAcceptThirdPartyCookies(wV, true)
+                    cookieManager.acceptThirdPartyCookies(wV)
                     cookieManager.setAcceptCookie(true)
                     cookieManager.removeAllCookies(null)
                     cookieManager.removeSessionCookies(null)
@@ -167,22 +169,28 @@ fun UnblockCloudflare(
                     if (isDestroyed) {
                         next(webView, request)
                     } else {
-                        val cookies = getCookie()
+
+                        val cookies = getCookie(request?.url?.toString())
+
                         if (cookies != null && hasCloudflareKey(cookies)) {
+                            Log.d("UNBLOCKER", "ADA BOI")
                             webView?.post {
                                 val httpURL = url.toHttpUrlOrNull()
+                                Log.d("UNBLOCKER AW", cookies.toString())
                                 if (httpURL != null) {
                                     (AppSettings.cookieJar as CustomCookieJar).updateCookies(
                                         httpURL, cookies
                                     )
                                 }
                                 if (AppSettings.cloudflareState.value.isBlocked) {
+                                    Log.d("UNBLOCKER OKE", "DAWDWAD")
                                     AppSettings.cloudflareState.update { state ->
                                         state.copy(
                                             isBlocked = false, key = 0, autoReloadConsumed = false
                                         )
                                     }
-                                    back()
+                                    webView.destroy()
+                                    onBackPressed()
                                 }
                             }
 

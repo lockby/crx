@@ -242,6 +242,7 @@ fun MainApp() {
         addMainNavigation(onBack = {
             navController.popBackStack()
         }, navigateTo = {
+            Log.d("Navigate to", it)
             try {
                 if (it === MainNavigation.HOME || it === MainNavigation.LOGIN) {
                     navController.navigate(it) {

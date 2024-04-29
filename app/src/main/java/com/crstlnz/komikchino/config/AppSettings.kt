@@ -46,7 +46,7 @@ object AppSettings {
 
     var cookieJar: CookieJar = EmptyCookieJar()
     var userAgent =
-        "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (HTML, like Gecko) Chrome/114.0.5735.130 Mobile Safari/537.36"
+        "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36 EdgA/115.0.1901.196"
 
     val cloudflareState: MutableStateFlow<CloudflareState> =
         MutableStateFlow(CloudflareState(false, 0, null, false))
