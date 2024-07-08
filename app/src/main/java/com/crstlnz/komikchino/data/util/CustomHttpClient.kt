@@ -36,7 +36,7 @@ class UrlLoggingInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request: Request = chain.request()
         val url = request.url.toString()
-        println("Request URL: $url")
+        Log.d("Interceptor", "Request Url : $url")
         return chain.proceed(request)
     }
 }
@@ -196,8 +196,8 @@ fun getImageLoader(context: Context): ImageLoader {
         .build()
 }
 
-fun getImageClient(komikServer: KomikServer): OkHttpClient {
-    if (komikServer === KomikServer.COSMICSCANSINDO || komikServer === KomikServer.COSMICSCANS) {
+fun getImageClient(komikServer: KomikServer): OkHttpClient { // OLD
+    if (komikServer === KomikServer.COSMICSCANSINDO) {
         return AppSettings.customHttpClient.newBuilder().addInterceptor {
             val newRequest = it.request().newBuilder().addHeader(
                 "Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
@@ -207,4 +207,31 @@ fun getImageClient(komikServer: KomikServer): OkHttpClient {
 
     }
     return AppSettings.customHttpClient
+}
+
+fun getImageClientCoil3(komikServer: KomikServer): OkHttpClient {
+    Log.d("IMAGELOADER", "WEWEWEWEW")
+    return AppSettings.customHttpClient.newBuilder()
+        .addInterceptor(UrlLoggingInterceptor())
+        .addInterceptor {
+            val newRequest = it.request().newBuilder()
+            Log.d("Referer", komikServer.url)
+            newRequest.addHeader("Referer", komikServer.url)
+            if (komikServer === KomikServer.COSMICSCANSINDO) {
+                newRequest.addHeader(
+                    "Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+                )
+            }
+            it.proceed(newRequest.build())
+        }.build()
+//    if (komikServer === KomikServer.COSMICSCANSINDO) {
+//        return AppSettings.customHttpClient.newBuilder().addInterceptor {
+//            val newRequest = it.request().newBuilder().addHeader(
+//                "Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+//            ).build()
+//            it.proceed(newRequest)
+//        }.build()
+//
+//    }
+//    return AppSettings.customHttpClient
 }

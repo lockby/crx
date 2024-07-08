@@ -2,8 +2,10 @@ package com.crstlnz.komikchino.data.api.source
 
 import android.util.Log
 import com.crstlnz.komikchino.data.api.KomikClient
+import com.crstlnz.komikchino.data.api.KomikClients
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
+import com.crstlnz.komikchino.data.api.client.MangaKatanaScrapeAPI
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterApi
 import com.crstlnz.komikchino.data.model.ChapterUpdate
@@ -31,7 +33,8 @@ import java.util.Date
 import java.util.Locale
 
 class Mangakatana : ScraperBase {
-    private val api = KomikClient.getMangaKatanaClient()
+    override val client = KomikClients.getMangaKatanaClient()
+    private val api = client.api
     private val DIVIDER = "*!@!*"
 
     override fun getChapterUrl(slug: String): String {
@@ -326,7 +329,7 @@ class Mangakatana : ScraperBase {
         return chapterList
     }
 
-    private suspend fun parseChapter(document: Document): ChapterApi {
+    private fun parseChapter(document: Document): ChapterApi {
         var imgList = listOf<String>()
         try {
             imgList = parseMangaKatanaChapterImages(document.html())
@@ -348,7 +351,9 @@ class Mangakatana : ScraperBase {
 
         return ChapterApi(
             id = slug.replace("/", DIVIDER),
-            imgs = imgList,
+            imgs = imgList.map {
+                it.replace("https://i1", "https://i2")
+            },
             title = chapterTitle,
             slug = slug,
             mangaId = mangaId,

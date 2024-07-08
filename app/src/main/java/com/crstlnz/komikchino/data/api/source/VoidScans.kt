@@ -1,8 +1,11 @@
 package com.crstlnz.komikchino.data.api.source
 
 import com.crstlnz.komikchino.data.api.KomikClient
+import org.json.JSONObject
+import com.crstlnz.komikchino.data.api.KomikClients
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
+import com.crstlnz.komikchino.data.api.client.VoidScansScrapeAPI
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterApi
 import com.crstlnz.komikchino.data.model.ChapterUpdate
@@ -31,7 +34,8 @@ import java.util.regex.Pattern
 
 
 class VoidScans : ScraperBase {
-    private val api = KomikClient.getVoidScansClient()
+    override val client = KomikClients.getVoidScansClient()
+    private val api = client.api
 
     override fun getChapterUrl(slug: String): String {
         return "${KomikServer.VOIDSCANS.url}$slug"
@@ -311,12 +315,37 @@ class VoidScans : ScraperBase {
         return chapterList
     }
 
+    fun extractChapterImages(html: String): List<String> {
+        // Define a regex pattern to extract the JSON object from the script tag
+        val pattern = Pattern.compile("""ts_reader\.run\((\{.*\})\);""")
+        val matcher = pattern.matcher(html)
+
+        if (matcher.find()) {
+            val jsonString = matcher.group(1)
+            val jsonObject = JSONObject(jsonString!!)
+            val sources = jsonObject.getJSONArray("sources")
+            val images = mutableListOf<String>()
+
+            // Assuming there is only one source in the array
+            if (sources.length() > 0) {
+                val source = sources.getJSONObject(0)
+                val imagesArray = source.getJSONArray("images")
+                for (i in 0 until imagesArray.length()) {
+                    images.add(imagesArray.getString(i))
+                }
+            }
+            return images
+        } else {
+            // If the JSON object is not found, return an empty list
+            return emptyList()
+        }
+    }
 
     private fun parseChapter(document: Document): ChapterApi {
-        val imgs = document.select("#readerarea img")
+        val imgs = extractChapterImages(document.html())
         val imgList = arrayListOf<String>()
         for (img in imgs) {
-            imgList.add(img.attr("src") ?: "")
+            imgList.add(img)
         }
 
         val breadCrumbs = document.select(".ts-breadcrumb li")

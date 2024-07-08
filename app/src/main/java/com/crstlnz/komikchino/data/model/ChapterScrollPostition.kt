@@ -1,6 +1,6 @@
 package com.crstlnz.komikchino.data.model
 
-import coil.request.ImageRequest
+import coil3.request.ImageRequest
 
 
 data class ImageSize(

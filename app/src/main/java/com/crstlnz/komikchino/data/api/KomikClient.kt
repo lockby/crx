@@ -27,7 +27,20 @@ object ApiClient {
     }
 }
 
-object KomikClient {
+class KomikClient<T>(
+    val server: KomikServer,
+    apiClass: Class<T>,
+    val baseUrl: String = server.url,
+    builder: (Retrofit.Builder) -> Retrofit.Builder = {
+        it
+    }
+) {
+    val api: T =
+        builder(Retrofit.Builder().baseUrl(baseUrl).client(AppSettings.customHttpClient)).build()
+            .create(apiClass)
+}
+
+object KomikClients {
     private val retrofitScraper = Retrofit.Builder()
 
 
@@ -39,77 +52,74 @@ object KomikClient {
 //        .build()
 
 
-    fun getKiryuuClient(): KiryuuScrapeAPI {
-        return retrofitScraper
-            .baseUrl(KomikServer.KIRYUU.url)
-            .client(AppSettings.customHttpClient)
-            .build()
-            .create(KiryuuScrapeAPI::class.java)
+    fun getKiryuuClient(): KomikClient<KiryuuScrapeAPI> {
+        return KomikClient(
+            KomikServer.KIRYUU,
+            KiryuuScrapeAPI::class.java
+        )
     }
 
-    fun getMangaKatanaClient(): MangaKatanaScrapeAPI {
-        return retrofitScraper
-            .baseUrl(KomikServer.MANGAKATANA.url)
-            .client(AppSettings.customHttpClient)
-            .build()
-            .create(MangaKatanaScrapeAPI::class.java)
+    fun getMangaKatanaClient(): KomikClient<MangaKatanaScrapeAPI> {
+        return KomikClient(
+            KomikServer.MANGAKATANA,
+            MangaKatanaScrapeAPI::class.java
+        )
     }
 
-    fun getVoidScansClient(): VoidScansScrapeAPI {
-        return retrofitScraper
-            .baseUrl(KomikServer.VOIDSCANS.url)
-            .client(AppSettings.customHttpClient)
-            .build()
-            .create(VoidScansScrapeAPI::class.java)
+    fun getVoidScansClient(): KomikClient<VoidScansScrapeAPI> {
+        return KomikClient(
+            KomikServer.VOIDSCANS,
+            VoidScansScrapeAPI::class.java
+        )
     }
 
-    fun getManhwalistClient(): ManhwalistScrapeAPI {
-        return retrofitScraper
-            .baseUrl(KomikServer.MANHWALIST.url)
-            .client(AppSettings.customHttpClient)
-            .build()
-            .create(ManhwalistScrapeAPI::class.java)
+    fun getManhwalistClient(): KomikClient<ManhwalistScrapeAPI> {
+        return KomikClient(
+            KomikServer.MANHWALIST,
+            ManhwalistScrapeAPI::class.java
+        )
     }
 
-    fun getCosmicScansClient(): CosmicScansScrapeAPI {
-        return retrofitScraper
-            .baseUrl(KomikServer.COSMICSCANS.url)
-            .client(AppSettings.customHttpClient)
-            .build()
-            .create(CosmicScansScrapeAPI::class.java)
+//    fun getCosmicScansClient(): CosmicScansScrapeAPI {
+//        return retrofitScraper
+//            .baseUrl(KomikServer.COSMICSCANS.url)
+//            .client(AppSettings.customHttpClient)
+//            .build()
+//            .create(CosmicScansScrapeAPI::class.java)
+//    }
+
+    fun getCosmicScansIndonesiaClient(): KomikClient<CosmicScansIndonesiaScrapeAPI> {
+        return KomikClient(
+            KomikServer.COSMICSCANSINDO,
+            CosmicScansIndonesiaScrapeAPI::class.java
+        )
     }
 
-    fun getCosmicScansIndonesiaClient(): CosmicScansIndonesiaScrapeAPI {
-        return retrofitScraper
-            .baseUrl(KomikServer.COSMICSCANSINDO.url)
-            .client(AppSettings.customHttpClient)
-            .build()
-            .create(CosmicScansIndonesiaScrapeAPI::class.java)
+    fun getMirrorKomikClient(): KomikClient<MirrorKomikScrapeAPI> {
+        return KomikClient(
+            KomikServer.MIRRORKOMIK,
+            MirrorKomikScrapeAPI::class.java
+        ) {
+            it.addConverterFactory(JacksonConverterFactory.create())
+        }
     }
 
-    fun getMirrorKomikClient(): MirrorKomikScrapeAPI {
-        return retrofitScraper
-            .addConverterFactory(JacksonConverterFactory.create())
-            .baseUrl(KomikServer.MIRRORKOMIK.url)
-            .client(AppSettings.customHttpClient)
-            .build()
-            .create(MirrorKomikScrapeAPI::class.java)
+    fun getKomikuIdClient(): KomikClient<KomikuScrapeAPI> {
+        return KomikClient(
+            KomikServer.KOMIKUID,
+            KomikuScrapeAPI::class.java
+        ) {
+            it.addConverterFactory(JacksonConverterFactory.create())
+        }
     }
 
-    fun getKomikuIdClient(): KomikuScrapeAPI {
-        return retrofitScraper
-            .addConverterFactory(JacksonConverterFactory.create())
-            .baseUrl(KomikServer.KOMIKUID.url)
-            .client(AppSettings.customHttpClient)
-            .build()
-            .create(KomikuScrapeAPI::class.java)
-    }
-    fun getKomikuIdSearchClient(): KomikuSearchScrapeAPI {
-        return retrofitScraper
-            .addConverterFactory(JacksonConverterFactory.create())
-            .baseUrl("https://api.komiku.id/")
-            .client(AppSettings.customHttpClient)
-            .build()
-            .create(KomikuSearchScrapeAPI::class.java)
+    fun getKomikuIdSearchClient(): KomikClient<KomikuSearchScrapeAPI> {
+        return KomikClient(
+            KomikServer.KOMIKUID,
+            KomikuSearchScrapeAPI::class.java,
+            "https://api.komiku.id/"
+        ) {
+            it.addConverterFactory(JacksonConverterFactory.create())
+        }
     }
 }
