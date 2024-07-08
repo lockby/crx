@@ -11,18 +11,21 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import coil.compose.rememberAsyncImagePainter
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
-import coil.request.ImageRequest
-import coil.size.Size
+import coil3.annotation.ExperimentalCoilApi
+import coil3.compose.rememberAsyncImagePainter
+import coil3.network.NetworkHeaders
+import coil3.network.httpHeaders
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.size.Size
 import com.crstlnz.komikchino.config.AppSettings
 
+@OptIn(ExperimentalCoilApi::class)
 @Composable
 fun ImageView(
     url: String,
     modifier: Modifier = Modifier,
-    shape : Shape = RectangleShape,
+    shape: Shape = RectangleShape,
     applyImageRequest: (ImageRequest.Builder) -> ImageRequest.Builder = { it },
     contentDescription: String?,
     contentScale: ContentScale = ContentScale.Crop,
@@ -30,12 +33,11 @@ fun ImageView(
     val imageRequest = ImageRequest.Builder(LocalContext.current)
         .data(url)
         .crossfade(true)
-        .setHeader("Referer", AppSettings.komikServer!!.url)
-        .decoderFactory(if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
+//        .httpHeaders(NetworkHeaders.Builder().add("Referer", AppSettings.komikServer!!.url).build())
+//        .decoderFactory(if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
         .size(Size.ORIGINAL) // Set the target size to load the image at.
 
     val painter = rememberAsyncImagePainter(
-        imageLoader = AppSettings.imageLoader!!,
         model = applyImageRequest(imageRequest)
             .build()
     )

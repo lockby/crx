@@ -16,6 +16,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -23,13 +25,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
-import coil.request.ImageRequest
-import coil.size.Dimension
-import coil.size.Size
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.request.crossfade
+import coil3.size.Size
+import coil3.size.Dimension
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.ui.theme.Black1
@@ -48,15 +51,16 @@ fun ChapterImageView(
     pageNumber: Int = 1,
 ) {
     val painter = rememberAsyncImagePainter(
-        imageLoader = AppSettings.imageLoader!!,
         model = ImageRequest.Builder(LocalContext.current)
             .data(data.url)
             .crossfade(true)
             .allowHardware(data.useHardware)
             .size(Size(screenWidthPixel, Dimension.Undefined))
-            .decoderFactory(if (SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
+//            .decoderFactory(if (SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
             .build()
     )
+
+//    val state by painter.state.collectAsState()
 
     if (painter.state is AsyncImagePainter.State.Success) {
         val intrinsicSize =

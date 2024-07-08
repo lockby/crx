@@ -13,6 +13,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
 interface ScraperBase {
+    val client: KomikClient<out Any>
     suspend fun getHome(): HomeData
     fun getDetailKomikUrl(slug: String): String
     fun getChapterUrl(slug: String): String
@@ -27,6 +28,11 @@ interface ScraperBase {
     suspend fun getChapterBySlug(slug: String): ChapterApi
     suspend fun fetch(onFetch: suspend () -> ResponseBody): Document {
         return Jsoup.parse(onFetch().string())
+    }
+
+    fun convertUrl(url: String): String {
+        if (url.startsWith("/")) return "${this.client.baseUrl}${url}"
+        return url
     }
 
     suspend fun searchByGenre(genreList: List<Genre>, page: Int = 1): GenreSearch

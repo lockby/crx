@@ -46,11 +46,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
-import coil.compose.AsyncImage
-import coil.decode.DecodeResult
-import coil.decode.Decoder
-import coil.request.CachePolicy
-import coil.request.ImageRequest
+import coil3.SingletonImageLoader
+import coil3.compose.AsyncImage
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.crstlnz.komikchino.R
 import com.crstlnz.komikchino.config.AppSettings
 import com.crstlnz.komikchino.config.nunito
@@ -194,6 +194,10 @@ fun ChapterImageList(
                 )
             )
             val scope = rememberCoroutineScope()
+            val context = LocalContext.current
+            val imageLoader = remember {
+                SingletonImageLoader.get(context)
+            }
             LazyColumn(
                 modifier
                     .weight(1f)
@@ -285,23 +289,20 @@ fun ChapterImageList(
                             if (imgSizeReq?.imageRequest != null) continue
                             val imgReq = ImageRequest.Builder(LocalContext.current)
                                 .data(image.url)
-                                // Disable reading from/writing to the memory cache.
-                                .memoryCachePolicy(CachePolicy.DISABLED)
-                                // Set a custom `Decoder.Factory` that skips the decoding step.
-                                .decoderFactory { _, _, _ ->
-                                    Decoder { DecodeResult(ColorDrawable(Color.BLACK), false) }
-                                }
+//                                // Disable reading from/writing to the memory cache.
+//                                .memoryCachePolicy(CachePolicy.DISABLED)
+//                                // Set a custom `Decoder.Factory` that skips the decoding step.
+//                                .decoderFactory { _, _, _ ->
+//                                    Decoder { DecodeResult(ColorDrawable(Color.BLACK), false) }
+//                                }
                                 .build()
 
                             imgSizeReq?.let {
                                 it.imageRequest = imgReq
                             }
-
-                            imgReq.lifecycle
-
-                            AppSettings.imageLoader?.enqueue(
-                                imgReq
-                            )
+//
+//                            imgReq.lifecycle
+                            imageLoader.enqueue(imgReq)
                         }
                     }
 

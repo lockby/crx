@@ -2,8 +2,10 @@ package com.crstlnz.komikchino.data.api.source
 
 import android.util.Log
 import com.crstlnz.komikchino.data.api.KomikClient
+import com.crstlnz.komikchino.data.api.KomikClients
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
+import com.crstlnz.komikchino.data.api.client.KomikuScrapeAPI
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterApi
 import com.crstlnz.komikchino.data.model.ChapterUpdate
@@ -29,8 +31,9 @@ import org.jsoup.nodes.Document
 import java.util.Locale
 
 class KomikuId : ScraperBase {
-    private val api = KomikClient.getKomikuIdClient()
-    private val searchApi = KomikClient.getKomikuIdSearchClient()
+    override val client = KomikClients.getKomikuIdClient()
+    private val api = client.api
+    private val searchApi = KomikClients.getKomikuIdSearchClient().api
 
     override fun getChapterUrl(slug: String): String {
         return "${KomikServer.KOMIKUID.url}$slug"
@@ -52,9 +55,10 @@ class KomikuId : ScraperBase {
         for (featured in featureds) {
             val url = featured.selectFirst("a")?.attr("href") ?: ""
             val genreLinkList = arrayListOf<GenreLink>()
+            Log.d("TITLE", featured.selectFirst(".ls2j a")?.text()?.trim() ?: "")
             featuredList.add(
                 FeaturedComic(
-                    title = featured.selectFirst("h4 a")?.text()?.trim() ?: "",
+                    title = featured.selectFirst(".ls2j a")?.text()?.trim() ?: "",
                     url = url,
                     description = "No description.",
                     genreLink = genreLinkList,

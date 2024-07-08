@@ -1,9 +1,12 @@
 package com.crstlnz.komikchino.data.api.source
 
 import android.content.Context
+import android.util.Log
 import com.crstlnz.komikchino.data.api.KomikClient
+import com.crstlnz.komikchino.data.api.KomikClients
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
+import com.crstlnz.komikchino.data.api.client.MirrorKomikScrapeAPI
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterApi
 import com.crstlnz.komikchino.data.model.ChapterUpdate
@@ -35,7 +38,8 @@ import retrofit2.Response
 
 
 class MirrorKomik(context: Context) : ScraperBase {
-    private val api = KomikClient.getMirrorKomikClient()
+    override val client = KomikClients.getMirrorKomikClient()
+    private val api = client.api
     private val DIVIDER = "@!*!@"
     private val CACHE_KEY = "mirrorkomik-genres"
     private val USERNAME = "cocotmu"
@@ -55,6 +59,7 @@ class MirrorKomik(context: Context) : ScraperBase {
     override fun getChapterUrlById(id: String): String {
         return getChapterUrl(id)
     }
+
     override fun getDetailKomikUrl(slug: String): String {
         return "${KomikServer.MIRRORKOMIK.url}${slug.replace(DIVIDER, "/")}"
     }
@@ -64,7 +69,7 @@ class MirrorKomik(context: Context) : ScraperBase {
     }
 
     private suspend fun checkLogin(body: Response<ResponseBody>): Boolean {
-        return if (body.raw().request.url.toString() == "https://mirrorkomik.net/login") {
+        return if (body.raw().request.url.toString() == "${client.baseUrl}login") {
             val loginDocument = Jsoup.parse(body.body()?.string() ?: "")
             val csrf =
                 loginDocument.selectFirst("input[name='csrf_test_name']")?.attr("value") ?: ""
@@ -99,6 +104,7 @@ class MirrorKomik(context: Context) : ScraperBase {
                 }
 
                 val dataType = url.trim("/".single()).split("/")
+                val imgUrl = featured.selectFirst("img")?.attr("data-src") ?: ""
                 featuredList.add(
                     FeaturedComic(
                         title = featured.selectFirst("a h4")?.text()?.trim() ?: "",
@@ -107,7 +113,7 @@ class MirrorKomik(context: Context) : ScraperBase {
                             ?: "No description.",
                         genreLink = genreLinkList,
                         type = dataType.getOrNull(0) ?: "",
-                        img = featured.selectFirst("img")?.attr("data-src") ?: "",
+                        img = convertUrl(imgUrl),
                         slug = generateSlug(url),
                         score = null
                     )
@@ -127,8 +133,10 @@ class MirrorKomik(context: Context) : ScraperBase {
                     title = comic.selectFirst("a h3")?.text()?.trim() ?: "",
                     url = url,
                     type = comic.selectFirst("img + div")?.className() ?: "",
-                    img = comic.selectFirst("img")?.attr("data-src")
-                        ?: getBackgroundImage(document.selectFirst("style")?.html() ?: ""),
+                    img = convertUrl(
+                        comic.selectFirst("img")?.attr("data-src")
+                            ?: getBackgroundImage(document.selectFirst("style")?.html() ?: "")
+                    ),
                     slug = getLastPathSegment(url) ?: "",
                     score = null,
                     chapterString = "",
@@ -174,7 +182,7 @@ class MirrorKomik(context: Context) : ScraperBase {
             latestUpdate.add(
                 LatestUpdate(
                     title = latest.selectFirst(".title a")?.text() ?: "",
-                    img = latest.selectFirst("img")?.attr("data-src") ?: "",
+                    img = convertUrl(latest.selectFirst("img")?.attr("data-src") ?: ""),
                     description = "",
                     slug = generateSlug(url),
                     url = url,
@@ -200,7 +208,7 @@ class MirrorKomik(context: Context) : ScraperBase {
             searchItems.add(
                 SearchResult.ExactMatch(
                     title = search.selectFirst("a .tt")?.text()?.trim() ?: "",
-                    img = search.selectFirst("a img")?.attr("data-src") ?: "",
+                    img = convertUrl(search.selectFirst("a img")?.attr("data-src") ?: ""),
                     type = url.trim("/".single()).split("/").getOrNull(0)?.trim() ?: "",
                     url = url,
                     slug = generateSlug(url)
@@ -261,7 +269,7 @@ class MirrorKomik(context: Context) : ScraperBase {
                         url = url,
                         genre = genreList.getOrNull(0)?.title ?: "",
                         type = dataType.getOrNull(0) ?: "",
-                        img = similar.selectFirst("img")?.attr("data-src") ?: "",
+                        img = convertUrl(similar.selectFirst("img")?.attr("data-src") ?: ""),
                         slug = generateSlug(url),
                     )
                 )
@@ -294,8 +302,8 @@ class MirrorKomik(context: Context) : ScraperBase {
             slug = slug,
             url = url,
             title = title?.trim() ?: "",
-            img = document.selectFirst("article .ims img")?.attr("src") ?: "",
-            banner = getBackgroundImage(document.selectFirst("style")?.html() ?: "") ?: "",
+            img = convertUrl(document.selectFirst("article .ims img")?.attr("src") ?: ""),
+            banner = convertUrl(getBackgroundImage(document.selectFirst("style")?.html() ?: "") ?: ""),
             type = typeInfo ?: "",
             description = document.selectFirst("#Sinopsis p")?.text()?.trim() ?: "",
             score = null,
@@ -431,7 +439,7 @@ class MirrorKomik(context: Context) : ScraperBase {
             searchItems.add(
                 KomikSearchResult(
                     title = search.selectFirst(".bigors .tt")?.text()?.trim() ?: "",
-                    img = search.selectFirst(".limit img")?.attr("data-src") ?: "",
+                    img = convertUrl(search.selectFirst(".limit img")?.attr("data-src") ?: ""),
                     type = url.trim("/".single()).split("/").getOrNull(0) ?: "",
                     url = url,
                     slug = generateSlug(url)

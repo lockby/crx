@@ -1,8 +1,11 @@
 package com.crstlnz.komikchino.data.api.source
 
 import com.crstlnz.komikchino.data.api.KomikClient
+import com.crstlnz.komikchino.data.api.KomikClients
 import com.crstlnz.komikchino.data.api.KomikServer
 import com.crstlnz.komikchino.data.api.ScraperBase
+import com.crstlnz.komikchino.data.api.client.CosmicScansIndonesiaScrapeAPI
+import com.crstlnz.komikchino.data.api.client.CosmicScansScrapeAPI
 import com.crstlnz.komikchino.data.model.Chapter
 import com.crstlnz.komikchino.data.model.ChapterApi
 import com.crstlnz.komikchino.data.model.ChapterUpdate
@@ -30,7 +33,8 @@ import java.util.Locale
 import java.util.regex.Pattern
 
 class CosmicScansIndonesia : ScraperBase {
-    private val api = KomikClient.getCosmicScansIndonesiaClient()
+    override val client = KomikClients.getCosmicScansIndonesiaClient()
+    private val api = client.api
 
     override fun getChapterUrl(slug: String): String {
         return "${KomikServer.COSMICSCANSINDO.url}$slug"

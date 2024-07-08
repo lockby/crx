@@ -142,15 +142,15 @@ object MainNavigation {
                 )
             }
 
-            KomikServer.COSMICSCANS -> {
-                return toWebView(
-                    "file:///android_asset/cosmicscansdisqus.html?id=${
-                        decodeBase64(slug)
-                    }&title=${title.ifEmpty { "Empty Title" }}&url=${
-                        decodeBase64(url)
-                    }", title
-                )
-            }
+//            KomikServer.COSMICSCANS -> {
+//                return toWebView(
+//                    "file:///android_asset/cosmicscansdisqus.html?id=${
+//                        decodeBase64(slug)
+//                    }&title=${title.ifEmpty { "Empty Title" }}&url=${
+//                        decodeBase64(url)
+//                    }", title
+//                )
+//            }
 
             KomikServer.COSMICSCANSINDO -> {
                 return toWebView(
